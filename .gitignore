@@ -1,0 +1,14 @@
+*.swp
+*.zip
+bak.*
+*.tex
+*.pdf
+*.log
+*.aux
+*.out
+__pycache__
+dist
+*.html
+test*
+*.save
+*.pyc
