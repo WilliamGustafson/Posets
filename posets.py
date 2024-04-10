@@ -1,8 +1,6 @@
 ##########################################
 #TODO
 ##########################################
-#Bug: latex and show for rank 0 posets
-#
 #standardize incMat convention (sign and diagonal)
 #
 #standardize choice of camelcase versus underscores
@@ -35,15 +33,12 @@
 #
 #Set HasseDiagram defaults for lattices of flats, should be same as BooleanAlgebra
 #for polymatroids and graph is using partitions
+#	Subclass HasseDiagram for the Boolean algebra and use that same class for (poly)matroids?
 #
 #We should have different functions for text for tikz and tkinter with the defaults the
 #same function
 #
-#Uniform matroids
-#
-#Uniform q-matroids
-#
-#Antichain example (fix latex and show)
+#Write README with some examples.
 ##########################################
 '''
 A module for creating and manipulating partially ordered sets.
@@ -91,6 +86,7 @@ import itertools
 import copy
 import decorator
 import collections
+import numpy as np
 
 import time
 class Timer:
@@ -163,7 +159,9 @@ def log_func(f):
 		print('\treturn value:',ret)
 		return ret
 	return g
-
+##########################################
+#Poset Class
+##########################################
 class Poset:
 	'''
 	A class representing a finite partially ordered set.
@@ -301,7 +299,7 @@ class Poset:
 			else:
 				this.incMat = [[0]*len(elements) for e in elements]
 
-		if len(this.incMat)>0 and trans_close: transClose(this.incMat)
+		if len(this.incMat)>0 and trans_close: Poset.transClose(this.incMat)
 		#####
 		#####
 		if not hasattr(this, 'elements'):
@@ -312,14 +310,24 @@ class Poset:
 		if hasse_class == None: hasse_class = HasseDiagram
 		this.hasseDiagram = hasse_class(this, **kwargs)
 
-	def make_incMat(relations=None, less=None, incMat=None, trans_close=True, elements=None, indices=False):
+	def transClose(M):
 		'''
-		Returns a valid incidence matrix given any of a list of relations, a less than function or a (possibly incomplete) incidence matrix.
+		Given a matrix with entries 1,-1,0 encoding a relation computes the transitive closure.
 		'''
-		#Efff... we need to put this all back in the constructor (:/ whatever the if logic isn't really complicated)
-		#because we need to set elements via relations
-		#then when setting elements normal way check if it is set yet
+		for i in range(0,len(M)):
+			#uoi for upper order ideal
+			uoi = [x for x in range(0,len(M)) if M[i][x] == 1]
+			while True:
+				next = [x for x in uoi]
+				for x in uoi:
+					for y in range(0,len(M)):
+						if M[x][y] == 1 and y not in next: next.append(y)
+				if uoi == next: break
+				uoi = next
 
+			for x in uoi:
+				M[i][x] = 1
+				M[x][i] = -1
 
 	def __str__(this):
 		'''
@@ -524,7 +532,7 @@ class Poset:
 		ranks = [[] for i in range(len(this.ranks)+len(that.ranks)-1)]
 		for i in range(len(this.elements)):
 			for j in range(len(that.elements)):
-				ranks[rankOf(this.ranks, i) + rankOf(that.ranks, j)].append(i*len(that.elements) + j)
+				ranks[this.rank(i,True)+that.rank(j,True)].append(i*len(that.elements)+j)
 
 		def less(x,y):
 			return x!=y and this.lesseq(x[0],y[0]) and that.lesseq(x[1],y[1])
@@ -762,13 +770,27 @@ class Poset:
 		'''
 		Computes the join of i and j, if it does not exist returns None.
 		'''
+		def _join(i,j,M):
+			if i==j: return i
+			if M[i][j] == -1: return i
+			if M[i][j] == 1: return j
+			m = [x for x in range(0,len(M)) if M[i][x] == 1 and M[j][x] == 1]
+			for x in range(0,len(m)):
+				is_join = True
+				for y in range(0,len(m)):
+					if x!=y and M[m[x]][m[y]] != 1:
+						is_join = False
+						break
+				if is_join: return m[x]
+			return None
+
 		if not indices:
 			i = this.elements.index(i)
 			j = this.elements.index(j)
-			ret = join(i, j, this.incMat)
+			ret = _join(i, j, this.incMat)
 			if ret == None: return None
 			return this.elements[ret]
-		return this.join(i, j, this.incMat)
+		return _join(i, j, this.incMat)
 
 	def mobius(this, i=None, j=None, indices=False):
 		'''
@@ -807,11 +829,15 @@ class Poset:
 	def rank(this, i, indices=False):
 		'''
 		Returns the length of i (the length of the longest chain ending at i).
+
+		Returns None if i is not an element (or valid index if indices is True).
 		'''
 		if not indices:
 			i = this.elements.index(i)
 
-		return rankOf(this.ranks, i)
+		for j in range(len(this.ranks)):
+			if i in this.ranks[j]: return j
+		return None
 	##############
 	#End Internal computations
 	##############
@@ -823,11 +849,63 @@ class Poset:
 		'''
 		Returns the table of flag f and h vectors as a list with elements [S, f_S, h_S].
 		'''
-		return makeFlagVectorsTable(this.incMat, this.ranks)
+		def fVectorCalc(ranks,S,M, i, count):
+			newCount = count
+			if S == []: return 1
+			for j in ranks[S[0]]:
+				if M[i][j] == 1:
+					newCount += fVectorCalc(ranks, S[1:], M, j, count)
+			return newCount
+		table = [[[],1,1]]
+
+		if len(this.ranks)<=2: return table
+
+		#iterate over all subsets of the ranks
+		for i in range(1,1<<(len(this.ranks)-1)-1):
+			#construct the corresponding set S
+			pad = 1
+			elem = 1
+			S = []
+			while pad <= i:
+				if pad&i:
+					S.append(elem)
+
+				pad <<= 1
+				elem += 1
+			table.append([S,fVectorCalc(this.ranks,S,this.incMat,this.ranks[0][0],0),0])
+
+
+		#do PIE to get the flag h vectors
+		for i in range(1,len(table)):
+			sign = (2*(len(table[i][0])%2)) - 1 #is -1 if even number of elements, 1 if odd
+			for j in range(0,i+1):
+				if set(table[j][0]).issubset(table[i][0]):
+					table[i][2] += sign*(2*(len(table[j][0])%2)-1)*table[j][1]
+		return table
+
+
+	def flagVectorsLatex(this):
+		'''
+		Returns a string of latex code representing the table of flag vectors of the poset.
+		'''
+		table = this.flagVectors()
+		ret = "\\begin{longtable}{c|c|c}\n\t$S$&$f_S$&$h_S$\\\\\n\t\\hline\n\t\\endhead\n"
+		for t in table:
+			ret += "\t\\{"
+			ret += ','.join([str(x) for x in t[0]])
+			ret = ret+"\\} & " + str(t[1]) + " & " + str(t[2]) + "\\\\\n\t\\hline\n"
+		return ret + "\\end{longtable}"
+
 
 	@cached_method
 	def abIndex(this):
-		return cdIndex(this.incMat, this.ranks, convert_to_cd=False)
+		ab = []
+		for x in this.flagVectors():
+			u = ['a']*(len(this.ranks)-2)
+			for s in x[0]: u[s-1] = 'b'
+			ab.append([x[2],''.join(u)])
+
+		return Polynomial(ab)
 
 	@cached_method
 	def cdIndex(this):
@@ -842,7 +920,7 @@ class Poset:
 
 		For more info on the cd-index see https://arxiv.org/abs/1901.04939
 		'''
-		return cdIndex(this.incMat, this.ranks)
+		return Polynomial(sorted(this.abIndex().abToCd().data, key=lambda x:x[1]))
 
 	@cached_method
 	def cdIndex_IA(this, v=None):
@@ -854,7 +932,30 @@ class Poset:
 		The argument v should be a vector indexed by the poset and by default is the all 1's vector. This is
 		the vector the incidence algebra functions are applied to.
 		'''
-		return cdIndex_incidence_algebra(this.incMat, this.ranks, np.array(v) if v!=None else v)
+		#find zerohat
+		M = this.incMat
+		zh = this.min(True)[0]
+		alpha=np.array([[(-1)**this.rank(y,True) if x==y or M[x][y]==1 else 0 for y in range(len(M))] for x in range(len(M))])
+		deltas=[np.array([[1 if i==j and i in itertools.chain(*this.ranks[:k+1]) else 0 for j in range(len(M))] for i in range(len(M))]) for k in range(len(this.ranks))]
+		def make_cd_ops(n,ops=[]):
+			ret=[]
+			if n>-1:
+				C=deltas[n]
+				c_ops=[(O,'c'+w) for O,w in ops] #you don't actually have to do the C ops they're already accounted for
+				ret+=make_cd_ops(n-1,c_ops)
+				if n>0:
+					D=np.matmul((-1)**n*alpha-deltas[-1],deltas[n])
+					d_ops=[(np.matmul(D,O),'d'+w) for O,w in ops]
+					ret+=make_cd_ops(n-2,d_ops)
+				return ret
+			return ops
+		if type(v) == type(None):
+			v = np.array([1 for x in M])
+		ops=make_cd_ops(len(this.ranks)-3,[(deltas[len(this.ranks)-1],'')])
+		ret=[[int(np.matmul(O,v)[zh]),w] for O,w in ops]
+		ret = sorted([x for x in ret if x[0]!=0],key=lambda x:x[1])
+		return Polynomial(ret)
+
 
 
 	@cached_method
@@ -862,7 +963,19 @@ class Poset:
 		'''
 		Returns the matrix for the incidence algebra element giving the u coefficient of the cd-index via Karu's formula.
 		'''
-		return cdIndex_coefficient_mat(this.incMat, this.ranks, u)
+		#find zerohat
+		M = this.incMat
+		zh = this.min(True)[0]
+		alpha=np.array([[(-1)**this.rank(y,True) if x==y or M[x][y]==1 else 0 for y in range(len(M))] for x in range(len(M))])
+		deltas=[np.array([[1 if i==j and i in itertools.chain(*this.ranks[:k+1]) else 0 for j in range(len(M))] for i in range(len(M))]) for k in range(len(this.ranks))]
+		u = u.replace('d','_d')
+		codeg = len(this.ranks)-2-len(u)
+		X = deltas[codeg]
+		for i in range(len(u)):
+			if u[i] == 'd':
+				X = np.matmul(X, np.matmul((-1)**(codeg+i)*alpha-deltas[-1],deltas[codeg+i]))
+		return X
+
 
 	def cd_op(this, u, v=None):
 		'''
@@ -1233,6 +1346,149 @@ class Poset:
 	##############
 	#End Misc
 	##############
+##########################################
+#End Poset Class
+##########################################
+##############
+#Polynomial class
+##############
+class Polynomial:
+	'''
+	A barebones class encoding polynomials in noncommutative variables (used by Poset class to compute the cd-index).
+
+	This is basically a wrapper around a list representation for polynomials (e.g. 3ab+2bb <--> [[3,'ab'],[2,'bb']]
+	and provides methods to add, multiple, subtract polynomials, to substitute a polynomial
+	for a variable in another polynomial and to convert ab-polynomials into cd-polynomials (when possible).
+	'''
+	def __init__(this, data):
+		'''
+		Returns a Polynomial given a list of pairs [c,m] with c a coefficient and m a string representing a monomial.
+		'''
+		this.data = data
+
+	def __mul__(this,that):
+		'''
+		Noncommutative polynomial multiplication.
+		'''
+		p = this.data
+		q = that.data
+		r=[[x[0]*y[0],x[1]+y[1]] for x in p for y in q]
+		#collect terms
+		ret=[]
+		for x in r:
+			monoms=[y[1] for y in ret]
+			if x[1] not in monoms:
+				ret.append(x)
+				continue
+			ret[monoms.index(x[1])][0]+=x[0]
+		return Polynomial(ret)
+
+	def __add__(this, that):
+		'''
+		Polynomial addition.
+		'''
+		p = this.data
+		q = that.data
+
+		ret=[x for x in p]
+		for x in q:
+			temp=[y[1] for y in ret]
+			if x[1] in temp:
+				ret[temp.index(x[1])][0]+=x[0]
+			else:
+				ret.append(x)
+		return Polynomial([x for x in ret if x[0]!=0])
+
+	def sub(this, p, m):
+		'''
+		Returns the polynomial obtained by substituting the Polynomial p for the monomial m (given as a string) in this.
+
+		this, p and m should not have any variable containing the character '*'.
+		'''
+		X=[[y[0],y[1].replace(m,'*')] for y in this]
+		ret=Polynomial([]) #0
+		for y in X:
+			q=Polynomial([[y[0],'']])
+			for i in range(0,len(y[1])):
+				if y[1][i]=='*':
+					q = q*p
+				else: #mult by the monomial
+					for j in range(0,len(q)):
+						q[j][1]+=y[1][i]
+			ret += q
+		return Polynomial(ret)
+
+	def __len__(this):
+		return len(this.data)
+
+	def __iter__(this):
+		return iter(this.data)
+
+	def __getitem__(this,i):
+		return this.data[i]
+
+	def __setitem__(this,i,value):
+		this.data[i] = value
+
+	def abToCd(this):
+		'''
+		Given an ab-polynomial return the corresponding cd-polynomial if possible and the given polynomial if not.
+		'''
+		if len(this)==0: return this
+		#substitue a->c+e and b->c-e
+		#where e=a-b
+		#this scales by a factor of 2^deg
+		ce = this.sub(Polynomial([[1,'c'],[1,'e']]),'a').sub(Polynomial([[1,'c'],[-1,'e']]),'b')
+
+		cd = ce.sub(Polynomial([[1,'cc'],[-2,'d']]),'ee')
+		#check if any e's are still present
+		for m in cd:
+			if 'e' in m[1]:
+				return this
+		#divide coefficients by 2^n
+		power=sum([2 if cd[0][1][i]=='d' else 1 for i in range(len(cd[0][1]))])
+		return Polynomial([[x[0]>>power,x[1]] for x in cd])
+
+	def __str__(this):
+		s = ""
+		for i in range(0,len(this)):
+			if this[i][0] == 0: continue
+			if this[i][0] == -1: s+= '-'
+			elif this[i][0] != 1: s += str(this[i][0])
+			current = ''
+			power = 0
+			for c in this[i][1]:
+				if current == '':
+					current = c
+					power = 1
+					continue
+				if c == current:
+					power += 1
+					continue
+				s += current
+				if power != 1: s += '^{' + str(power) + '}'
+				current = c
+				power = 1
+			s += current
+			if power != 1 and power != 0: s += '^{' + str(power) + '}'
+			if power == 0 and current == "": s += '1'
+
+			if i != len(this)-1:
+				if this[i+1][0] >= 0: s += "+"
+		if s == '': return '0'
+		return s
+
+	def __repr__(this):
+		return 'Polynomial('+repr(this.data)+')'
+
+	def __eq__(this,that):
+		return this.data == that.data
+
+
+
+##############
+#End Polynomial class
+##############
 ##############
 #Built in posets
 ##############
@@ -1311,6 +1567,12 @@ def Butterfly(n):
 	P.cache['isEulerian()']=True
 	P.cache['isGorenstein()']=True
 	return P
+
+def Antichain(n):
+	'''
+	Returns the poset on 1...n with no relations.
+	'''
+	return Poset(elements=list(range(n)))
 
 def Chain(n):
 	'''
@@ -1778,7 +2040,7 @@ def Uncrossing(t, upper=False):
 			newRank = []
 
 		ranks = ranks[::-1]
-		transClose(M)
+		Poset.transClose(M)
 		return P,ranks,M
 
 	if isinstance(t,int):
@@ -2071,6 +2333,15 @@ def LatticeOfFlats(data):
 	ret.elements = [elem_conv(e) for e in ret.elements]
 	return ret
 
+def UniformMatroid(n=3,r=3,q=1):
+	'''
+	Returns the lattice of flats of the uniform (q-)matroid of rank r on n elements.
+	'''
+	if q==1:
+		return Boolean(n).rankSelection(list(range(r))+[n])
+	else:
+		return Bnq(n,q).rankSelection(list(range(r))+[n])
+
 def MinorPoset(L,genL=None):
 	'''
 	Returns the minor poset given a lattice L and a list of generators genL.
@@ -2093,7 +2364,7 @@ def MinorPoset(L,genL=None):
 	joins = [[0 for i in range(0,len(L))]for j in range(0,len(L))]
 	for i in range(0,len(L)):
 		for j in range(i,len(L)):
-			k = join(i,j,L)
+			k = L_P.join(i,j,True)
 			if k == None:
 				raise Exception('input L to MinorPoset must be a lattice')
 			joins[i][j]=k
@@ -2152,7 +2423,7 @@ def MinorPoset(L,genL=None):
 				minors_M[r][s] = -1
 				minors_M[s][r] = 1
 				if minor not in new: new.append(minor)
-	transClose(minors_M)
+	Poset.transClose(minors_M)
 
 	class GenlattDiagram:
 
@@ -2225,7 +2496,7 @@ def MinorPoset(L,genL=None):
 #End Built in posets
 ##############
 ##############
-#Hasse drawer
+#HasseDiagram
 ##############
 import math
 import random
@@ -2576,7 +2847,10 @@ class HasseDiagram:
 		'''
 		#TODO make max rank return height
 		rk = this.P.rank(i, True)
-		delta = float(this.height)/float(len(this.P.ranks)-1)
+		try:
+			delta = float(this.height)/float(len(this.P.ranks)-1)
+		except:
+			delta = 1
 		jiggle = this.jiggle_y + this.jiggle
 		return str( rk*delta + random.uniform(-jiggle,jiggle) )
 #		if this.P.min(True) == [i]: return '0'
@@ -2743,351 +3017,5 @@ class HasseDiagram:
 
 
 ##############
-#End Hasse drawer
-##############
-##############
-#cdIndex functions
-##############
-##########################################
-#code below is copied from cdIndex.py
-#from https://github.com/WilliamGustafson/cdIndexCalculator
-##########################################
-#a few general poset utilities
-#
-#within this module a poset is represented via matrix M
-#whose entry M[i][j] is 1 if i<j, -1 if i>j and 0 otherwise.
-#
-#many functions also require a rank list provided whose ith entry
-#is a list of the indices corresponding to rank i elements.
-##########################################
-import sys
-
-def debugPrint(s, x=None):
-	if 'debug' in sys.argv:
-		print('')
-		if x ==None: print(s)
-		else:
-			print(s + ": ",end='')
-			print(x)
-		print('')
-
-def rankOf(ranks,x):
-	for i in range(0, len(ranks)):
-		if x in ranks[i]:
-			return i
-	return -1
-
-#given a matrix encoding all the cover relations of a poset this function
-#alters the input to compute the matrix representing the poset
-def transClose(M):
-	for i in range(0,len(M)):
-		#uoi for upper order ideal
-		uoi = [x for x in range(0,len(M)) if M[i][x] == 1]
-		while True:
-			next = [x for x in uoi]
-			for x in uoi:
-				for y in range(0,len(M)):
-					if M[x][y] == 1 and y not in next: next.append(y)
-			if uoi == next: break
-			uoi = next
-
-		for x in uoi:
-			M[i][x] = 1
-			M[x][i] = -1
-
-#computes the join of i and j in M, returns -1 if it does not exist
-def join(i,j,M):
-	if i==j: return i
-	if M[i][j] == -1: return i
-	if M[i][j] == 1: return j
-	m = [x for x in range(0,len(M)) if M[i][x] == 1 and M[j][x] == 1]
-	for x in range(0,len(m)):
-		isJoin = True
-		for y in range(0,len(m)):
-			if x!=y and M[m[x]][m[y]] != 1:
-				isJoin = False
-				break
-		if isJoin: return m[x]
-	return None
-
-#computes mobius function of [i,j], useful for debugging
-def mobius(M, ranks, i, j):
-	if i == j: return 1
-	if M[i][j] != 1: return None
-	ret = 0
-	for x in range(0,len(M)):
-		if M[x][j] == 1 and M[x][i] == -1:
-			ret -= mobius(M,ranks,i,x)
-	ret -= 1 #mobius(M,rank,i,i)
-	return ret
-
-
-##########################################
-#helper functions for polynomials with noncommutative variables
-#
-#monomials are stored as a list containing the coefficient and a string for the variables
-#polynomials are lists of monomials
-##########################################
-
-def multPolys(p,q):
-	r=[[x[0]*y[0],x[1]+y[1]] for x in p for y in q]
-	#collect terms
-	ret=[]
-	for x in r:
-		monoms=[y[1] for y in ret]
-		if x[1] not in monoms:
-			ret.append(x)
-			continue
-		ret[monoms.index(x[1])][0]+=x[0]
-	return ret
-
-def multManyPolys(P):
-	ret=P[0]
-	while len(P)>1:
-		P=P[1:]
-		ret=multPolys(ret,P[0])
-	return p
-
-def addPolys(p,q):
-	ret=[x for x in p]
-	for x in q:
-		temp=[y[1] for y in ret]
-		if x[1] in temp:
-			ret[temp.index(x[1])][0]+=x[0]
-		else:
-			ret.append(x)
-	return [x for x in ret if x[0]!=0]
-
-def subPolyForMonom(x,p,m):
-	X=[[y[0],y[1].replace(m,'*')] for y in x]
-	ret=[]
-	for y in X:
-		q=[[y[0],'']]
-		for i in range(0,len(y[1])):
-			if y[1][i]=='*':
-				q=multPolys(q,p)
-			else: #mult by the monomial
-				for j in range(0,len(q)):
-					q[j][1]+=y[1][i]
-		ret=addPolys(ret,q)
-	return ret
-
-##########################################
-#methods to calculate flag vector table
-##########################################
-
-#fVector returns the flag f vector f_S(M)
-#fVectorCalc calculates this recursively
-
-def fVectorCalc(ranks,S,M, i, count):
-	newCount = count
-	if S == []: return 1
-	for j in ranks[S[0]]:
-		if M[i][j] == 1:
-			newCount += fVectorCalc(ranks, S[1:], M, j, count)
-	return newCount
-
-def fVector(M,ranks,S):
-	return fVectorCalc(ranks,S,M,ranks[0][0],0)
-
-#returns a list whose entries are lists containing a subset of the ranks
-#and the flag f and h vector entries
-def makeFlagVectorsTable(M,ranks):
-	table = [[[],1,1]]
-
-	if len(ranks)<=2: return table
-
-	#iterate over all subsets of the ranks
-	for i in range(1,1<<(len(ranks)-1)-1):
-		#construct the corresponding set S
-		pad = 1
-		elem = 1
-		S = []
-		while pad <= i:
-			if pad&i:
-				S.append(elem)
-
-			pad <<= 1
-			elem += 1
-		table.append([S,fVector(M,ranks,S),0])
-
-
-	#do PIE to get the flag h vectors
-	for i in range(1,len(table)):
-		sign = (2*(len(table[i][0])%2)) - 1 #is -1 if even number of elements, 1 if odd
-		for j in range(0,i+1):
-			if set(table[j][0]).issubset(table[i][0]):
-				table[i][2] += sign*(2*(len(table[j][0])%2)-1)*table[j][1]
-	return table
-
-##########################################
-#methods for computing the ab and cd indices
-##########################################
-
-def abIndex(table, rank):
-	ab = []
-	for x in table:
-		u = ['a']*(rank-1)
-		for s in x[0]: u[s-1] = 'b'
-		ab.append([x[2],''.join(u)])
-
-	return ab
-
-#returns a given ab polynomial expressed in terms of c and d if possible
-#if not possible returns ab
-def abToCd(ab):
-	if len(ab)==0: return ab
-	#substitue a->c+e and b->c-e
-	#where e=a-b
-	#this scales by a factor of 2^n (n+1 is number of ranks)
-	ce=subPolyForMonom(subPolyForMonom(ab,[[1,'c'],[1,'e']],'a'),[[1,'c'],[-1,'e']],'b')
-	debugPrint('ce',ce)
-
-	cd=subPolyForMonom(ce,[[1,'cc'],[-2,'d']],'ee')
-	leftover_e=False
-	for m in cd:
-		if 'e' in m[1]:
-#			break
-			if 'e' in m[1][:-1]: return ab
-			leftover_e = True
-	#divide coefficients by 2^n
-	power=sum([2 if cd[0][1][i]=='d' else 1 for i in range(len(cd[0][1]))])
-	if leftover_e:
-		return ab
-#		ret = [[],[],[]]
-#		for x in cd:
-#			coeff = x[0]>>power
-#			monom = x[1][:-1]
-#			if 'e' not in x[1]:
-#				if x[1][-1] == 'c':
-#					ret[1] = addPolys(ret[1], [[coeff,monom]])
-#					ret[2] = addPolys(ret[2], [[coeff, monom]])
-##					ret[1].append([[coeff, monom]])
-##					ret[2].append([[coeff, monom]])
-#				else: # x[1][-1] == 'd':
-#					ret[0] = addPolys(ret[0], [[coeff, monom]])
-##					ret[0].append([[coeff, monom]])
-#			else:
-#				ret[1] = addPolys(ret[1], [[coeff, monom]])
-#				ret[2] = addPolys(ret[2], [[-coeff, monom]])
-##				ret[1].append([coeff, monom])
-##				ret[2].append([-coeff,monom])
-		return ret
-	return [[x[0]>>power,x[1]] for x in cd]
-
-#returns the cd-index of the poset encoded by M
-#
-#optionally provide a list for table or ab and these will be
-#filled with the flag vectors table and ab-index respectively
-
-def cdIndex(M, ranks, table=None, ab=None, convert_to_cd=True):
-	if table == None: table = []
-	if ab == None: ab = []
-
-	table += makeFlagVectorsTable(M,ranks)
-
-	debugPrint('table', table)
-
-	ab += abIndex(table, len(ranks)-1)
-
-	debugPrint('ab',ab)
-	if not convert_to_cd: return ab
-	cd=abToCd(ab)
-	#actual cd-index
-	if type(cd[0][0])==int: cd.sort(key=lambda x:x[1])
-	else:
-		#lower Gorenstein* cdd,cda,cdb index
-		cd = (sorted(cd[0]), sorted(cd[1]), sorted(cd[2]))
-	debugPrint('cd', cd)
-	return cd
-
-##########################################
-#formatting methods
-##########################################
-
-#returns a string representing the given polynomial in latex
-def cdIndexLatex(cd):
-	s = ""
-	for i in range(0,len(cd)):
-		if cd[i][0] == 0: continue
-		if cd[i][0] == -1: s+= '-'
-		elif cd[i][0] != 1: s += str(cd[i][0])
-		current = ''
-		power = 0
-		for c in cd[i][1]:
-			if current == '':
-				current = c
-				power = 1
-				continue
-			if c == current:
-				power += 1
-				continue
-			s += current
-			if power != 1: s += '^{' + str(power) + '}'
-			current = c
-			power = 1
-		s += current
-		if power != 1 and power != 0: s += '^{' + str(power) + '}'
-		if power == 0 and current == "": s += '1'
-
-		if i != len(cd)-1:
-			if cd[i+1][0] >= 0: s += "+"
-	if s == '': return '0'
-	return s
-
-#returns a string with latex code to display the given flag vectors table
-def flagVectorsLatex(table):
-	ret = "\\begin{longtable}{c|c|c}\n\t$S$&$f_S$&$h_S$\\\\\n\t\\hline\n\t\\endhead\n"
-	for t in table:
-		ret += "\t\\{"
-		ret += ','.join([str(x) for x in t[0]])
-		ret = ret+"\\} & " + str(t[1]) + " & " + str(t[2]) + "\\\\\n\t\\hline\n"
-	return ret + "\\end{longtable}"
-
-
-import numpy as np
-
-def cdIndex_incidence_algebra(M,ranks,v=None):
-#	incMat=np.array([[1 if M[i][j]==1 or i==j else 0 for j in range(len(M))] for i in range(len(M))])
-#	mu=np.linalg.inv(incMat)
-	#alpha=np.array([[(-1)**rankOf(ranks,y)*incMat[x][y] for y in range(len(M))] for x in range(len(M))])
-	#find zerohat
-	zh = [i for i in range(len(M)) if -1 not in M[i]][0]
-	alpha=np.array([[(-1)**rankOf(ranks, y) if x==y or M[x][y]==1 else 0 for y in range(len(M))] for x in range(len(M))])
-#	deltas=[np.array([[1 if i==j and i in [x for r in ranks[:k+1] for x in r] else 0 for j in range(len(M))]for i in range(len(M))])for k in range(len(ranks))]
-	deltas=[np.array([[1 if i==j and i in itertools.chain(*ranks[:k+1]) else 0 for j in range(len(M))] for i in range(len(M))]) for k in range(len(ranks))]
-	def make_cd_ops(n,ops=[]):
-		ret=[]
-		if n>-1:
-			C=deltas[n]
-#			c_ops=[(np.matmul(C,O),'c'+w) for O,w in ops]
-			c_ops=[(O,'c'+w) for O,w in ops] #you don't actually have to do the C ops they're already accounted for
-			ret+=make_cd_ops(n-1,c_ops)
-			if n>0:
-#				D=np.matmul(deltas[n-1],np.matmul((-1)**n*alpha-deltas[-1],deltas[n]))
-				D=np.matmul((-1)**n*alpha-deltas[-1],deltas[n])
-				d_ops=[(np.matmul(D,O),'d'+w) for O,w in ops]
-				ret+=make_cd_ops(n-2,d_ops)
-			return ret
-		return ops
-	if type(v) == type(None):
-		v = np.array([1 for x in M])
-	ops=make_cd_ops(len(ranks)-3,[(deltas[len(ranks)-1],'')])
-	ret=[[int(np.matmul(O,v)[ranks[0]]),w] for O,w in ops]
-	ret = sorted([x for x in ret if x[0]!=0],key=lambda x:x[1])
-	return ret
-def cdIndex_coefficient_mat(M,ranks,u):
-	#find zerohat
-	zh = [i for i in range(len(M)) if -1 not in M[i]][0]
-	alpha=np.array([[(-1)**rankOf(ranks, y) if x==y or M[x][y]==1 else 0 for y in range(len(M))] for x in range(len(M))])
-	deltas=[np.array([[1 if i==j and i in itertools.chain(*ranks[:k+1]) else 0 for j in range(len(M))] for i in range(len(M))]) for k in range(len(ranks))]
-	u = u.replace('d','_d')
-	codeg = len(ranks)-2-len(u)
-	X = deltas[codeg]
-	for i in range(len(u)):
-		if u[i] == 'd':
-			X = np.matmul(X, np.matmul((-1)**(codeg+i)*alpha-deltas[-1],deltas[codeg+i]))
-	return X
-##############
-#End cdIndex functions
+#End HasseDiagram
 ##############
