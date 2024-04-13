@@ -86,7 +86,10 @@ import itertools
 import copy
 import decorator
 import collections
-import numpy as np
+try:
+	import numpy as np
+except:
+	numpy=None
 
 import time
 class Timer:
@@ -476,6 +479,9 @@ class Poset:
 		such as Poset.union and Poset.starProduct.
 		'''
 		if any([e in F for e in E]+[f in E for f in F]):
+			z=0
+			while z in E or z in F:
+				z+=1
 			return [(e,0) for e in E] + [(0,f) for f in F]
 		else:
 			return E+F
@@ -1098,7 +1104,11 @@ class Poset:
 
 	@cached_method
 	def __hash__(this):
-		return hash(tuple(tuple(term) for term in this.abIndex()))
+		X=set()
+		for r in range(len(this.ranks)-1):
+			for p in this.ranks[r]:
+				X.add((r,len([q for q in this.ranks[r+1] if this.incMat[p][q]==1])))
+		return hash((tuple(this.elements),frozenset(X)))
 
 	def copy(this):
 		'''
@@ -1343,12 +1353,35 @@ class Poset:
 			preranks[l] = 1+max([-1]+[preranks[i] for i in loi])
 			left.remove(l)
 		return [[j for j in range(len(incMat)) if preranks[j]==i] for i in range(1+max(preranks.values()))]
+	def isoClass(this):
+		return PosetIsoClass(this)
 	##############
 	#End Misc
 	##############
 ##########################################
 #End Poset Class
 ##########################################
+##############
+#Poset Iso Class
+##############
+class PosetIsoClass:
+	def __init__(this, P):
+		this.P=P
+	def __eq__(this, that):
+		return this.P.is_isomorphic(that.P)
+	def toSage(this):
+		if type(this.P)==Poset:
+			this.P = this.P.toSage()
+	@cached_method
+	def __hash__(this):
+		X=set()
+		for r in range(len(this.P.ranks)-1):
+			for p in this.P.ranks[r]:
+				X.add((r,len([q for q in this.P.ranks[r+1] if this.P.incMat[p][q]==1])))
+		return hash(frozenset(X))
+##############
+#End Poset Iso Class
+##############
 ##############
 #Polynomial class
 ##############
@@ -2500,7 +2533,11 @@ def MinorPoset(L,genL=None):
 ##############
 import math
 import random
-import tkinter as tk
+try:
+	import tkinter as tk
+except:
+	tkinter=None
+
 class HasseDiagram:
 	r'''
 	A class that can produce latex/tikz code for the Hasse diagram of a poset or display the diagram in a window using tkinter.
