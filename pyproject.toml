@@ -16,8 +16,10 @@ classifiers = [
 	]
 keywords = ["posets", "partial orders", "cd-index", "ab-index", "partially ordered", "lattices", "partially ordered sets", "order complex", "Hasse", "Hasse diagram"]
 dependencies =[
-	"numpy",
 	"decorator"
 	] 
+[project.optional-dependencies]
+mats =["numpy"]
 [project.urls]
 Homepage = "https://github.com/WilliamGustafson/posets"
+
