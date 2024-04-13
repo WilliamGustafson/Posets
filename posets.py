@@ -1378,9 +1378,9 @@ class PosetIsoClass(Poset):
 	@cached_method
 	def __hash__(this):
 		X=set()
-		for r in range(len(this.P.ranks)-1):
-			for p in this.P.ranks[r]:
-				X.add((r,len([q for q in this.P.ranks[r+1] if this.P.incMat[p][q]==1])))
+		for r in range(len(this.ranks)-1):
+			for p in this.ranks[r]:
+				X.add((r,len([q for q in this.ranks[r+1] if this.incMat[p][q]==1])))
 		return hash(frozenset(X))
 	def __str__(this):
 		return "Isomorphism class of "+Poset.__str__(this)
