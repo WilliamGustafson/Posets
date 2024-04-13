@@ -238,11 +238,15 @@ class Poset:
 	a poset you should clear the cache via:
 		this.cache = {}
 	'''
+	__slots__ = ('cache','hasseDiagram','incMat','elements','ranks','name')
 	def __init__(this, incMat=None, elements=None, ranks=None, less=None, name='', hasse_class=None, trans_close=True, relations=None, indices=False, **kwargs):
 		'''
 		See Poset
 		'''
-		#this.__slots__ = ('cache','hasseDiagram','incMat','elements','ranks','name')
+		if isinstance(incMat, Poset):
+			for s in Poset.__slots__:
+				setattr(this, s, getattr(incMat, s))
+			return
 		if elements !=None: elements = list(elements) #can take any iterable but need indexing
 		#####
 		#make incMat
@@ -1107,16 +1111,6 @@ class Poset:
 	#Misc
 	##############
 	@cached_method
-	def _hash_tuple(this):
-		d = {i: this.rank(i,indices=True) for i in range(len(this))}
-		def get_lengths(l):
-			return tuple([len(x) for x in l])
-		ret = set()
-		for i in range(len(this)):
-			ret.add( (d[i], get_lengths(this.filter([i],indices=True).ranks), get_lengths(this.ideal([i],indices=True).ranks)) )
-		return frozenset(ret)
-
-	@cached_method
 	def __hash__(this):
 		X=set()
 		for r in range(len(this.ranks)-1):
@@ -1191,7 +1185,6 @@ class Poset:
 		'''
 		return this.hasseDiagram.latex(**kwargs)
 
-	@requires(tkinter)
 	def show(this, **kwargs):
 		'''
 		Opens a window displaying the Hasse diagram of the poset.
@@ -1379,14 +1372,9 @@ class Poset:
 ##############
 #Poset Iso Class
 ##############
-class PosetIsoClass:
-	def __init__(this, P):
-		this.P=P
+class PosetIsoClass(Poset):
 	def __eq__(this, that):
-		return this.P.is_isomorphic(that.P)
-	def toSage(this):
-		if type(this.P)==Poset:
-			this.P = this.P.toSage()
+		return this.is_isomorphic(that)
 	@cached_method
 	def __hash__(this):
 		X=set()
@@ -1394,6 +1382,22 @@ class PosetIsoClass:
 			for p in this.P.ranks[r]:
 				X.add((r,len([q for q in this.P.ranks[r+1] if this.P.incMat[p][q]==1])))
 		return hash(frozenset(X))
+	def __str__(this):
+		return "Isomorphism class of "+Poset.__str__(this)
+	def __repr__(this):
+		return "PosetIsoClass("+Poset.__repr__(this)[6:]
+@decorator.decorator
+def return_iso(f, *args, **kwargs):
+	ret = f(*args, **kwargs)
+	if isinstance(ret, Poset):
+		return ret.isoClass()
+	return ret
+for f in dir(PosetIsoClass):
+	if f.startswith('_'): continue
+	if f=='isoClass': continue
+	attr = getattr(PosetIsoClass, f)
+	if not callable(attr): continue
+	setattr(PosetIsoClass, f, return_iso(attr))
 ##############
 #End Poset Iso Class
 ##############
