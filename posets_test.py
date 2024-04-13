@@ -578,7 +578,7 @@ if __name__ == '__main__':
 
 		testeq(B.reorder(B.elements[::-1]).sort(), P(Poset(elements=['a0','a1','b0','b1'],relations={0:[1,3],2:[1,3]},indices=True)), "sort")
 
-		test(B.shuffle().is_isomorphic(B), "shuffle")
+		testeq(B, B.shuffle(), "shuffle")
 
 		pent = LatticeOfFlats([0,1,2,2,1,3,3,3])
 		testeq(Poset(relations=pent.relations()).sort().ranks, [[0],[1,4],[2],[3]], "ranks")
