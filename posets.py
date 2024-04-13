@@ -89,7 +89,7 @@ import collections
 try:
 	import numpy as np
 except:
-	numpy=None
+	np = "numpy"
 
 import time
 class Timer:
@@ -154,6 +154,18 @@ def cached_method(f, *args, **kwargs):
 	except:
 		pass
 	return ret
+
+def requires(mod):
+	@decorator.decorator
+	def f(g, *args, **kwargs):
+		if type(mod)==str:
+			def ret(*args, **kwargs):
+				raise NotImplementedError("You must install "+mod+" to use "+g.__name__)
+		else:
+			def ret(*args, **kwargs):
+				return g(*args, **kwargs)
+		return ret(*args, **kwargs)
+	return f
 
 def log_func(f):
 	def g(*args, **kwargs):
@@ -928,6 +940,7 @@ class Poset:
 		'''
 		return Polynomial(sorted(this.abIndex().abToCd().data, key=lambda x:x[1]))
 
+	@requires(np)
 	@cached_method
 	def cdIndex_IA(this, v=None):
 		'''
@@ -963,7 +976,7 @@ class Poset:
 		return Polynomial(ret)
 
 
-
+	@requires(np)
 	@cached_method
 	def cd_coeff_mat(this, u):
 		'''
@@ -982,7 +995,7 @@ class Poset:
 				X = np.matmul(X, np.matmul((-1)**(codeg+i)*alpha-deltas[-1],deltas[codeg+i]))
 		return X
 
-
+	@requires(np)
 	def cd_op(this, u, v=None):
 		'''
 		Applies the incidence algebra operation corresponding to the cd-monomial u to the vector v.
@@ -999,6 +1012,7 @@ class Poset:
 		'''
 		return [[1 if i==j or this.incMat[i][j]==1 else 0 for j in range(len(this.incMat))] for i in range(len(this.incMat))]
 
+	@requires(np)
 	@cached_method
 	def bettiNumbers(this):
 		'''
@@ -1177,6 +1191,7 @@ class Poset:
 		'''
 		return this.hasseDiagram.latex(**kwargs)
 
+	@requires(tkinter)
 	def show(this, **kwargs):
 		'''
 		Opens a window displaying the Hasse diagram of the poset.
@@ -2536,7 +2551,7 @@ import random
 try:
 	import tkinter as tk
 except:
-	tkinter=None
+	tk = "tkinter"
 
 class HasseDiagram:
 	r'''
@@ -2931,6 +2946,7 @@ class HasseDiagram:
 		this.canvas.create_oval(x-ptsize/2,y-ptsize/2,x+ptsize/2,y+ptsize/2, fill='black')
 		return
 
+	@requires(tk)
 	def tkinter(this, **kwargs):
 		'''
 		Opens a window using tkinter and draws the Hasse diagram.
