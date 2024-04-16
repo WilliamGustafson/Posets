@@ -561,6 +561,7 @@ if __name__ == '__main__':
 		phi = B.buildIsomorphism(B2)
 		phi_inv = {v:k for k,v in phi.items()}
 		test(all(set(B.filter([i],indices=True)) == set(phi_inv[j] for j in B2.filter([phi[i]],indices=True)) for i in range(len(B))), "buildIsomorphism")
+		testeq(B.buildIsomorphism(Chain(3)), None, "buildIsomorphism None ret")
 
 		test_timer.stop();print('Finished invariant tests',test_timer)
 
