@@ -247,6 +247,7 @@ class Poset:
 			for s in Poset.__slots__:
 				setattr(this, s, getattr(incMat, s))
 			return
+
 		if elements !=None: elements = list(elements) #can take any iterable but need indexing
 		#####
 		#make incMat
@@ -366,7 +367,7 @@ class Poset:
 		To eval the returned string Poset must be in the namespace and repr(this.elements)
 		must return a suitable string for evaluation.
 		'''
-		return 'Poset(incMat='+repr(this.incMat)+', elements='+repr(this.elements)+', ranks='+repr(this.ranks)+')'
+		return 'Poset(incMat='+repr(this.incMat)+', elements='+repr(this.elements)+', ranks='+repr(this.ranks)+',name='+repr(this.name)+')'
 
 	def __eq__(this,that):
 		'''
@@ -2672,7 +2673,7 @@ class HasseDiagram:
 	#Keyword arguments
 	##########################################
 
-	Options that affect about latex() and tkinter():
+	Options that affect both latex() and tkinter():
 
 		width - Width of the diagram. When calling latex() this is the width
 			in tikz units, for tkinter() the units are 1/10th of tkinter's units.
@@ -2744,7 +2745,7 @@ class HasseDiagram:
 		padding - A border of this width is added around all sides of the diagram.
 			This is affected by scale.
 
-			The default value is 1.
+			The default value is 3.
 
 		offset - Cover lines start above the bottom element and end below the top
 			element, this controls the separation.
@@ -2837,7 +2838,7 @@ class HasseDiagram:
 		this.in_latex = False
 		this.in_tkinter = False
 
-		defaults = {
+		this.defaults = {
 			'extra_packages':'',
 			'nodescale':'1',
 			'scale':'1',
@@ -2860,12 +2861,12 @@ class HasseDiagram:
 			'jiggle_x': 0,
 			'jiggle_y': 0,
 			'standalone': False,
-			'padding': 20,
+			'padding': 3,
 			'nodeDraw': type(this).nodeDraw,
 			'offset': 1
 			}
 
-		for (k,v) in defaults.items():
+		for (k,v) in this.defaults.items():
 			if k in kwargs: this.__dict__[k] = kwargs[k]
 			else: this.__dict__[k] = v
 
@@ -2901,22 +2902,13 @@ class HasseDiagram:
 
 		The return value is a string.
 		'''
-		#TODO make max rank return height
 		rk = this.P.rank(i, True)
-		try:
+		try: #divide by zero when P is an antichain
 			delta = float(this.height)/float(len(this.P.ranks)-1)
 		except:
 			delta = 1
 		jiggle = this.jiggle_y + this.jiggle
 		return str( rk*delta + random.uniform(-jiggle,jiggle) )
-#		if this.P.min(True) == [i]: return '0'
-#		if this.P.max(True) == [i]: return str(this.height)
-#		if i in this.P.max(True): return str(this.height)
-#		rk = this.P.rank(i, True)
-#		delta=float(this.height)/float(len(this.P.ranks)-2)
-#		ret = rk*delta-delta/2.0
-#		jiggle = this.jiggle_y + this.jiggle
-#		return str( ret + random.uniform(-jiggle, jiggle) )
 
 	def nodeLabel(this,i):
 		'''
@@ -2925,8 +2917,6 @@ class HasseDiagram:
 		The ith element is returned cast to a string.
 		'''
 		return str(this.P.elements[i])
-#		return str(i) if this.indices_for_nodes else str(this.P.elements[i])
-#		return str(i)
 
 	def nodeName(this,i):
 		'''
@@ -2967,31 +2957,26 @@ class HasseDiagram:
 
 		root = tk.Tk()
 		root.title("Hasse diagram of "+(this.P.name if hasattr(this.P,"name") else "a poset"))
-		scaling = float(this.scale)*10 #TODO get rid of
-		padding = float(this.padding) #TODO get rid of
 		this.scale = float(this.scale)*10
-		this.padding = float(this.padding)
-		width = float(this.width)*scaling
-		height = float(this.height)*scaling
-		canvas = tk.Canvas(root, width=width+2*padding, height=height+2*padding)
+		this.padding = float(this.padding)*this.scale
+		width = float(this.width)*this.scale
+		height = float(this.height)*this.scale
+		canvas = tk.Canvas(root, width=width+2*this.padding, height=height+2*this.padding)
 		this.canvas = canvas
 		canvas.pack(fill = "both", expand = True)
 		for r in range(len(this.P.ranks)):
 			for i in this.P.ranks[r]:
-				x = float(this.loc_x(this,i))*scaling + width/2 + padding
-				y = 2*padding+height-(float(this.loc_y(this,i))*scaling + padding)
+				x = float(this.loc_x(this,i))*this.scale + width/2 + this.padding
+				y = 2*this.padding+height-(float(this.loc_y(this,i))*this.scale + this.padding)
 				if not this.labels:
-#					canvas.create_oval(x-ptsize/2,y-ptsize/2,x+ptsize/2,y+ptsize/2, fill='black')
 					this.nodeDraw(this, i)
 				else:
 					canvas.create_text(x,y,text=str(i) if this.indices_for_nodes else this.nodeLabel(this,i),anchor='c')
 				if r == len(this.P.ranks)-1: continue
-				#TODO: should we worry about efficiency? (I mean probably not but this feels ugly)
-				for j in this.P.ranks[r+1] if this.P.isRanked() else this.P.filter([i], indices = True, strict = True).min():
-					if not this.P.less(i,j,True): continue
-					xj = float(this.loc_x(this,j))*scaling + width/2 + padding
-					yj = 2*padding+height-(float(this.loc_y(this,j))*scaling + padding)
-					canvas.create_line(x,y-scaling*this.offset,xj,yj+scaling*this.offset)
+				for j in [r for r in this.P.ranks[r+1] if this.P.less(i,r,True)] if this.P.isRanked() else this.P.filter([i], indices = True, strict = True).min():
+					xj = float(this.loc_x(this,j))*this.scale + width/2 + this.padding
+					yj = 2*this.padding+height-(float(this.loc_y(this,j))*this.scale + this.padding)
+					canvas.create_line(x,y-this.scale*this.offset,xj,yj+this.scale*this.offset)
 		root.mainloop() #makes this function blocking so you can actually see the poset when ran in a script
 		this.__dict__.update(defaults)
 
@@ -3009,9 +2994,23 @@ class HasseDiagram:
 		if this.northsouth:
 			this.lowsuffix = '.north'
 			this.highsuffix = '.south'
+		##############
 		#write preamble
+		##############
 		ret=[]
-#		ret.append('%'+' '.join([a for a in sys.argv])+'\n') #TODO: put in actual parameters here
+		######
+		#parameters
+		#####
+		ret.append('%')
+		temp = []
+		for k in this.defaults:
+			v = this.__dict__[k]
+			temp.append(k+'='+(v.__name__ if callable(v) else repr(v)))
+		ret.append(','.join(temp))
+		del temp
+		######
+		######
+		ret.append('\n')
 		if this.standalone:
 			ret.append('\\documentclass{article}\n\\usepackage{tikz}\n')
 			ret.append(this.extra_packages)
@@ -3020,7 +3019,9 @@ class HasseDiagram:
 			ret.append('\\begin{document}\n\\pagestyle{empty}\n')
 		ret.append('\\begin{tikzpicture}\n')
 
+		###############
 		#write nodes for the poset elements
+		###############
 		if not this.labels:
 			for rk in this.P.ranks:
 				for r in rk:
