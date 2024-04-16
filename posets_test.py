@@ -3,9 +3,10 @@
 Usage: posets_test.py [-l LOG_FILE] [-a] [-c] [-s] [-m]
 
 This module when executed tests the posets module.
+By default all tests except the conversion functions for sage and Macaulay2 are tested.
 
 Arguments:
-	-a Run all tests, this is the default behavior.
+	-a Run all tests.
 
 	-skip Reverses the effect of all test flags, specified tests are skipped instead of ran.
 
@@ -52,8 +53,14 @@ if '-skip' in sys.argv:
 	for tf in test_flags:
 		if tf not in sys.argv: tests.append(tf)
 
-if '-a' in sys.argv or not any(tf in sys.argv for tf in test_flags):
+elif '-a' in sys.argv:
 	tests = test_flags.copy()
+
+elif not any(tf in sys.argv for tf in test_flags): #no test flags given skip sage and Macaulay2
+	tests = test_flags.copy()
+	tests.remove('-s')
+	tests.remove('-m')
+
 
 if '-l' in sys.argv:
 	log_file = open(sys.argv[sys.argv.index('-l')+1],'w')
