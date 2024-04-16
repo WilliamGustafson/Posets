@@ -1,6 +1,9 @@
 ##########################################
 #TODO
 ##########################################
+#DistributiveLattice(Chain(1).union(Chain(1))) is borked
+#Also is_isomorphic on Chain(1).union(Chain(1))
+#
 #standardize incMat convention (sign and diagonal)
 #
 #standardize choice of camelcase versus underscores
@@ -1060,21 +1063,30 @@ class Poset:
 		d1 = {i: this.rank(i,indices=True) for i in range(len(this))}
 		d2 = {i: that.rank(i,indices=True) for i in range(len(that))}
 		if collections.Counter(d1.values()) != collections.Counter(d2.values()): return None
+		this_ranks = [0 for i in this]
+		for r in range(len(this.ranks)):
+			for i in this.ranks[r]: this_ranks[i] = r
+		that_ranks = [0 for i in that]
+		for r in range(len(that.ranks)):
+			for i in that.ranks[r]: that_ranks[i] = r
 		def get_lengths(l):
 			return tuple([len(x) for x in l])
-		def set_comp_rks(P,d):
+		def set_comp_rks(P,d,ranks):
 			for i in range(len(P)):
-				d[i] = (d[i], get_lengths(P.filter([i],indices=True).ranks), get_lengths(P.ideal([i],indices=True).ranks))
+				row = P.incMat[i]
+				upset = frozenset(collections.Counter(ranks[j] for j in range(len(P)) if row[j] == 1).items())
+				downset = frozenset(collections.Counter(ranks[j] for j in range(len(P)) if row[j] == -1).items())
+				d[i] = (upset, downset) #get_lengths(P.filter([i],indices=True).ranks), get_lengths(P.ideal([i],indices=True).ranks))
 			return d
 		if 'set_comp_rks()' in this.cache:
 			d1 = this.cache['set_comp_rks()']
 		else:
-			set_comp_rks(this, d1)
+			set_comp_rks(this, d1, this_ranks)
 			this.cache['set_comp_rks()'] = d1
 		if 'set_comp_rks()' in that.cache:
 			d2 = that.cache['set_comp_rks()']
 		else:
-			set_comp_rks(that, d2)
+			set_comp_rks(that, d2, that_ranks)
 			that.cache['set_comp_rks()'] = d2
 		def invert(d):
 			ret = {}
@@ -1088,20 +1100,42 @@ class Poset:
 		d2Inv = invert(d2)
 
 		def iso(P, Q, map, dP, dQ, dPinv, dQinv, i):
+			#all values set return
 			if i==len(P): return map
-			if dP[i] not in dQinv: return None
-			cands = dQinv[dP[i]] #candidates for image of P[i]
+			#candidates are elements that compare to the same number of elements per rank
+			cands = dQinv[dP[i]]
 			for j in cands:
-				if j in [m[1] for m in map]: continue
-				#check if i->j is ordering-preserving
-				if all(P.incMat[m[0]][i] == Q.incMat[m[1]][j] for m in map):
-					new_map = iso(P,Q,map+((i,j),),dP,dQ,dPinv,dQinv,i+1)
-					if new_map != None: return new_map
+				#skip if j is already hit
+				if j in map.values(): continue
+				#i-> is order-preserving
+				if all(P.incMat[m[0]][i] == Q.incMat[m[1]][j] for m in map.items()):
+					new_map = {i:j}
+					new_map.update(map)
+					new_map = iso(P,Q,new_map,dP,dQ,dPinv,dQinv,i+1)
+					if new_map!=None: return new_map
 			return None
-		ret = iso(this, that, tuple(), d1, d2, d1Inv, d2Inv, 0)
+
+		def nextchoice(map, i, jstart):
+			if i==len(this): return map, True
+			cands = d2Inv[d1[i]]
+			for j in range(jstart,len(cands)):
+				j = cands[j]
+				if j in [m[1] for m in map]: continue
+				if all(this.incMat[m[0]][i] == that.incMat[m[1]][j] for m in map):
+					return map+[[i,j]], False
+			return None, True
+
+		jstarts = [0 for i in range(len(this))]
+		map, map_built = nextchoice([], 0, 0)
+		while not map_built and len(map)<len(this):
+			jstarts[len(map)-1] = map[-1][1]+1
+			map, map_built = nextchoice(map, map[-1][0]+1, jstarts[len(map)])
+		ret = map
+
 		if ret != None:
 			ret = {r[0] : r[1] for r in ret}
 		return ret
+
 
 	def is_isomorphic(this, that):
 		return this.buildIsomorphism(that) != None
