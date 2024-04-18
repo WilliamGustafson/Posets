@@ -2411,6 +2411,7 @@ def LatticeOfFlats(data):
 	#data is a graph
 	#flats are vertex partitions
 	#####
+	data = list(data)
 	if hasattr(data[0], '__iter__'):
 		#grab all vertices
 		V = list(set(itertools.chain(*data)))
@@ -2472,6 +2473,33 @@ def LatticeOfFlats(data):
 	ret = Poset(elements=flats, less=less)
 	ret.elements = [elem_conv(e) for e in ret.elements]
 	return ret
+
+def PartitionLattice(n=3):
+	'''
+	Returns the lattice of partitions of a 1,...,n ordered by refinement.
+	'''
+	return LatticeOfFlats(itertools.combinations(range(1,n+1),2))
+
+def NoncrossingPartitionLattice(n=3):
+	'''
+	Returns the lattice of noncrossing partitions of 1,...,n ordered by refinement.
+	'''
+	def noncrossing(p):
+		for i in range(len(p)):
+			pi = p[i]y
+			for j in range(i+1,len(p)):
+				pj =p[j]
+				if pj[0]<pi[0]:
+					if any(x >= pi[0] and x<=pi[-1] for x in pj):
+						retuen False
+				elif pj[0]>pi[-1]:
+					return True
+				else:
+					if any(x>pi[-1] for x in pj):
+						return False
+		return True
+	Pi = PartitionLattice(n)
+	return Pi.subposet([p for p in Pi if noncrossing(p)])
 
 def UniformMatroid(n=3,r=3,q=1):
 	'''
