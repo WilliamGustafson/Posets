@@ -558,7 +558,7 @@ if __name__ == '__main__':
 		B2 = Boolean(2)
 		B = Boolean(2)
 		B.reorder(B.elements[::-1])
-		phi = B.buildIsomorphism(B2)
+		phi = B.buildIsomorphism(B2,indices=True)
 		phi_inv = {v:k for k,v in phi.items()}
 		test(all(set(B.filter([i],indices=True)) == set(phi_inv[j] for j in B2.filter([phi[i]],indices=True)) for i in range(len(B))), "buildIsomorphism")
 		testeq(B.buildIsomorphism(Chain(3)), None, "buildIsomorphism None ret")
