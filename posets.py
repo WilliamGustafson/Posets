@@ -1638,6 +1638,18 @@ def Empty():
 	'''
 	return Poset(elements = [], ranks = [], incMat = [])
 
+def Weak(n):
+	'''
+	Returns the weak order on the symmetric group S_n.
+	'''
+	def covers(p):
+		ret=[]
+		for i in range(n-1):
+			if p[i]<p[i+1]:
+				ret.append(p[:i]+(p[i+1],p[i])+tuple([p[j] for j in range(i+2,n)]))
+		return ret
+	return Poset(relations={p:covers(p) for p in itertools.permutations(range(1,n+1))})
+
 def Bruhat(n):
 	r'''
 	Returns the type A_{n-1} Bruhat order (symmetric group S_n).
@@ -1679,6 +1691,19 @@ def Bruhat(n):
 	P.cache['isEulerian()']=True
 	P.cache['isGorenstein()']=True
 	return P
+def Root(n=3):
+	'''
+	Returns the type A_{n+1} root poset.
+	'''
+	def covers(i,j):
+		if i==1:
+			if j==n:
+				return []
+			return [(1,j+1)]
+		elif j==n:
+			return [(i-1,n)]
+		return [(i-1,j),(i,j+1)]
+	return Poset(relations={(i, j) : covers(i,j) for i in range(1, n) for j in range(i+1, (n+1 if i>1 else n))})
 
 def Butterfly(n):
 	r'''
@@ -2350,7 +2375,7 @@ def Bnq(n=2, q=2):
 #	for i in range(0,len(lengths)): lengths[i]=sorted(list(lengths[i]))
 	return Poset(elements = spaces, less = lambda i,j: i!=j and i&j == i)
 
-def DistributiveLattice(P):
+def DistributiveLattice(P, indices=False):
 	'''
 	Returns the lattice of ideals of a given poset.
 	'''
@@ -2375,13 +2400,27 @@ def DistributiveLattice(P):
 					ideals.append(x)
 					new.append(x)
 	ranks=[[] for i in range(0,len(M)+1)]
-	elements = []
-	for I in ideals:
-		ranks[len([c for c in bin(I) if c=='1'])].append(I)
-		elements.append(tuple(P[i] for i in range(len(P)) if (1<<i)&I!=0))
-	def less(I,J):
-		return I!=J and all(i in J for i in I)
+	if indices:
+		elements = ideals
+		def less(I, J):
+			return I!=J and I&J==I
+	else:
+		elements = []
+		for I in ideals:
+			ranks[len([c for c in bin(I) if c=='1'])].append(I)
+			elements.append(tuple(P[i] for i in range(len(P)) if (1<<i)&I!=0))
+		def less(I,J):
+			return I!=J and all(i in J for i in I)
 	return Poset(elements = elements, less = less)
+
+#def SignedBirkhoff(P):
+#	D = DistributiveLattice(P, indices=True)
+#	def maximal(I):
+#		elems = [i for i in range(1<<len(P)) if (1<<i)&I!=0]
+#		return [i for i in elems if all(P.incMat[i][j]!=1 for j in elems]
+#	achains = [maximal(I) for I in D]
+#	
+
 
 def LatticeOfFlats(data):
 	'''
@@ -2486,12 +2525,12 @@ def NoncrossingPartitionLattice(n=3):
 	'''
 	def noncrossing(p):
 		for i in range(len(p)):
-			pi = p[i]y
+			pi = p[i]
 			for j in range(i+1,len(p)):
 				pj =p[j]
 				if pj[0]<pi[0]:
 					if any(x >= pi[0] and x<=pi[-1] for x in pj):
-						retuen False
+						return False
 				elif pj[0]>pi[-1]:
 					return True
 				else:
@@ -2510,7 +2549,7 @@ def UniformMatroid(n=3,r=3,q=1):
 	else:
 		return Bnq(n,q).rankSelection(list(range(r))+[n])
 
-def MinorPoset(L,genL=None):
+def MinorPoset(L,genL=None, weak=False):
 	'''
 	Returns the minor poset given a lattice L and a list of generators genL.
 
@@ -2580,6 +2619,11 @@ def MinorPoset(L,genL=None):
 				temp = set([joins[l[1][i]][j] for j in l[1]])
 				temp.remove(l[1][i])
 				minor=[l[1][i],sorted(list(temp))]
+				if weak: #extra deletions
+					contr_gens = [L_P.join(g, l[0], indices=True) for g in genL]
+					extra_del = [L_P.join(g, l[1][i], indices=True) for g in contr_gens if g not in l[1]]
+					minor[1] = [g for g in minor[1] if g not in extra_del]
+					if minor[0] in extra_del: continue
 				if minor in minors:
 					s = minors.index(minor)
 				else:
