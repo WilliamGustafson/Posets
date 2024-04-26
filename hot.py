@@ -1,187 +1,223 @@
+'''
+TODO:
+>optimize traditional cdIndex algorithm more
+>optimize new sum formula more (don't use exponentiation etc.)
+	>maybe consider testing exponentiation versus binary ops
+>for specific posets (e.g. boolean algebra) can the traditional algorithm beat
+the new sum by judiciously choosing which flag f vectors to compute?
+>integrate new sum formula into mainline cdIndex method
+>is the new sum formula a faster way to compute the ab-index?
+	>e.g. for DS posets compute cd-index then convert to ab-index
+'''
 from posets import *
+import math
+import time
 
-def buildIsomorphism(this, that, indices=False):
-	d1 = {i: this.rank(i,indices=True) for i in range(len(this))}
-	d2 = {i: that.rank(i,indices=True) for i in range(len(that))}
-	if collections.Counter(d1.values()) != collections.Counter(d2.values()): return None
-	this_ranks = [0 for i in this]
-	for r in range(len(this.ranks)):
-		for i in this.ranks[r]: this_ranks[i] = r
-	that_ranks = [0 for i in that]
-	for r in range(len(that.ranks)):
-		for i in that.ranks[r]: that_ranks[i] = r
-	def get_lengths(l):
-		return tuple([len(x) for x in l])
-	def set_comp_rks(P,d,ranks):
-		for i in range(len(P)):
-			row = P.incMat[i]
-			upset = frozenset(collections.Counter(ranks[j] for j in range(len(P)) if row[j] == 1).items())
-			downset = frozenset(collections.Counter(ranks[j] for j in range(len(P)) if row[j] == -1).items())
-			d[i] = (upset, downset) #get_lengths(P.filter([i],indices=True).ranks), get_lengths(P.ideal([i],indices=True).ranks))
-		return d
-	if 'set_comp_rks()' in this.cache:
-		d1 = this.cache['set_comp_rks()']
+def cdIndex1(P):
+	'''
+	Computes the cd-index by computing the ab-index and converting it c's and d's.
+	'''
+	return Polynomial(sorted(P.abIndex().abToCd().data, key=lambda x:x[1]))
+
+debug = False
+
+def dprint(*args):
+	if debug: print(*args)
+
+def domIdeal(v,minvalue=0,strict=False):
+	v = tuple(v)
+	n = len(v)-1
+	u = v
+	offset = 1 if strict else 0
+	while True:
+		yield u
+		found_index = False
+		for i in range(n,0,-1):
+			if u[i]>u[i-1]+offset:
+				found_index = True
+				break
+		if not found_index:
+			if u[0] == minvalue:
+				return
+			i = 0
+		u = u[:i] +(u[i]-1,)+ v[i+1:]
+
+def f(this):
+	'''
+	Returns some of the flag f-vector given a poset.
+	'''
+	def fVectorCalc(ranks,S,M, i, count):
+		newCount = count
+		if len(S)==0: return 1
+		for j in ranks[S[0]]:
+			if M[i][j] == 1:
+				newCount += fVectorCalc(ranks, S[1:], M, j, count)
+		return newCount
+	table = [[tuple(),1]]
+
+	if len(this.ranks)<=2: return table
+
+	n = len(this.ranks)-2
+	if n%2==1:
+		v = tuple(i for i in range(2,n+1,2))
 	else:
-		set_comp_rks(this, d1, this_ranks)
-		this.cache['set_comp_rks()'] = d1
-	if 'set_comp_rks()' in that.cache:
-		d2 = that.cache['set_comp_rks()']
-	else:
-		set_comp_rks(that, d2, that_ranks)
-		that.cache['set_comp_rks()'] = d2
-	def invert(d):
-		ret = {}
-		for k in d:
-			if d[k] in ret:
-				ret[d[k]].append(k)
+		v = tuple(i for i in range(1,n,2))
+	dprint('v',v)
+	for i in range(0,len(v)):
+		u = v[i:]
+		for S in domIdeal(u,1,True):
+			dprint('S',S)
+			table.append([S,fVectorCalc(this.ranks,S,this.incMat,this.ranks[0][0],0)])
+	return table
+
+def flagVectors(P):
+	n = len(P.ranks)-2
+	def fVectorCalc(ranks,S,M, i, count):
+		newCount = count
+		if len(S)==0: return 1
+		for j in ranks[S[0]]:
+			if M[i][j] == 1:
+				newCount += fVectorCalc(ranks, S[1:], M, j, count)
+		return newCount
+	flag = [[tuple(),1]]
+
+	#iterate over all subsets of the ranks not containing n
+	for i in range(1,1<<(n-1)):
+		#construct the corresponding set S
+		pad = 1
+		elem = 1
+		S = []
+		while pad <= i:
+			if pad&i:
+				S.append(elem)
+
+			pad <<= 1
+			elem += 1
+		flag.append((tuple(S),fVectorCalc(P.ranks,S,P.incMat,P.ranks[0][0],0)))
+
+
+	table = {x[0] : x[1] for x in flag}
+	ret = []
+
+	def pie(S):
+		entry = [S,table[S],0]
+		#go over T subset of S
+		for T in range(1<<len(S)):
+			b = bin(T)[2:][::-1]
+			T = tuple(S[i] for i in range(len(b)) if b[i]=='1')
+			if 1&(len(T)^len(S))==1:
+				entry[-1] -= table[T]
 			else:
-				ret[d[k]] = [k]
-		return ret
-	d1Inv = invert(d1)
-	d2Inv = invert(d2)
+				entry[-1] += table[T]
+		return entry
 
-	def iso(P, Q, map, dP, dQ, dPinv, dQinv, i):
-		#all values set return
-		if i==len(P): return map
-		#candidates are elements that compare to the same number of elements per rank
-		cands = dQinv[dP[i]]
-		for j in cands:
-			#skip if j is already hit
-			if j in map.values(): continue
-			#i-> is order-preserving
-			if all(P.incMat[m[0]][i] == Q.incMat[m[1]][j] for m in map.items()):
-				new_map = {i:j}
-				new_map.update(map)
-				new_map = iso(P,Q,new_map,dP,dQ,dPinv,dQinv,i+1)
-				if new_map!=None: return new_map
-		return None
+	for S in table:
+		entry = pie(S)
+		ret.append(entry)
+		ret.append([tuple(i for i in range(1,n+1) if i not in S),entry[1],entry[2]])
+	return ret
 
-	def nextchoice(map, i, jstart):
-		#print('nextchoice:')
-		#print('\ti',i)
-		#print('\tmap',map)
-		#print('\tjstart',jstart)
-		if i==len(this): return map, -1, True
-		cands = d2Inv[d1[i]]
-		for j_ in range(jstart,len(cands)):
-			j = cands[j_]
-			if j in [m[1] for m in map]: continue
-			if all(this.incMat[m[0]][i] == that.incMat[m[1]][j] for m in map):
-				return map+[[i,j]], j_+1, False
-		return None, j_+1, True
+def fibSets(n, prefix, start):
+	if n<=1: return [tuple(prefix)]
+	if n==2: return [tuple(prefix),tuple(prefix)+(start,)]
+	return fibSets(n-1, prefix, start+1) + fibSets(n-2, prefix+[start], start+2)
 
-	def prevchoice(map, i, jstarts):
-		#print('prevchoice:')
-		#print('\tmap',map)
-		#print('\ti',i)
-		#print('\tjstarts',jstarts)
-		while i>=0 and jstarts[i] >= len(d2Inv[d1[i]]):
-			jstarts[i] = 0
-			i -= 1
-		if i==-1:
-			#print('prevchoice i got to -1, returning None,None,None')
-			#print('jstarts',jstarts)
-			#print('map',map)
-			#print('candidate lengths:',[len(d2Inv[d1[k]]) for k in range(len(this))])
-			#print('candidates:',[d2Inv[d1[k]] for k in range(len(this))])
-			return None,None,None
-		map = [m for m in map if m[0]<i]
-#		jstarts[i] += 1
-		return map, i, jstarts
+def fibSet_str(W,n):
+	ret = []
+	if len(W)==0: return 'c'*n
+	for i in W:
+		while len(ret)+1 < i: ret.append('c')
+		ret.append('d')
+		ret.append('d')
+	ret.append('c'*(n-len(ret)))
+	return ''.join(ret).replace('dd','d')
 
-	jstarts = [0 for i in range(len(this))]
-#	map, map_built = nextchoice([], 0, 0)
-	map = []
-	map_built = False
-	i = 0
-	while not map_built and len(map)<len(this):
-		#print('*'*14)
-		#print('i',i)
-		#print('jstarts',jstarts)
-		#print('map',map)
-		#print('map_built',map_built)
-		#print('*'*14)
-		new_map, j, map_built = nextchoice(map, i, jstarts[i])
-		jstarts[i] = j
-		if new_map == None:
-			map, i, jstarts = prevchoice(map,i,jstarts)
-			map_built = False
-			if map==None: map_built = True
-		else:
-			map = new_map
-#			jstarts[i] = j
-			i+=1
-	map = map
+def cdIndex2(P):
+	'''
+	Computes the cd-index using the sum in corollary 4.3.
+	'''
+	global debug
+	n = len(P.ranks)-2
+	flag_ = f(P)
+	flag = {}
+	dprint('flag_',flag_)
+	for x,y in flag_: flag[tuple(x)] = y
+	dprint('flag',flag)
+	FS = fibSets(n,[],1)[1:] #non c^n coefficients
+	psi = [] #cd-index
 
-	if map != None:
-		if indices:
-			map = {m[0] : m[1] for m in map}
-		else:
-			map = {this[m[0]] : that[m[1]] for m in map}
-	return map
+	for W in FS:
+#		debug=W==(2,4)
+		dprint('W',W)
+		coeff = 0
+		for v in domIdeal(W):
+			sumW = sum(W)
+			skip = False
+			eq_count = 0
+			eq_inds=[]
+			if v[0]==0:
+				if W[0]%2==0: continue
+				eq_count = 1
+				eq_inds+=[0]
+			for i in range(1,len(v)):
+				if v[i]==v[i-1]:
+					if(v[i]+W[i])%2==0:
+						skip = True
+						break
+					eq_count += 1
+					eq_inds+=[i]
+			if skip: continue
+			dprint('v',v)
+			v_eqsum = sum(v[i] for i in eq_inds)
+			sumv = sum(v)
+			v = tuple(sorted(list(set(i for i in v if i!=0))))
+			dprint('adding term', flag[v] * (2)**(eq_count) * (-1)**(sum(v)+sumW))
+			dprint('flag[v]',flag[v])
+			dprint('eq_count',eq_count)
+			dprint('sum(v)',sum(v))
+			dprint('sumW',sumW)
+#			coeff += flag[v] * (-2)**(eq_count) * (-1)**(sum(v)+sumW+sum(W[i] for i in eq_inds)+v_eqsum)
+			coeff += flag[v] * (2)**(eq_count) * (-1)**(sumv+sumW)
+		if coeff!=0: psi.append([coeff,fibSet_str(W,n)])
+	dprint('psi',psi)
+	return Polynomial(psi+[[1,'c'*n]])
 
-def eq(P,Q):
-	phi = P.buildIsomorphism(Q)
-	if phi==None: return False
-	return all(phi[p] == p for p in phi)
-
-def eq2(P,Q):
-	if set(P.elements)!=set(Q.elements): return False
-	inds = [Q.elements.index(P[i]) for i in range(len(P))]
-	return all(P.incMat[i][j] == Q.incMat[inds[i]][inds[j]] for i in range(len(P)) for j in range(i+1,len(P)) )
-
-def testeq(P,Q=None):
-	if Q == None: Q = P.copy()
-
+def test(P):
 	P.cache={}
-	Q.cache={}
 
 	t = Timer()
-	ret1 = P==Q
+	psi = cdIndex1(P)
 	t.stop()
 
 	P.cache={}
-	Q.cache={}
 
 	s = Timer()
-	ret2 = eq(P,Q)
+	phi = cdIndex2(P)
 	s.stop()
 
-	P.cache={}
-	Q.cache={}
+	print('same result',phi==psi)
+	print('cdIndex1 time:',t)
+	print('cdIndex2 time:',s)
+	x=float(str(t))
+	y=float(str(s))
+	print('ratio:',x/y)
 
-	r = Timer()
-	ret3 = eq2(P,Q)
-	r.stop()
+def bool(n=3,m=10):
+	T = [] #times
+	S = []
+	for k in range(n,m):
+		P = Cube(k)
+		P.cache = {}
 
-	print('cold:',t,'hot:',s,'hot2:',r)
+		t = time.perf_counter()
+		cdIndex1(P)
+		T.append(time.perf_counter()-t)
 
-	return ret1, ret2, ret3
+		P.cache = {}
 
-def testiso(P,Q=None):
-	if Q==None:
-		Q = P.copy().shuffle()
-		Q.elements = list(range(len(Q)))
+		s = time.perf_counter()
+		cdIndex2(P)
+		S.append(time.perf_counter()-s)
 
-	P.cache = {}
-	Q.cache = {}
+	return T,S
 
-	t = Timer()
-	phi = buildIsomorphism(P,Q)
-	t.stop()
-
-	P.cache = {}
-	Q.cache = {}
-
-	s = Timer()
-	theta = P.buildIsomorphism(Q)
-	s.stop()
-
-	r = Timer()
-	P == P
-	r.stop()
-
-	print('hot:',t,'cold:',s, '__eq__:', r)
-	if phi==None: return False
-	#print(phi)
-	return all(P.less(p1,p2) == Q.less(phi[p1],phi[p2]) for p1 in P for p2 in P),all(P.less(p1,p2) == Q.less(theta[p1],theta[p2]) for p1 in P for p2 in P)# all(P.less(p1,p2,True) == Q.less(theta[p1],theta[p2],True) for p1 in range(len(P)) for p2 in range(len(P)))

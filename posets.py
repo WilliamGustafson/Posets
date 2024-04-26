@@ -1590,6 +1590,7 @@ class Polynomial:
 		return Polynomial([[x[0]>>power,x[1]] for x in cd])
 
 	def __str__(this):
+		this.data.sort(key=lambda x:x[1])
 		s = ""
 		for i in range(0,len(this)):
 			if this[i][0] == 0: continue
@@ -1622,6 +1623,7 @@ class Polynomial:
 		return 'Polynomial('+repr(this.data)+')'
 
 	def __eq__(this,that):
+		this.data.sort(key=lambda x:x[1])
 		return this.data == that.data
 
 
