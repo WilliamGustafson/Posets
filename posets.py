@@ -1504,7 +1504,7 @@ class Polynomial:
 		'''
 		Returns a Polynomial given a list of pairs [c,m] with c a coefficient and m a string representing a monomial.
 		'''
-		this.data = data
+		this.data = [list(d) for d in data]
 
 	def __mul__(this,that):
 		'''
@@ -1624,6 +1624,7 @@ class Polynomial:
 
 	def __eq__(this,that):
 		this.data.sort(key=lambda x:x[1])
+		that.data.sort(key=lambda x:x[1])
 		return this.data == that.data
 
 
