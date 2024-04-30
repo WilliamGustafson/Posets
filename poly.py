@@ -57,30 +57,61 @@ class Polynomial:
 
 		this, p and m should not have any variable containing the filler character filler_char
 		'''
-		Polynomial.__add__(*(
-			Polynomial({'':c})
-			*
-			Polynomial.__mul__(
-				*iter_join(
-					map(lambda x:Polynomial({x:1}), m.split(monom)),
-					poly
-					)
-				)
-				for m,c in this.data.items()
-			)
-			)
-#		X=[[y[0],y[1].replace(m,'*')] for y in this]
-#		ret=Polynomial([]) #0
-#		for y in X:
-#			q=Polynomial([[y[0],'']])
-#			for i in range(0,len(y[1])):
-#				if y[1][i]=='*':
-#					q = q*p
-#				else: #mult by the monomial
-#					for j in range(0,len(q)):
-#						q[j][1]+=y[1][i]
-#			ret += q
-#		return Polynomial(ret)
+		ret = Polynomial({}) #initialize to zero
+		for m,c in this.data.items():
+			r = [['',c]] #term to add to ret, starts as coefficient
+			monom_iter = iter(monom)
+			curr_char = next(monom_iter)
+			last_char_ind = 0 #start of char block being read
+			curr_ind = 0 #current index
+			for v in m: #loop through chars looking for monom
+				curr_ind += 1
+				if v==curr_char:
+					try:
+						curr_char = next(monom_iter)
+					except StopIteration:
+						r = Polynomial._prepoly_mul_poly(r,poly)
+						monom_iter = iter(monom)
+						curr_char = next(monom_iter)
+						last_char_ind = curr_ind
+				else:
+					s = m[last_char_ind:curr_ind]
+					for x in r: x[0]+=s #multiply r by the variables in the buffer
+					last_char_ind = curr_ind
+			#if m ended in a partial match need to dump buffer
+			if last_char_ind != curr_ind:
+				s = m[last_char_ind:]
+				for x in r: x[0]+=s
+			Polynomial._poly_add_prepoly(ret,r) #add the poly to ret
+		ret.data = {k:v for k,v in ret.data.items() if v!=0}
+		return ret
+
+	def _poly_add_prepoly(p, q):
+		for m,c in q:
+			p[m] = c + (p[m] if m in p else 0)
+	def _prepoly_mul_poly(q, p):
+		return [[x[0][0]+x[1][0], x[0][1]*x[1][1]] for x in itertools.product(q,p.data.items())]
+
+	def abToCd(this):
+		'''
+		Given an ab-polynomial return the corresponding cd-polynomial if possible and the given polynomial if not.
+		'''
+		if len(this.data)==0: return this
+		#substitue a->c+e and b->c-e
+		#where e=a-b
+		#this scales by a factor of 2^deg
+		ce = this.sub(Polynomial({'c':1,'e':1}),'a').sub(Polynomial({'c':1,'e':-1}),'b')
+
+		cd = ce.sub(Polynomial({'cc':1,'d':-2}),'ee')
+		#check if any e's are still present
+		for m in cd.data:
+			if 'e' in m:
+				return this
+		#divide coefficients by 2^n
+		for monom in cd.data.keys(): break #grab a monomial
+		power=sum(2 if v=='d' else 1 for v in monom)
+		return Polynomial({k:v>>power for k,v in cd.data.items()})
+
 
 	def __len__(this):
 		return len(this.data)
@@ -93,25 +124,6 @@ class Polynomial:
 
 	def __setitem__(this,i,value):
 		this.data[i] = value
-
-	def abToCd(this):
-		'''
-		Given an ab-polynomial return the corresponding cd-polynomial if possible and the given polynomial if not.
-		'''
-		if len(this)==0: return this
-		#substitue a->c+e and b->c-e
-		#where e=a-b
-		#this scales by a factor of 2^deg
-		ce = this.sub(Polynomial([[1,'c'],[1,'e']]),'a').sub(Polynomial([[1,'c'],[-1,'e']]),'b')
-
-		cd = ce.sub(Polynomial([[1,'cc'],[-2,'d']]),'ee')
-		#check if any e's are still present
-		for m in cd:
-			if 'e' in m[1]:
-				return this
-		#divide coefficients by 2^n
-		power=sum([2 if cd[0][1][i]=='d' else 1 for i in range(len(cd[0][1]))])
-		return Polynomial([[x[0]>>power,x[1]] for x in cd])
 
 	def __str__(this):
 		data = list(this.data.items())

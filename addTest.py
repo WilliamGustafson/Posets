@@ -141,12 +141,12 @@ t = time.perf_counter()
 #for p,q in Z: _ = p+q
 #print('add1',time.perf_counter()-t)
 
-
-Polynomial.__add__ = add2
-Z = zip(P,Q)
-t = time.perf_counter()
-for p,q in Z: _ = p+q
-print('add2',time.perf_counter()-t)
+#
+#Polynomial.__add__ = add2
+#Z = zip(P,Q)
+#t = time.perf_counter()
+#for p,q in Z: _ = p+q
+#print('add2',time.perf_counter()-t)
 
 
 #Polynomial.__add__ = add3
@@ -157,20 +157,20 @@ print('add2',time.perf_counter()-t)
 
 P_ = [poly.Polynomial(p.data) for p in P]
 Q_ = [poly.Polynomial(q.data) for q in Q]
-Z = zip(P_,Q_)
-t = time.perf_counter()
-for p,q in Z: _ = p+q
-print('poly.Polynomial.__add__',time.perf_counter()-t)
+#Z = zip(P_,Q_)
+#t = time.perf_counter()
+#for p,q in Z: _ = p+q
+#print('poly.Polynomial.__add__',time.perf_counter()-t)
 
-Z = zip(P,Q)
-t = time.perf_counter()
-for p,q in Z: _ = p*q
-print('add2 multiplication',time.perf_counter()-t)
-
-Z = zip(P_,Q_)
-t = time.perf_counter()
-for p,q in Z: _ = p*q
-print('poly.Polynomial.__mul__',time.perf_counter()-t)
+#Z = zip(P,Q)
+#t = time.perf_counter()
+#for p,q in Z: _ = p*q
+#print('add2 multiplication',time.perf_counter()-t)
+#
+#Z = zip(P_,Q_)
+#t = time.perf_counter()
+#for p,q in Z: _ = p*q
+#print('poly.Polynomial.__mul__',time.perf_counter()-t)
 
 c=Polynomial([[1,'a'],[1,'b']])
 c_=poly.Polynomial({'a':1, 'b':1})
@@ -186,27 +186,12 @@ print('new sub:', time.perf_counter()-t)
 exit()
 
 for p,q in zip(P,Q):
-	r = p+q
-#	assert(r==add2(p,q))
-#	assert(r==add3(p,q))
+	r = p.sub(c,'c')
+	r_ = poly.Polynomial(p.data).sub(c_,'c')
 	try:
-		assert(poly.Polynomial(r.data) == poly.Polynomial(p)+poly.Polynomial(q))
+		assert(poly.Polynomial(r.data)==r_)
 	except:
 		print('p',p)
-		print('q',q)
 		print('old',r)
-		print('new',poly.Polynomial(p)+poly.Polynomial(q))
-		print(add2(p,q))
-		print('')
-
-	r = p*q
-#	assert(r==add2(p,q))
-#	assert(r==add3(p,q))
-	try:
-		assert(poly.Polynomial(r.data) == poly.Polynomial(p)*poly.Polynomial(q))
-	except:
-		print('p',p)
-		print('q',q)
-		print('old',r)
-		print('new',poly.Polynomial(p)+poly.Polynomial(q))
+		print('new',r_)
 		print('')

@@ -18,6 +18,23 @@ def cdIndex1(P):
 	'''
 	return Polynomial(sorted(P.abIndex().abToCd().data, key=lambda x:x[1]))
 
+def cdIndex3(P):
+	'''
+	Computes the cd-inndex by compuing the ab-index and converting it to c's ad d's, but like faster this time.
+	'''
+	flag = flagVectors(P)
+	n = len(P.ranks)-2
+	def abMonom(S,n):
+		ret = []
+		for i in range(1,n+1):
+			if i in S:
+				ret.append('b')
+			else:
+				ret.append('a')
+		return ''.join(ret)
+	ab = poly.Polynomial({abMonom(f[0],n):f[2] for f in flag})
+	return ab.abToCd()
+
 debug = False
 
 def dprint(*args):
@@ -234,14 +251,15 @@ def bool(n=3,m=10):
 
 	return T,S
 
-if __name__ == '__main__':
+def main():
 	Poset.flagVectors = flagVectors
-	P = Boolean(6)
+	n = 6 if len(sys.argv)<2 else int(sys.argv[1])
+	P = Boolean(n)
 
-	P.cache = {}
-	t = time.perf_counter()
-	psi1 = cdIndex1(P)
-	print('flag vector algorithm',time.perf_counter()-t)
+#	P.cache = {}
+#	t = time.perf_counter()
+#	psi1 = cdIndex1(P)
+#	print('flag vector algorithm',time.perf_counter()-t)
 
 	P.cache = {}
 
@@ -250,10 +268,12 @@ if __name__ == '__main__':
 	print('new summation formula',time.perf_counter()-t)
 	print('')
 
-	import posets
-	P = posets.Poset(P)
-	posets.Polynomial = poly.Polynomial
 	P.cache  = {}
 	t = time.perf_counter()
-	psi3 = cdIndex1(P)
+	psi3 = cdIndex3(P)
 	print('flag vector algorithm new poly class', time.perf_counter()-t)
+
+#	assert(str(psi1)==str(psi2))
+	assert(str(psi2)==str(psi3))
+
+if __name__ == '__main__': main()
