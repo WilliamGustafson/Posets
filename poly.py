@@ -3,6 +3,14 @@
 ##############
 import math
 import itertools
+
+def iter_join(i, x):
+	try:
+		yield next(i)
+		yield x
+	except StopIteration:
+		pass
+
 class Polynomial:
 	'''
 	A barebones class encoding polynomials in noncommutative variables (used by Poset class to compute the cd-index).
@@ -43,24 +51,36 @@ class Polynomial:
 		return Polynomial(ret)
 
 
-	def sub(this, p, m, filler_char = ' '):
+	def sub(this, poly, monom):
 		'''
 		Returns the polynomial obtained by substituting the Polynomial p for the monomial m (given as a string) in this.
 
 		this, p and m should not have any variable containing the filler character filler_char
 		'''
-		X=[[y[0],y[1].replace(m,'*')] for y in this]
-		ret=Polynomial([]) #0
-		for y in X:
-			q=Polynomial([[y[0],'']])
-			for i in range(0,len(y[1])):
-				if y[1][i]=='*':
-					q = q*p
-				else: #mult by the monomial
-					for j in range(0,len(q)):
-						q[j][1]+=y[1][i]
-			ret += q
-		return Polynomial(ret)
+		Polynomial.__add__(*(
+			Polynomial({'':c})
+			*
+			Polynomial.__mul__(
+				*iter_join(
+					map(lambda x:Polynomial({x:1}), m.split(monom)),
+					poly
+					)
+				)
+				for m,c in this.data.items()
+			)
+			)
+#		X=[[y[0],y[1].replace(m,'*')] for y in this]
+#		ret=Polynomial([]) #0
+#		for y in X:
+#			q=Polynomial([[y[0],'']])
+#			for i in range(0,len(y[1])):
+#				if y[1][i]=='*':
+#					q = q*p
+#				else: #mult by the monomial
+#					for j in range(0,len(q)):
+#						q[j][1]+=y[1][i]
+#			ret += q
+#		return Polynomial(ret)
 
 	def __len__(this):
 		return len(this.data)

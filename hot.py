@@ -7,6 +7,7 @@ the new sum by judiciously choosing which flag f vectors to compute?
 	>e.g. for DS posets compute cd-index then convert to ab-index
 '''
 from posets import *
+import poly
 import math
 import time
 import sys
@@ -235,20 +236,24 @@ def bool(n=3,m=10):
 
 if __name__ == '__main__':
 	Poset.flagVectors = flagVectors
-	P = Boolean(8)
+	P = Boolean(6)
 
-	if 'new' not in sys.argv:
+	P.cache = {}
+	t = time.perf_counter()
+	psi1 = cdIndex1(P)
+	print('flag vector algorithm',time.perf_counter()-t)
 
-		P.cache = {}
-		t = time.perf_counter()
-		psi1 = cdIndex1(P)
-		print('flag vector algorithm',time.perf_counter()-t)
+	P.cache = {}
 
-	if 'old' not in sys.argv:
+	t = time.perf_counter()
+	psi2 = cdIndex2(P)
+	print('new summation formula',time.perf_counter()-t)
+	print('')
 
-		P.cache = {}
-
-		t = time.perf_counter()
-		psi2 = cdIndex2(P)
-		print('new summation formula',time.perf_counter()-t)
-		print('')
+	import posets
+	P = posets.Poset(P)
+	posets.Polynomial = poly.Polynomial
+	P.cache  = {}
+	t = time.perf_counter()
+	psi3 = cdIndex1(P)
+	print('flag vector algorithm new poly class', time.perf_counter()-t)

@@ -123,8 +123,8 @@ def add4(p,q):
 
 n = 10000
 #n = 10
-P = [randPoly(5,10) for i in range(n)]
-Q = [randPoly(5,10) for i in range(n)]
+P = [randPoly() for i in range(n)]
+Q = [randPoly() for i in range(n)]
 Z = zip(P,Q)
 t = time.perf_counter()
 #for p,q in Z: _ = p*q
@@ -171,6 +171,19 @@ Z = zip(P_,Q_)
 t = time.perf_counter()
 for p,q in Z: _ = p*q
 print('poly.Polynomial.__mul__',time.perf_counter()-t)
+
+c=Polynomial([[1,'a'],[1,'b']])
+c_=poly.Polynomial({'a':1, 'b':1})
+t = time.perf_counter()
+for p in P:
+	_ = p.sub(c, 'c')
+print('old sub:', time.perf_counter()-t)
+
+t = time.perf_counter()
+for p in P_:
+	_ = p.sub(c_, 'c')
+print('new sub:', time.perf_counter()-t)
+exit()
 
 for p,q in zip(P,Q):
 	r = p+q
