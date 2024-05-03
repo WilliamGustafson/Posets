@@ -11,6 +11,7 @@ import poly
 import math
 import time
 import sys
+from rpy2.robjects import r as R
 
 def cdIndex1(P):
 	'''
@@ -251,29 +252,59 @@ def bool(n=3,m=10):
 
 	return T,S
 
-def main():
-	Poset.flagVectors = flagVectors
-	n = 6 if len(sys.argv)<2 else int(sys.argv[1])
-	P = Boolean(n)
+def main(n,m):
+	old_times = []
+	new_times = []
+	for k in range(n,m+1):
+		print('\nn =',k)
 
-#	P.cache = {}
-#	t = time.perf_counter()
-#	psi1 = cdIndex1(P)
-#	print('flag vector algorithm',time.perf_counter()-t)
+		Poset.flagVectors = flagVectors
+		P = Boolean(k)
 
-	P.cache = {}
+		P.cache = {}
 
-	t = time.perf_counter()
-	psi2 = cdIndex2(P)
-	print('new summation formula',time.perf_counter()-t)
-	print('')
+		t = time.perf_counter()
+		psi2 = cdIndex2(P)
+		t = time.perf_counter()-t
+		new_times.append(t)
+		print('new summation formula',t)
+		print('')
 
-	P.cache  = {}
-	t = time.perf_counter()
-	psi3 = cdIndex3(P)
-	print('flag vector algorithm new poly class', time.perf_counter()-t)
+		P.cache  = {}
+		t = time.perf_counter()
+		psi3 = cdIndex3(P)
+		t = time.perf_counter()-t
+		old_times.append(t)
+		print('flag vector algorithm new poly class', t)
 
-#	assert(str(psi1)==str(psi2))
-	assert(str(psi2)==str(psi3))
-
-if __name__ == '__main__': main()
+		assert(str(psi2)==str(psi3))
+	#make plot
+	R_code='''
+pdf("times.pdf")
+new<-data.frame(time=c({2}),n={0}:{1})
+old<-data.frame(time=c({3}),n={0}:{1})
+print(new)
+print(old)
+xlim<-range(c(new$n,old$n))
+ylim<-range(c(new$time,old$time))
+plot(new$n,new$time,ylim=ylim,xlab="Rank of Boolean algebra",ylab="seconds",type="b",pch=16)
+par(new=TRUE)
+plot(old$n,old$time,ylim=ylim,col="red",bg="red",xlab="",ylab="",type="b",pch=16)
+legend(x="topleft", legend=c("new method","flag vector method"), col=c("black","red"),lwd=2)
+dev.off()
+	'''.format(
+		n,
+		m,
+		','.join(str(x) for x in new_times),
+		','.join(str(x) for x in old_times),
+		)
+	R(R_code)
+	with open("hot.r","w") as file: file.write(R_code)
+if __name__ == '__main__':
+	n = 3
+	m = 8
+	if len(sys.argv)>1:
+		n = int(sys.argv[1])
+	if len(sys.argv)>2:
+		m = int(sys.argv[2])
+	main(n,m)
