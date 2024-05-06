@@ -1,15 +1,8 @@
 ##########################################
 #TODO
 ##########################################
-#__eq__ has worse complexity than is_isomorphic
-#	for example:
-#		>>> P = Bruhat(6)
-#		>>> t = Timer(); P.isoClass()==P.isoClass(); t.stop(); print(t)
-#		True
-#		0.14259886741638184
-#		>>> t = Timer(); P == P; t.stop(); print(t)
-#		True
-#		9.599322080612183
+#Make Bruhat directly should be faster
+
 #
 #standardize incMat convention (sign and diagonal)
 #
@@ -96,6 +89,7 @@ import itertools
 import copy
 import decorator
 import collections
+import poly
 try:
 	import numpy as np
 except:
@@ -545,6 +539,15 @@ class Poset:
 
 		return this_proper.union(that_proper).adjoin_zerohat().adjoin_onehat()
 
+	def bddProduct(this, that):
+		'''
+		Computes the Cartesian product of two posets with maximum and minimum adjoined.
+		'''
+		this_proper = this.complSubposet(this.max(True)+this.min(True), True)
+		that_proper = that.complSubposet(that.max(True)+that.min(True), True)
+
+		return this_proper.cartesianProduct(that_proper).adjoin_zerohat().adjoin_onehat()
+
 	def starProduct(this, that):
 		'''
 		Computes the star product of two posets.
@@ -956,7 +959,93 @@ class Poset:
 
 		For more info on the cd-index see https://arxiv.org/abs/1901.04939
 		'''
-		return Polynomial(sorted(this.abIndex().abToCd().data, key=lambda x:x[1]))
+		n = len(this.ranks)-2
+		flag = {tuple():1}
+		###########################################################
+
+		def domIdeal(v,minvalue=0,strict=False):
+			v = tuple(v)
+			n = len(v)-1
+			u = v
+			offset = 1 if strict else 0
+			while True:
+				yield u
+				found_index = False
+
+				for i in range(n,0,-1):
+					if u[i]>u[i-1]+offset:
+						found_index = True
+						break
+				if not found_index:
+					if u[0] == minvalue:
+						return
+					i = 0
+				u = u[:i] +(u[i]-1,)+ v[i+1:]
+		def fibSets(n, prefix, start):
+			if n<=1: return [tuple(prefix)]
+			if n==2: return [tuple(prefix),tuple(prefix)+(start,)]
+			return fibSets(n-1, prefix, start+1) + fibSets(n-2, prefix+[start], start+2)
+
+		def fibSet_str(W,n):
+			ret = []
+			if len(W)==0: return 'c'*n
+			for i in W:
+				while len(ret)+1 < i: ret.append('c')
+				ret.append('d')
+				ret.append('d')
+			ret.append('c'*(n-len(ret)))
+			return ''.join(ret).replace('dd','d')
+
+		###########################################################
+		def fVectorCalc(ranks,S,M, i, count):
+			newCount = count
+			if len(S)==0: return 1
+			for j in ranks[S[0]]:
+				if M[i][j] == 1:
+					newCount += fVectorCalc(ranks, S[1:], M, j, count)
+			return newCount
+
+		if len(this.ranks)<=2: return table
+
+		n = len(this.ranks)-2
+		if n%2==1:
+			v = tuple(i for i in range(2,n+1,2))
+		else:
+			v = tuple(i for i in range(1,n,2))
+		for i in range(0,len(v)):
+			u = v[i:]
+			for S in domIdeal(u,1,True):
+				flag[S] = fVectorCalc(this.ranks,S,this.incMat,this.ranks[0][0],0)
+		###########################################################
+		FS = fibSets(n,[],1)[1:] #non c^n coefficients
+		psi = [] #cd-index
+
+		for W in FS:
+			coeff = 0
+			for v in domIdeal(W):
+				sumW = sum(W)
+				skip = False
+				eq_count = 0
+				eq_inds=[]
+				if v[0]==0:
+					if W[0]%2==0: continue
+					eq_count = 1
+					eq_inds+=[0]
+				for i in range(1,len(v)):
+					if v[i]==v[i-1]:
+						if(v[i]+W[i])%2==0:
+							skip = True
+							break
+						eq_count += 1
+						eq_inds+=[i]
+				if skip: continue
+				v_eqsum = sum(v[i] for i in eq_inds)
+				sumv = sum(v)
+				v = tuple(sorted(list(set(i for i in v if i!=0))))
+				coeff += (flag[v]<<eq_count) if ((sumv+sumW)%2==0) else -(flag[v]<<eq_count)
+			if coeff!=0: psi.append([coeff,fibSet_str(W,n)])
+		return poly.Polynomial(psi+[[1,'c'*n]])
+
 
 	@requires(np)
 	@cached_method
@@ -1490,149 +1579,6 @@ for f in dir(PosetIsoClass):
 #End Poset Iso Class
 ##############
 ##############
-#Polynomial class
-##############
-class Polynomial:
-	'''
-	A barebones class encoding polynomials in noncommutative variables (used by Poset class to compute the cd-index).
-
-	This is basically a wrapper around a list representation for polynomials (e.g. 3ab+2bb <--> [[3,'ab'],[2,'bb']]
-	and provides methods to add, multiple, subtract polynomials, to substitute a polynomial
-	for a variable in another polynomial and to convert ab-polynomials into cd-polynomials (when possible).
-	'''
-	def __init__(this, data):
-		'''
-		Returns a Polynomial given a list of pairs [c,m] with c a coefficient and m a string representing a monomial.
-		'''
-		this.data = [list(d) for d in data]
-
-	def __mul__(this,that):
-		'''
-		Noncommutative polynomial multiplication.
-		'''
-		p = this.data
-		q = that.data
-		r=[[x[0]*y[0],x[1]+y[1]] for x in p for y in q]
-		#collect terms
-		ret=[]
-		for x in r:
-			monoms=[y[1] for y in ret]
-			if x[1] not in monoms:
-				ret.append(x)
-				continue
-			ret[monoms.index(x[1])][0]+=x[0]
-		return Polynomial(ret)
-
-	def __add__(this, that):
-		'''
-		Polynomial addition.
-		'''
-		p = this.data
-		q = that.data
-
-		ret=[x for x in p]
-		for x in q:
-			temp=[y[1] for y in ret]
-			if x[1] in temp:
-				ret[temp.index(x[1])][0]+=x[0]
-			else:
-				ret.append(x)
-		return Polynomial([x for x in ret if x[0]!=0])
-
-	def sub(this, p, m):
-		'''
-		Returns the polynomial obtained by substituting the Polynomial p for the monomial m (given as a string) in this.
-
-		this, p and m should not have any variable containing the character '*'.
-		'''
-		X=[[y[0],y[1].replace(m,'*')] for y in this]
-		ret=Polynomial([]) #0
-		for y in X:
-			q=Polynomial([[y[0],'']])
-			for i in range(0,len(y[1])):
-				if y[1][i]=='*':
-					q = q*p
-				else: #mult by the monomial
-					for j in range(0,len(q)):
-						q[j][1]+=y[1][i]
-			ret += q
-		return Polynomial(ret)
-
-	def __len__(this):
-		return len(this.data)
-
-	def __iter__(this):
-		return iter(this.data)
-
-	def __getitem__(this,i):
-		return this.data[i]
-
-	def __setitem__(this,i,value):
-		this.data[i] = value
-
-	def abToCd(this):
-		'''
-		Given an ab-polynomial return the corresponding cd-polynomial if possible and the given polynomial if not.
-		'''
-		if len(this)==0: return this
-		#substitue a->c+e and b->c-e
-		#where e=a-b
-		#this scales by a factor of 2^deg
-		ce = this.sub(Polynomial([[1,'c'],[1,'e']]),'a').sub(Polynomial([[1,'c'],[-1,'e']]),'b')
-
-		cd = ce.sub(Polynomial([[1,'cc'],[-2,'d']]),'ee')
-		#check if any e's are still present
-		for m in cd:
-			if 'e' in m[1]:
-				return this
-		#divide coefficients by 2^n
-		power=sum([2 if cd[0][1][i]=='d' else 1 for i in range(len(cd[0][1]))])
-		return Polynomial([[x[0]>>power,x[1]] for x in cd])
-
-	def __str__(this):
-		this.data.sort(key=lambda x:x[1])
-		s = ""
-		for i in range(0,len(this)):
-			if this[i][0] == 0: continue
-			if this[i][0] == -1: s+= '-'
-			elif this[i][0] != 1: s += str(this[i][0])
-			current = ''
-			power = 0
-			for c in this[i][1]:
-				if current == '':
-					current = c
-					power = 1
-					continue
-				if c == current:
-					power += 1
-					continue
-				s += current
-				if power != 1: s += '^{' + str(power) + '}'
-				current = c
-				power = 1
-			s += current
-			if power != 1 and power != 0: s += '^{' + str(power) + '}'
-			if power == 0 and current == "": s += '1'
-
-			if i != len(this)-1:
-				if this[i+1][0] >= 0: s += "+"
-		if s == '': return '0'
-		return s
-
-	def __repr__(this):
-		return 'Polynomial('+repr(this.data)+')'
-
-	def __eq__(this,that):
-		this.data.sort(key=lambda x:x[1])
-		that.data.sort(key=lambda x:x[1])
-		return this.data == that.data
-
-
-
-##############
-#End Polynomial class
-##############
-##############
 #Built in posets
 ##############
 def Empty():
@@ -1968,6 +1914,15 @@ def Torus(n=2, m=2):
 	P.cache['isEulerian()']= n%2 == 1
 	P.cache['isGorenstein()']= n == 1
 	return P
+
+def Snowman(n=2,m=2):
+	'''
+	Returns the m-fold bounded product of Butterfly(m).
+	'''
+	B = Butterfly(m)
+	ret = Chain(2)
+	for _ in range(n): ret = ret.bddProduct(B)
+	return ret
 
 def GluedCube(orientations = None):
 	'''
@@ -2414,7 +2369,21 @@ def DistributiveLattice(P, indices=False):
 			elements.append(tuple(P[i] for i in range(len(P)) if (1<<i)&I!=0))
 		def less(I,J):
 			return I!=J and all(i in J for i in I)
-	return Poset(elements = elements, less = less)
+	class DistributiveHasseDiagram(HasseDiagram):
+		def __init__(this,JP,P,**kwargs):
+			super().__init__(this,P,**kwargs)
+			this.Irr = P
+		def nodeDraw(this, i):
+			IrrArgs = {k[4:]:v for k,v in kwargs.items() if k[:4]=='irr.'}
+			IrrArgs['color'] = 'gray'
+			IrrLatex = this.Irr.hasseDiagram.latex(IrrArgs)
+
+			ideal = this.Irr.subposet(this.P[i])
+#			idealLatex = ideal.latex()....?
+
+	JP = Poset(elements = elements, less = less)
+#	JP.hasseDiagram = DistributiveHasseDiagram(JP,P)
+	return JP
 
 #def SignedBirkhoff(P):
 #	D = DistributiveLattice(P, indices=True)
@@ -3025,7 +2994,8 @@ class HasseDiagram:
 			'standalone': False,
 			'padding': 3,
 			'nodeDraw': type(this).nodeDraw,
-			'offset': 1
+			'offset': 1,
+			'color':'black',
 			}
 
 		for (k,v) in this.defaults.items():
@@ -3099,7 +3069,7 @@ class HasseDiagram:
 		x = float(this.loc_x(this,i))*float(this.scale) + float(this.scale)*float(this.width)/2 + float(this.padding)
 		y = 2*float(this.padding)+float(this.height)*float(this.scale)-(float(this.loc_y(this,i))*float(this.scale) + float(this.padding))
 
-		this.canvas.create_oval(x-ptsize/2,y-ptsize/2,x+ptsize/2,y+ptsize/2, fill='black')
+		this.canvas.create_oval(x-ptsize/2,y-ptsize/2,x+ptsize/2,y+ptsize/2, fill=this.color)
 		return
 
 	@requires(tk)
@@ -3138,7 +3108,7 @@ class HasseDiagram:
 				for j in [r for r in this.P.ranks[r+1] if this.P.less(i,r,True)] if this.P.isRanked() else this.P.filter([i], indices = True, strict = True).min():
 					xj = float(this.loc_x(this,j))*this.scale + width/2 + this.padding
 					yj = 2*this.padding+height-(float(this.loc_y(this,j))*this.scale + this.padding)
-					canvas.create_line(x,y-this.scale*this.offset,xj,yj+this.scale*this.offset)
+					canvas.create_line(x,y-this.scale*this.offset,xj,yj+this.scale*this.offset,color=this.color)
 		root.mainloop() #makes this function blocking so you can actually see the poset when ran in a script
 		this.__dict__.update(defaults)
 
@@ -3189,11 +3159,11 @@ class HasseDiagram:
 				for r in rk:
 					name=this.nodeName(this, r)
 					ret.append('\\coordinate('+name+')at('+this.loc_x(this, r)+','+this.loc_y(this, r)+');\n')
-					ret.append('\\fill('+name+')circle('+this.ptsize+');\n')
+					ret.append('\\fill[color='+this.color+']('+name+')circle('+this.ptsize+');\n')
 		else:
 			for rk in this.P.ranks:
 				for r in rk:
-					ret.append('\\node('+this.nodeName(this, r)+')at('+this.loc_x(this, r)+','+this.loc_y(this, r)+')\n{')
+					ret.append('\\node[color='+this.color+']('+this.nodeName(this, r)+')at('+this.loc_x(this, r)+','+this.loc_y(this, r)+')\n{')
 					ret.append('\\scalebox{'+this.nodescale+"}{")
 					ret.append(str(r) if this.indices_for_nodes else this.nodeLabel(this, r))
 					ret.append('}};\n\n')
@@ -3209,7 +3179,7 @@ class HasseDiagram:
 						if this.P.less(i,j,True):
 							options=this.decoration(this, i,j)+(','+this.line_options if this.line_options!='' else "")
 							if len(options)>0: options='['+options+']'
-							ret.append('\\draw'+options+'('+this.nodeName(this, i)+this.lowsuffix+')--('+this.nodeName(this, j)+this.highsuffix+");\n")
+							ret.append('\\draw[color='+this.color+']'+options+'('+this.nodeName(this, i)+this.lowsuffix+')--('+this.nodeName(this, j)+this.highsuffix+");\n")
 
 		#for unranked version for each element we have to check all the higher length elements
 		if not this.P.isRanked():
@@ -3227,7 +3197,7 @@ class HasseDiagram:
 					for j in covers:
 						options=this.decoration(this, i,j)+(','+this.line_options if this.line_options!='' else "")
 						if len(options)>0: options='['+options+']'
-						ret.append('\\draw'+options+'('+this.nodeName(this, i)+this.lowsuffix+')--('+this.nodeName(this, j)+this.highsuffix+");\n")
+						ret.append('\\draw[color='+this.color+']'+options+'('+this.nodeName(this, i)+this.lowsuffix+')--('+this.nodeName(this, j)+this.highsuffix+");\n")
 		ret.append('\\end{tikzpicture}')
 		if this.standalone:
 			ret.append('\n\\end{document}')

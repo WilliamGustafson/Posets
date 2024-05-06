@@ -49,23 +49,6 @@ def domIdeal(v,minvalue=0,strict=False):
 		yield u
 		found_index = False
 
-		#################
-#		it = reversed(zip(u,range(len(u))))
-#		try: #try is the wrong word here, we will succeed (but end with an exception)
-#			ui,i = next(it)
-#			while True:
-#				uj,j = next(it)
-#				if ui > uj+offset: raise ValueError() #Did you know python has a jump statement?
-#				ui = uj
-#				i = j
-#		except ValueError:
-#			if u[0] == minvalue: return
-#			i = 0
-#		except StopIteration:
-#			pass
-			#everything's fine please resume your regularly scheduled activities
-			#this was just a drill not a real exception
-		################
 		for i in range(n,0,-1):
 			if u[i]>u[i-1]+offset:
 				found_index = True
@@ -74,7 +57,6 @@ def domIdeal(v,minvalue=0,strict=False):
 			if u[0] == minvalue:
 				return
 			i = 0
-		################
 		u = u[:i] +(u[i]-1,)+ v[i+1:]
 
 def f(this):
