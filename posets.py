@@ -1,6 +1,7 @@
 ##########################################
 #TODO
 ##########################################
+#Make Bruhat directly should be faster
 #__eq__ has worse complexity than is_isomorphic
 #	for example:
 #		>>> P = Bruhat(6)
@@ -96,6 +97,7 @@ import itertools
 import copy
 import decorator
 import collections
+import poly
 try:
 	import numpy as np
 except:
@@ -544,6 +546,15 @@ class Poset:
 		that_proper = that.complSubposet(that.max(True)+that.min(True), True)
 
 		return this_proper.union(that_proper).adjoin_zerohat().adjoin_onehat()
+
+	def bddProduct(this, that):
+		'''
+		Computes the Cartesian product of two posets with maximum and minimum adjoined.
+		'''
+		this_proper = this.complSubposet(this.max(True)+this.min(True), True)
+		that_proper = that.complSubposet(that.max(True)+that.min(True), True)
+
+		return this_proper.cartesianProduct(that_proper).adjoin_zerohat().adjoin_onehat()
 
 	def starProduct(this, that):
 		'''
@@ -1966,6 +1977,15 @@ def Torus(n=2, m=2):
 	P.cache['isGorenstein()']= n == 1
 	return P
 
+def Snowman(n=2,m=2):
+	'''
+	Returns the m-fold bounded product of Butterfly(m).
+	'''
+	B = Butterfly(m)
+	ret = Chain(2)
+	for _ in range(n): ret = ret.bddProduct(B)
+	return ret
+
 def GluedCube(orientations = None):
 	'''
 	Returns the face poset of the cubical complex obtained from a 2x...x2 grid of n-cubes via a series of gluings as indicated by the parameter orientations.
@@ -2411,7 +2431,21 @@ def DistributiveLattice(P, indices=False):
 			elements.append(tuple(P[i] for i in range(len(P)) if (1<<i)&I!=0))
 		def less(I,J):
 			return I!=J and all(i in J for i in I)
-	return Poset(elements = elements, less = less)
+	class DistributiveHasseDiagram(HasseDiagram):
+		def __init__(this,JP,P,**kwargs):
+			super().__init__(this,P,**kwargs)
+			this.Irr = P
+		def nodeDraw(this, i):
+			IrrArgs = {k[4:]:v for k,v in kwargs.items() if k[:4]=='irr.'}
+			IrrArgs['color'] = 'gray'
+			IrrLatex = this.Irr.hasseDiagram.latex(IrrArgs)
+
+			ideal = this.Irr.subposet(this.P[i])
+#			idealLatex = ideal.latex()....?
+
+	JP = Poset(elements = elements, less = less)
+#	JP.hasseDiagram = DistributiveHasseDiagram(JP,P)
+	return JP
 
 #def SignedBirkhoff(P):
 #	D = DistributiveLattice(P, indices=True)
@@ -3022,7 +3056,8 @@ class HasseDiagram:
 			'standalone': False,
 			'padding': 3,
 			'nodeDraw': type(this).nodeDraw,
-			'offset': 1
+			'offset': 1,
+			'color':'black',
 			}
 
 		for (k,v) in this.defaults.items():
@@ -3096,7 +3131,7 @@ class HasseDiagram:
 		x = float(this.loc_x(this,i))*float(this.scale) + float(this.scale)*float(this.width)/2 + float(this.padding)
 		y = 2*float(this.padding)+float(this.height)*float(this.scale)-(float(this.loc_y(this,i))*float(this.scale) + float(this.padding))
 
-		this.canvas.create_oval(x-ptsize/2,y-ptsize/2,x+ptsize/2,y+ptsize/2, fill='black')
+		this.canvas.create_oval(x-ptsize/2,y-ptsize/2,x+ptsize/2,y+ptsize/2, fill=this.color)
 		return
 
 	@requires(tk)
@@ -3135,7 +3170,7 @@ class HasseDiagram:
 				for j in [r for r in this.P.ranks[r+1] if this.P.less(i,r,True)] if this.P.isRanked() else this.P.filter([i], indices = True, strict = True).min():
 					xj = float(this.loc_x(this,j))*this.scale + width/2 + this.padding
 					yj = 2*this.padding+height-(float(this.loc_y(this,j))*this.scale + this.padding)
-					canvas.create_line(x,y-this.scale*this.offset,xj,yj+this.scale*this.offset)
+					canvas.create_line(x,y-this.scale*this.offset,xj,yj+this.scale*this.offset,color=this.color)
 		root.mainloop() #makes this function blocking so you can actually see the poset when ran in a script
 		this.__dict__.update(defaults)
 
@@ -3186,11 +3221,11 @@ class HasseDiagram:
 				for r in rk:
 					name=this.nodeName(this, r)
 					ret.append('\\coordinate('+name+')at('+this.loc_x(this, r)+','+this.loc_y(this, r)+');\n')
-					ret.append('\\fill('+name+')circle('+this.ptsize+');\n')
+					ret.append('\\fill[color='+this.color+']('+name+')circle('+this.ptsize+');\n')
 		else:
 			for rk in this.P.ranks:
 				for r in rk:
-					ret.append('\\node('+this.nodeName(this, r)+')at('+this.loc_x(this, r)+','+this.loc_y(this, r)+')\n{')
+					ret.append('\\node[color='+this.color+']('+this.nodeName(this, r)+')at('+this.loc_x(this, r)+','+this.loc_y(this, r)+')\n{')
 					ret.append('\\scalebox{'+this.nodescale+"}{")
 					ret.append(str(r) if this.indices_for_nodes else this.nodeLabel(this, r))
 					ret.append('}};\n\n')
@@ -3206,7 +3241,7 @@ class HasseDiagram:
 						if this.P.less(i,j,True):
 							options=this.decoration(this, i,j)+(','+this.line_options if this.line_options!='' else "")
 							if len(options)>0: options='['+options+']'
-							ret.append('\\draw'+options+'('+this.nodeName(this, i)+this.lowsuffix+')--('+this.nodeName(this, j)+this.highsuffix+");\n")
+							ret.append('\\draw[color='+this.color+']'+options+'('+this.nodeName(this, i)+this.lowsuffix+')--('+this.nodeName(this, j)+this.highsuffix+");\n")
 
 		#for unranked version for each element we have to check all the higher length elements
 		if not this.P.isRanked():
@@ -3224,7 +3259,7 @@ class HasseDiagram:
 					for j in covers:
 						options=this.decoration(this, i,j)+(','+this.line_options if this.line_options!='' else "")
 						if len(options)>0: options='['+options+']'
-						ret.append('\\draw'+options+'('+this.nodeName(this, i)+this.lowsuffix+')--('+this.nodeName(this, j)+this.highsuffix+");\n")
+						ret.append('\\draw[color='+this.color+']'+options+'('+this.nodeName(this, i)+this.lowsuffix+')--('+this.nodeName(this, j)+this.highsuffix+");\n")
 		ret.append('\\end{tikzpicture}')
 		if this.standalone:
 			ret.append('\n\\end{document}')
