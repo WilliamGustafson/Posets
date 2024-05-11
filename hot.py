@@ -7,7 +7,7 @@ the new sum by judiciously choosing which flag f vectors to compute?
 	>e.g. for DS posets compute cd-index then convert to ab-index
 '''
 from posets import *
-import poly
+from poly import *
 import math
 import time
 import sys
@@ -46,8 +46,10 @@ def domIdeal(v,minvalue=0,strict=False):
 	n = len(v)-1
 	u = v
 	offset = 1 if strict else 0
+	size=1
 	while True:
 		yield u
+		size+=1
 		found_index = False
 
 		for i in range(n,0,-1):
@@ -164,7 +166,14 @@ def cdIndex2(P):
 	for i in range(0,len(v)):
 		u = v[i:]
 		for S in domIdeal(u,1,True):
-			flag[S] = fVectorCalc(P.ranks,S,P.incMat,P.ranks[0][0],0)
+			if S not in flag:
+				flag[S] = fVectorCalc(P.ranks,S,P.incMat,P.ranks[0][0],0)
+	print('computed',len(flag.keys()),'entries of the flag f-vector')
+	flag = {S : 0 for S in itertools.chain(*(itertools.combinations(range(1,n+1),k) for k in range(0,n+1)))}
+	print(flag)
+	flag[(1,2)]=2
+	flag[(1,2,3)]=-1
+	flag[(1,2,4)]=1
 	###########################################################
 	FS = fibSets(n,[],1)[1:] #non c^n coefficients
 	psi = [] #cd-index
