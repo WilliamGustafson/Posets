@@ -170,7 +170,7 @@ def cdIndex2(P):
 				flag[S] = fVectorCalc(P.ranks,S,P.incMat,P.ranks[0][0],0)
 	print('computed',len(flag.keys()),'entries of the flag f-vector')
 	flag = {S : 0 for S in itertools.chain(*(itertools.combinations(range(1,n+1),k) for k in range(0,n+1)))}
-	print(flag)
+#	print(flag)
 	flag[(1,2)]=2
 	flag[(1,2,3)]=-1
 	flag[(1,2,4)]=1

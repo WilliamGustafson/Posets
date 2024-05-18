@@ -2,7 +2,8 @@
 #TODO
 ##########################################
 #Make Bruhat directly should be faster
-
+#
+#get rid of requires decorators and try wrapped imports
 #
 #standardize incMat convention (sign and diagonal)
 #
@@ -3128,7 +3129,7 @@ class HasseDiagram:
 			for rk in this.P.ranks:
 				for r in rk:
 					ret.append('\\node[color='+this.color+']('+this.nodeName(this, r)+')at('+this.loc_x(this, r)+','+this.loc_y(this, r)+')\n{')
-					ret.append('\\scalebox{'+this.nodescale+"}{")
+					ret.append('\\scalebox{'+str(this.nodescale)+"}{")
 					ret.append(str(r) if this.indices_for_nodes else this.nodeLabel(this, r))
 					ret.append('}};\n\n')
 
@@ -3150,14 +3151,14 @@ class HasseDiagram:
 #			for r in range(0,len(this.P.ranks)-1):
 #				for i in this.P.ranks[r]:
 #					for s in this.P.ranks[r+1:]: #<--there's 2 colons this time
-			for r in len(0,len(ranks)-1):
-				for i in ranks[r]:
+			for r in range(0,len(this.P.ranks)-1):
+				for i in this.P.ranks[r]:
 					uoi=[] #elements above i
-					for s in ranks[r+1:]:
+					for s in this.P.ranks[r+1:]:
 						for j in s:
 							if this.P.less(i,j, True):
 								uoi.append(j)
-					covers=poset_min(uoi,lambda i,j: this.P.less(i,j, True))
+					covers=this.P.subposet(uoi,indices=True).min(True)
 					for j in covers:
 						options=this.decoration(this, i,j)+(','+this.line_options if this.line_options!='' else "")
 						if len(options)>0: options='['+options+']'
