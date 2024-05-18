@@ -11,6 +11,7 @@
 #		>>> t = Timer(); P == P; t.stop(); print(t)
 #		True
 #		9.599322080612183
+#get rid of requires decorators and try wrapped imports
 #
 #standardize incMat convention (sign and diagonal)
 #
@@ -1651,7 +1652,9 @@ def Empty():
 
 def Weak(n):
 	'''
-	Returns the weak order on the symmetric group S_n.
+	Returns the type $A_{n-1}$ weak order (the symmetric group $S_n$).
+
+	%\includegraphics{figures/weak_3.pdf}
 	'''
 	def covers(p):
 		ret=[]
@@ -1663,18 +1666,9 @@ def Weak(n):
 
 def Bruhat(n):
 	r'''
-	Returns the type A_{n-1} Bruhat order (symmetric group S_n).
+	Returns the type $A_{n-1}$ Bruhat order (the symmetric group $S_n$).
 
-	Bruhat(3)
-
-	   321
-	 /    \ 
-	231  312
-	|  \/  |
-	|  /\  |
-	132  213
-	 \    /
-	   123
+	%\includegraphics{figures/Bruhat_3.pdf}
 	'''
 	def pairing_to_perm(tau):
 		arcs = [[int(x) for x in a.split(',')] for a in tau[1:-1].split(')(')]
@@ -1704,7 +1698,9 @@ def Bruhat(n):
 	return P
 def Root(n=3):
 	'''
-	Returns the type A_{n+1} root poset.
+	Returns the type $A_{n+1}$ root poset.
+
+	%\includegraphics{figures/root_3.pdf}
 	'''
 	def covers(i,j):
 		if i==1:
@@ -1718,19 +1714,9 @@ def Root(n=3):
 
 def Butterfly(n):
 	r'''
-	Returns the rank n+1 bounded poset where ranks 1...n have two elements and all comparisons between ranks.
+	Returns the rank $n+1$ bounded poset where ranks $1,\dots,n$ have two elements and all comparisons between ranks.
 
-	Butterfly(2)
-
-	  1
-	 / \ 
-	a2 b2
-	|\ /|
-	| X |
-	|/ \|
-	a1 b1
-	 \ /
-	  0
+	%\includegraphics{figures/Butterfly_3.pdf}
 	'''
 	elements = [('a' if i%2==0 else 'b')+str(i//2) for i in range(2*n)]
 	ranks = [[i,i+1] for i in range(0,2*n,2)]
@@ -1746,23 +1732,13 @@ def Butterfly(n):
 
 def Antichain(n):
 	'''
-	Returns the poset on 1...n with no relations.
+	Returns the poset on $1,\dots,n$ with no relations.
 	'''
 	return Poset(elements=list(range(n)))
 
 def Chain(n):
 	'''
-	Returns the poset on 0...n ordered linearly.
-
-	Chain(3)
-
-	3
-	|
-	2
-	|
-	1
-	|
-	0
+	Returns the poset on $0,\dots,n$ ordered linearly (i.e. by usual ordering of integers).
 	'''
 	elements = list(range(n+1))
 	ranks = [[i] for i in elements]
@@ -1776,15 +1752,9 @@ def Chain(n):
 
 def Boolean(n, X=None):
 	r'''
-	Returns the poset of subsets of X, default is {1...n}, ordered by inclusion.
+	Returns the poset of subsets of $X$, default is $\{1,\dots,n\}$, ordered by inclusion.
 
-	Boolean(2)
-
-	    (1,2)
-	   /    \ 
-	(1,)   (2,)
-	   \    /
-	     ()
+	%\includegraphics{figures/Boolean_3.pdf}
 	'''
 	P = Poset()
 	P.elements = list(range(1<<n))
@@ -1815,24 +1785,15 @@ def Boolean(n, X=None):
 
 def Simplex(n):
 	'''
-	Returns Boolean(n+1) the face lattice of the n-dimensional simplex.
+	Returns Boolean(n+1) the face lattice of the $n$-dimensional simplex.
 	'''
 	return Boolean(n+1)
 
 def Polygon(n):
 	r'''
-	Returns the face lattice of the n-gon.
+	Returns the face lattice of the $n$-gon.
 
-	Polygon(3)
-
-	        1
-	    /   |   \ 
-	(1,2) (3,1) (2,3)
-	   |\/     \/|
-	   |/\     /\|
-	(1,)  (2,)  (3,)
-	   \    |   /
-	        0
+	%\includegraphics{figures/polygon_4.pdf}
 	'''
 	elements = []
 	for i in range(n//2):
@@ -1859,18 +1820,9 @@ def Polygon(n):
 
 def Cube(n):
 	r'''
-	Returns the face lattice of the n-dimensional cube.
+	Returns the face lattice of the $n$-dimensional cube.
 
-	Cube(2)
-
-	      **
-	  /  /  \  \ 
-	0*  *0  *1  1*
-	| \/  \/  \/ |
-	| /\  /\  /\ |
-	00  01  10  11
-	  \  \  /   /
-	       0
+	%\includegraphics{figurs/cube_2.pdf}
 	'''
 	def expand(E):
 		return [e+'0' for e in E]+[e+'1' for e in E]+[e+'*' for e in E]
@@ -1900,14 +1852,15 @@ def Cube(n):
 
 def Torus(n=2, m=2):
 	'''
-	Returns the face poset of a cubical complex homeomorphic to the n-dimensional Torus.
+	Returns the face poset of a cubical complex homeomorphic to the $n$-dimensional Torus.
 
-	This poset is isomorphic to the cartesian product of n copies of P_m with minimum and maximum adjoined
-	where P_m is the face lattice of an m-gon with its minimum and maximum removed.
+	This poset is isomorphic to the Cartesian product of $n$ copies of $P_m$ with minimum and maximum adjoined
+	where $P_m$ is the face lattice of an $m$-gon with its minimum and maximum removed.
 
-	When m<= 26 the set is {0,1,...,m-1,A,B,...,[mth leter of the alphabet]}^n and otherwise is {0,...,m-1,*0,...*[m-1]}^n.
+	Let~$\ell_m$ be the $m$th letter of the alphabet.
+	When $m\le 26$ the set is $\{0,1,\dots,m-1,A,B,\dots,\ell_m\}^n$ and otherwise is $\{0,\dots,m-1,*0,\dots*[m-1]\}^n$.
 	The order relation is
-	componentwise where 0<A,[mth letter of the alphabet], 1<A,B,..., m-1<[m-1st letter of the alphabet],[mth letter of the alphabet]  for m<=26, and 0<*1,*2 ... m-1<*[m-1],*0 for m>26
+	componentwise where $0<A,\ell_m, 1<A,B,..., m-1<\ell_{m-1},\ell_m$  for $m\le26, and $0<*1,*2 ... m-1<*[m-1],*0$ for $m>26$.
 	'''
 	if m<=26:
 		symbols = [str(i) for i in range(m)]+[chr(i+ord('A')) for i in range(m)]
@@ -1979,7 +1932,7 @@ def Torus(n=2, m=2):
 
 def Snowman(n=2,m=2):
 	'''
-	Returns the m-fold bounded product of Butterfly(m).
+	Returns the $m$-fold bounded product of \verb|Butterfly(m)|.
 	'''
 	B = Butterfly(m)
 	ret = Chain(2)
@@ -1988,19 +1941,19 @@ def Snowman(n=2,m=2):
 
 def GluedCube(orientations = None):
 	'''
-	Returns the face poset of the cubical complex obtained from a 2x...x2 grid of n-cubes via a series of gluings as indicated by the parameter orientations.
+	Returns the face poset of the cubical complex obtained from a $2\times\dots\times2$ grid of $n$-cubes via a series of gluings as indicated by the parameter orientations.
 
-	If orientations is [1,...,1] the n-Torus is constructed and if orientations is [-1,...,-1] the
+	If orientations is \verb|[1,...,1]| the $n$-Torus is constructed and if orientations is \verb|[-1,...,-1]| the
 	projective space of dimension n is constructed.
 
-	The dimension of the cubes is len(orientations).
+	The dimension of the cubes is \verb|len(orientations)|.
 
-	If orientations[i] == 1 the two ends of the large cube are glued so that points with the same
-	image under projecting out the ith coordinate are identified.
+	If \verb|orientations[i] == 1| the two ends of the large cube are glued so that points with the same
+	image under projecting out the $i$th coordinate are identified.
 
-	If orientations[i] == -1 points on the two ends of the large cube are identified with their antiodes.
+	If \verb|orientations[i] == -1| points on the two ends of the large cube are identified with their antipodes.
 
-	If orientations[i] is any other value no gluing is performed for that component.
+	If \verb|orientations[i]| is any other value no gluing is performed for that component.
 	'''
 	#2-torus by default
 	if orientations == None:
@@ -2046,9 +1999,9 @@ def GluedCube(orientations = None):
 
 def KleinBottle():
 	'''
-	Returns the face poset of a cubical complex homeomorphic to the KleinBottle().
+	Returns the face poset of a cubical complex homeomorphic to the Klein Bottle.
 
-	Pseudonym for GluedCube([-1,1]).
+	Pseudonym for \verb|GluedCube([-1,1])|.
 	'''
 	P = GluedCube([-1,1])
 	P.name = "Klein Bottle"
@@ -2056,9 +2009,9 @@ def KleinBottle():
 
 def ProjectiveSpace(n=2):
 	'''
-	Returns the face poset of a Cubical complex homeomorphic to Project space of dimension n.
+	Returns the face poset of a Cubical complex homeomorphic to Project space of dimension $n$.
 
-	Pseudonym for GluedCube([-1,...,-1]).
+	Pseudonym for \verb|GluedCube([-1,...,-1])|.
 	'''
 	P = GluedCube([-1]*n)
 	P.name = str(n)+"-dimensional projective space"
@@ -2072,7 +2025,7 @@ def ProjectiveSpace(n=2):
 
 def Grid(n=2,d=None):
 	'''
-	Returns the face poset of the cubical complex that forms a d[0]x...xd[-1] grid of n-cubes.
+	Returns the face poset of the cubical complex that forms a $\verb|d[0]|\times\dots\times\verb|d[-1]|$ grid of $n$-cubes.
 	'''
 	if d == None: d = [2]*n
 	cube = Cube(n).complSubposet([0])
@@ -2116,10 +2069,10 @@ def Grid(n=2,d=None):
 #from https://github.com/WilliamGustafson/cdIndexCalculator
 def Uncrossing(t, upper=False):
 	'''
-	Returns either a lower interval [0,t] or the upper interval [t,1] in the uncrossing poset.
+	Returns either a lower interval $[0,t]$ or the upper interval $[t,1]$ in the uncrossing poset.
 
-	The parameter t should be either a pairing encoded as a list [s_1,t_1,...,s_n,t_n] where
-	s_i is paired to t_i or an integer greater than 1. If t is an integer the entire uncrossing
+	The parameter \verb|t| should be either a pairing encoded as a list \verb|[s_1,t_1,...,s_n,t_n]| where
+	\verb|s_i| is paired to \verb|t_i| or \verb|t| can be an integer greater than 1. If t is an integer the entire uncrossing
 	poset is returned.
 
 	For more info on the uncrossing poset see: https://arxiv.org/abs/1406.5671
@@ -2324,7 +2277,7 @@ def Uncrossing(t, upper=False):
 
 def Bnq(n=2, q=2):
 	'''
-	Returns the poset of subspaces of the vector space F_q^n where F_q is the field with q elements.
+	Returns the poset of subspaces of the vector space $\F_q^n$ where $\F_q$ is the field with q elements.
 
 	Currently only implemented for q a prime. Raises a not implemented error if q is not prime.
 	'''
@@ -2460,13 +2413,15 @@ def LatticeOfFlats(data):
 	'''
 	Returns the lattice of flats given either a list of edges of a graph or a the rank function of a (poly)matroid.
 
-	When the input represents a graph it should be in the format [[i_1,j_1],...,[i_n,j_n]]
-	where the pair [i_k,j_k] represents an edge between i and j in the graph.
+	When the input represents a graph it should be in the format \verb|[[i_1,j_1],...,[i_n,j_n]]|
+	where the pair \verb|[i_k,j_k]| represents an edge between i and j in the graph.
 
 	When the input represents a (poly)matroid the input should be a list of the ranks of
 	sets ordered reverse lexicographically (i.e. binary order). For example, if f is the
 	rank function of a (poly)matroid with ground set size 3 the input should be
-		[f({}),f({1}),f({2}),f({1,2}),f({3}),f({1,3}),f({2,3}),f({1,2,3})].
+		\[
+		[|f({}),f({1}),f({2}),f({1,2}),f({3}),f({1,3}),f({2,3}),f({1,2,3})].
+		\]
 
 	Input representing a polymatroid need not actually represent a polymatroid, no checks
 	are done for the axioms. This function may return a poset that isn't a lattice if
@@ -2549,13 +2504,13 @@ def LatticeOfFlats(data):
 
 def PartitionLattice(n=3):
 	'''
-	Returns the lattice of partitions of a 1,...,n ordered by refinement.
+	Returns the lattice of partitions of a $1,\dots,n$ ordered by refinement.
 	'''
 	return LatticeOfFlats(itertools.combinations(range(1,n+1),2))
 
 def NoncrossingPartitionLattice(n=3):
 	'''
-	Returns the lattice of noncrossing partitions of 1,...,n ordered by refinement.
+	Returns the lattice of noncrossing partitions of $1,\dots,n$ ordered by refinement.
 	'''
 	def noncrossing(p):
 		for i in range(len(p)):
@@ -2576,7 +2531,7 @@ def NoncrossingPartitionLattice(n=3):
 
 def UniformMatroid(n=3,r=3,q=1):
 	'''
-	Returns the lattice of flats of the uniform (q-)matroid of rank r on n elements.
+	Returns the lattice of flats of the uniform ($q$-)matroid of rank $r$ on $n$ elements.
 	'''
 	if q==1:
 		return Boolean(n).rankSelection(list(range(r))+[n])
@@ -2585,9 +2540,9 @@ def UniformMatroid(n=3,r=3,q=1):
 
 def MinorPoset(L,genL=None, weak=False):
 	'''
-	Returns the minor poset given a lattice L and a list of generators genL.
+	Returns the minor poset given a lattice $L$ and a list of generators \verb|genL|.
 
-	The join irreducibles are automatically added to L. If genL is not provided the generating set will be only the
+	The join irreducibles are automatically added to \verb|genL|. If \verb|genL} is not provided the generating set will be only the
 	join irreducibles.
 
 	For more info on minor posets see: https://arxiv.org/abs/2205.01200
@@ -2775,7 +2730,7 @@ class HasseDiagram:
 	be overriden by passing keyword arguments  either to
 	the constructor or the functions themselves.
 
-	Other options such as loc_x, loc_y, nodeLabel or nodeDraw are functions.
+	Other options such as \verb|loc_x|, \verb|loc_y|, \verb|nodeLabel| or \verb|nodeDraw| are functions.
 	The default values for these functions are class methods.
 
 	##########################################
@@ -2784,36 +2739,40 @@ class HasseDiagram:
 
 	Function parameters can be overriden in two ways. The first option is to
 	make a function with the same signature as the default function and to pass that
-	function as a keyword argument to the constructor or latex()/tkinter() when called.
+	function as a keyword argument to the constructor or \verb|latex()|/\verb|tkinter()| when called.
 
 	For example:
 
+		\verb|
 		def nodeLabel(this, i):
 			return str(this.P.mobius(0, this.P[i]))
 
 		#P is a Poset already constructed that has a minimum 0
 		P.hasseDiagram.tkinter(nodeLabel = nodeLabel)
+		|
 
-	The code above will show a Hasse Diagram of P with the elements labeled by
+	The code above will show a Hasse Diagram of \verb|P| with the elements labeled by
 	the mobius values $\mu(0,p)$.
 
 	When overriding function parameters the first argument is always the HasseDiagram
 	instance. HasseDiagram has an attribute for each option described below as well
 	as the following attributes:
 
-		P - The poset to be drawn.
+		\begin{itemize}
 
-		in_tkinter - Boolean indicating whether tkinter() is being executed.
+			\item{\verb|P| - The poset to be drawn.}
 
-		in_latex - Boolean indicating whether latex() is being executed.
+			\item{\verb|in_tkinter| - Boolean indicating whether tkinter() is being executed.}
 
-		canvas - While tkinter() is being executed this is the tkinter.Canvas
-			object being drawn to.
+			\item{\verb|in_latex| - Boolean indicating whether latex() is being executed.}
 
-	Note that any function parameters, such as nodeLabel, are set via
-		this.nodeLabel = #provided function
+			\item{\verb|canvas| - While tkinter() is being executed this is the tkinter.Canvas
+				object being drawn to.}
+
+	Note that any function parameters, such as \verb|nodeLabel|, are set via
+		\[\verb|this.nodeLabel = #provided function|\]
 	so if you intend to call these functions you must pass this as an argument via
-		this.nodeLabel(this, i)
+		\[\verb|this.nodeLabel(this, i)|\]
 	The class methods remain unchanged of course, for example HasseDiagram.nodeLabel
 	always refers to the default implementation.
 
@@ -2828,6 +2787,8 @@ class HasseDiagram:
 	execution of the function by any provided keyword arguments, and restored at the end of
 	execution. The mobius example above can be accomplished by subclassing as
 	follows:
+		\[
+		\verb|
 		class MobiusHasseDiagram(HasseDiagram):
 
 			def nodeLabel(this, i):
@@ -2836,10 +2797,12 @@ class HasseDiagram:
 
 		P.hasseDiagram = MobiusHasseDiagram(P)
 		P.hasseDiagram.tkinter()
+		|\]
 
 	To provide an option that changes what element the mobius value is computed
 	from just set the value in the constructor.
-
+		\[
+		\verb|
 		class MobiusHasseDiagram(HasseDiagram):
 
 			def __init__(this, P, z = None, **kwargs):
@@ -2858,15 +2821,17 @@ class HasseDiagram:
 		P.hasseDiagram.tkinter() #labels are $\mu(0, x)$
 		P.hasseDiagram.tkinter(z = P[0]) #labels are $\mu(P_0, x)$
 		P.hasseDiagram.tkinter() #labels are $\mu(0, x)$
+		|
+		\]
 
-	Note you can pass a class to the Poset constructor to construct a poset with
-	a hasseDiagram of that class.
+	Note you can pass a class to the \verb|Poset| constructor to construct a poset with
+	a \verb|hasseDiagram| of that class.
 
 	##########################################
 	#Keyword arguments
 	##########################################
 
-	Options that affect both latex() and tkinter():
+	Options that affect both \verb|latex()| and \verb|tkinter()|:
 
 		width - Width of the diagram. When calling latex() this is the width
 			in tikz units, for tkinter() the units are 1/10th of tkinter's units.
@@ -3170,7 +3135,7 @@ class HasseDiagram:
 				for j in [r for r in this.P.ranks[r+1] if this.P.less(i,r,True)] if this.P.isRanked() else this.P.filter([i], indices = True, strict = True).min():
 					xj = float(this.loc_x(this,j))*this.scale + width/2 + this.padding
 					yj = 2*this.padding+height-(float(this.loc_y(this,j))*this.scale + this.padding)
-					canvas.create_line(x,y-this.scale*this.offset,xj,yj+this.scale*this.offset,color=this.color)
+					canvas.create_line(x,y-this.scale*this.offset,xj,yj+this.scale*this.offset)#,color=this.color)
 		root.mainloop() #makes this function blocking so you can actually see the poset when ran in a script
 		this.__dict__.update(defaults)
 
@@ -3226,7 +3191,7 @@ class HasseDiagram:
 			for rk in this.P.ranks:
 				for r in rk:
 					ret.append('\\node[color='+this.color+']('+this.nodeName(this, r)+')at('+this.loc_x(this, r)+','+this.loc_y(this, r)+')\n{')
-					ret.append('\\scalebox{'+this.nodescale+"}{")
+					ret.append('\\scalebox{'+str(this.nodescale)+"}{")
 					ret.append(str(r) if this.indices_for_nodes else this.nodeLabel(this, r))
 					ret.append('}};\n\n')
 
@@ -3248,14 +3213,14 @@ class HasseDiagram:
 #			for r in range(0,len(this.P.ranks)-1):
 #				for i in this.P.ranks[r]:
 #					for s in this.P.ranks[r+1:]: #<--there's 2 colons this time
-			for r in len(0,len(ranks)-1):
-				for i in ranks[r]:
+			for r in range(0,len(this.P.ranks)-1):
+				for i in this.P.ranks[r]:
 					uoi=[] #elements above i
-					for s in ranks[r+1:]:
+					for s in this.P.ranks[r+1:]:
 						for j in s:
 							if this.P.less(i,j, True):
 								uoi.append(j)
-					covers=poset_min(uoi,lambda i,j: this.P.less(i,j, True))
+					covers=this.P.subposet(uoi,indices=True).min(True)
 					for j in covers:
 						options=this.decoration(this, i,j)+(','+this.line_options if this.line_options!='' else "")
 						if len(options)>0: options='['+options+']'
