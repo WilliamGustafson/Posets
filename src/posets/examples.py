@@ -1,15 +1,28 @@
+from .poset import Poset
+from .hasseDiagram import HasseDiagram
+import itertools
 ##############
 #Built in posets
 ##############
 def Empty():
-	'''
+	r'''
+	@section@Built in posets@
 	Returns an empty poset.
 	'''
 	return Poset(elements = [], ranks = [], incMat = [])
 
 def Weak(n):
-	'''
-	Returns the weak order on the symmetric group S_n.
+	r'''
+	@section@Built in posets@
+	Returns the type $A_{n-1}$ weak order (the symmetric group $S_n$).
+
+	\begin{center}
+		\includegraphics{figures/weak_3.pdf}
+
+		The poset \verb|Weak(3)|.
+	\end{center}
+	@exec@
+	make_fig(Weak(3),'weak_3',height=4,width=3)
 	'''
 	def covers(p):
 		ret=[]
@@ -21,18 +34,16 @@ def Weak(n):
 
 def Bruhat(n):
 	r'''
-	Returns the type A_{n-1} Bruhat order (symmetric group S_n).
+	@section@Built in posets@
+	Returns the type $A_{n-1}$ Bruhat order (the symmetric group $S_n$).
 
-	Bruhat(3)
+	\begin{center}
+		\includegraphics{figures/Bruhat_3.pdf}
 
-	   321
-	 /    \ 
-	231  312
-	|  \/  |
-	|  /\  |
-	132  213
-	 \    /
-	   123
+		The poset \verb|Bruhat(3)|.
+	\end{center}
+	@exec@
+	make_fig(Bruhat(3), 'Bruhat_3',height=4, width=3)
 	'''
 	def pairing_to_perm(tau):
 		arcs = [[int(x) for x in a.split(',')] for a in tau[1:-1].split(')(')]
@@ -61,8 +72,18 @@ def Bruhat(n):
 	P.cache['isGorenstein()']=True
 	return P
 def Root(n=3):
-	'''
-	Returns the type A_{n+1} root poset.
+	r'''
+	@section@Built in posets@
+	Returns the type $A_{n+1}$ root poset.
+
+	\begin{center}
+		\includegraphics{figures/root_3.pdf}
+
+		The poset \verb|Root(3)|.
+	\end{center}
+
+	@exec@
+	make_fig(Root(3).reorder(range(2,-1,-1),True),'root_3',height=3,width=3)
 	'''
 	def covers(i,j):
 		if i==1:
@@ -76,19 +97,15 @@ def Root(n=3):
 
 def Butterfly(n):
 	r'''
-	Returns the rank n+1 bounded poset where ranks 1...n have two elements and all comparisons between ranks.
+	@section@Built in posets@
+	Returns the rank $n+1$ bounded poset where ranks $1,\dots,n$ have two elements and all comparisons between ranks.
+	\begin{center}
+		\includegraphics{figures/Butterfly_3.pdf}
 
-	Butterfly(2)
-
-	  1
-	 / \ 
-	a2 b2
-	|\ /|
-	| X |
-	|/ \|
-	a1 b1
-	 \ /
-	  0
+		The poset \verb|Butterfly(3)|.
+	\end{center}
+	@exec@
+	make_fig(Butterfly(3),'Butterfly_3',height=5,width=2)
 	'''
 	elements = [('a' if i%2==0 else 'b')+str(i//2) for i in range(2*n)]
 	ranks = [[i,i+1] for i in range(0,2*n,2)]
@@ -103,24 +120,34 @@ def Butterfly(n):
 	return P
 
 def Antichain(n):
+	r'''
+	@section@Built in posets@
+	Returns the poset on $1,\dots,n$ with no relations.
+
+	\begin{center}
+		\includegraphics{figures/antichain_3.pdf}
+
+		The poset \verb|Antichain(3)|.
+	\end{center}
+
+	@exec@
+	make_fig(Antichain(3),'antichain_3',height=3,width=3)
 	'''
-	Returns the poset on 1...n with no relations.
-	'''
-	return Poset(elements=list(range(n)))
+	return Poset(elements=list(range(1,n+1)))
 
 def Chain(n):
-	'''
-	Returns the poset on 0...n ordered linearly.
+	r'''
+	@section@Built in posets@
+	Returns the poset on $0,\dots,n$ ordered linearly (i.e. by usual ordering of integers).
 
-	Chain(3)
+	\begin{center}
+		\includegraphics{figures/chain_3.pdf}
 
-	3
-	|
-	2
-	|
-	1
-	|
-	0
+		The poset \verb|Chain(3)|.
+	\end{center}
+
+	@exec@
+	make_fig(Chain(3),'chain_3',height=5,width=3)
 	'''
 	elements = list(range(n+1))
 	ranks = [[i] for i in elements]
@@ -134,15 +161,17 @@ def Chain(n):
 
 def Boolean(n, X=None):
 	r'''
-	Returns the poset of subsets of X, default is {1...n}, ordered by inclusion.
+	@section@Built in posets@
+	Returns the poset of subsets of $X$, default is $\{1,\dots,n\}$, ordered by inclusion.
 
-	Boolean(2)
+	\begin{center}
+		\includegraphics{figures/Boolean_3.pdf}
 
-	    (1,2)
-	   /    \ 
-	(1,)   (2,)
-	   \    /
-	     ()
+		The poset \verb|Boolean(3)|.
+	\end{center}
+
+	@exec@
+	make_fig(Boolean(3),'Boolean_3', height=6, width=4)
 	'''
 	P = Poset()
 	P.elements = list(range(1<<n))
@@ -172,25 +201,25 @@ def Boolean(n, X=None):
 	return P
 
 def Simplex(n):
-	'''
-	Returns Boolean(n+1) the face lattice of the n-dimensional simplex.
+	r'''
+	@section@Built in posets@
+	Returns Boolean(n+1) the face lattice of the $n$-dimensional simplex.
 	'''
 	return Boolean(n+1)
 
 def Polygon(n):
 	r'''
-	Returns the face lattice of the n-gon.
+	@section@Built in posets@
+	Returns the face lattice of the $n$-gon.
 
-	Polygon(3)
+	\begin{center}
+		\includegraphics{figures/polygon_4.pdf}
 
-	        1
-	    /   |   \ 
-	(1,2) (3,1) (2,3)
-	   |\/     \/|
-	   |/\     /\|
-	(1,)  (2,)  (3,)
-	   \    |   /
-	        0
+		The poset \verb|Polygon(4)|.
+	\end{center}
+
+	@exec@
+	make_fig(Polygon(4),'polygon_4',height=6,width=5)
 	'''
 	elements = []
 	for i in range(n//2):
@@ -217,18 +246,17 @@ def Polygon(n):
 
 def Cube(n):
 	r'''
-	Returns the face lattice of the n-dimensional cube.
+	@section@Built in posets@
+	Returns the face lattice of the $n$-dimensional cube.
 
-	Cube(2)
+	\begin{center}
+		\includegraphics{figures/cube_2.pdf}
 
-	      **
-	  /  /  \  \ 
-	0*  *0  *1  1*
-	| \/  \/  \/ |
-	| /\  /\  /\ |
-	00  01  10  11
-	  \  \  /   /
-	       0
+		The poset \verb|Cube(2)|.
+	\end{center}
+
+	@exec@
+	make_fig(Cube(2),'cube_2',height=6,width=5)
 	'''
 	def expand(E):
 		return [e+'0' for e in E]+[e+'1' for e in E]+[e+'*' for e in E]
@@ -257,15 +285,26 @@ def Cube(n):
 	return P
 
 def Torus(n=2, m=2):
-	'''
-	Returns the face poset of a cubical complex homeomorphic to the n-dimensional Torus.
+	r'''
+	@section@Built in posets@
+	Returns the face poset of a cubical complex homeomorphic to the $n$-dimensional Torus.
 
-	This poset is isomorphic to the cartesian product of n copies of P_m with minimum and maximum adjoined
-	where P_m is the face lattice of an m-gon with its minimum and maximum removed.
+	This poset is isomorphic to the Cartesian product of $n$ copies of $P_m$ with minimum and maximum adjoined
+	where $P_m$ is the face lattice of an $m$-gon with its minimum and maximum removed.
 
-	When m<= 26 the set is {0,1,...,m-1,A,B,...,[mth leter of the alphabet]}^n and otherwise is {0,...,m-1,*0,...*[m-1]}^n.
+	Let~$\ell_m$ be the $m$th letter of the alphabet.
+	When $m\le 26$ the set is $\{0,1,\dots,m-1,A,B,\dots,\ell_m\}^n$ and otherwise is $\{0,\dots,m-1,*0,\dots*[m-1]\}^n$.
 	The order relation is
-	componentwise where 0<A,[mth letter of the alphabet], 1<A,B,..., m-1<[m-1st letter of the alphabet],[mth letter of the alphabet]  for m<=26, and 0<*1,*2 ... m-1<*[m-1],*0 for m>26
+	componentwise where $0<A,\ell_m\ 1<A,B\ \dots\ m-1<\ell_{m-1},\ell_m$  for $m\le26$, and $0<*1,*2\ \dots\  m-1<*[m-1],*0$ for $m>26$.
+
+	\begin{center}
+		\includegraphics{figures/torus.pdf}
+
+		The poset \verb|Torus(2,2)|.
+	\end{center}
+
+	@exec@
+	make_fig(Torus(),'torus',height=6,width=6)
 	'''
 	if m<=26:
 		symbols = [str(i) for i in range(m)]+[chr(i+ord('A')) for i in range(m)]
@@ -335,40 +374,30 @@ def Torus(n=2, m=2):
 	P.cache['isGorenstein()']= n == 1
 	return P
 
-def Snowman(n=2,m=2):
-	'''
-	Returns the m-fold bounded product of Butterfly(m).
-
-	Here's the reasoning for the name "Snowman". The poset Butterfly(m) is the face poset of
-	the smallest regular m-dimensional cellular sphere. Taking the bounded product gives
-	the face poset of the n-fold Cartesian product of m-dimensional spheres.
-	You can visual this space as configurations of m-spheres, the largest sphere representing
-	the position in the first coordinate, the next largest sphere placed on the largest representing
-	the next coordinate with a smaller sphere placed on this on and so on until the mth
-	sphere which has a point placed on it to specify the last coordinate. When n=3 and m=2
-	the point which has in all n coordinates the top point of the sphere looks like a snowman
-	(with a button on the top of his head).
-	'''
-	B = Butterfly(m)
-	ret = Chain(2)
-	for _ in range(n): ret = ret.bddProduct(B)
-	return ret
-
 def GluedCube(orientations = None):
-	'''
-	Returns the face poset of the cubical complex obtained from a 2x...x2 grid of n-cubes via a series of gluings as indicated by the parameter orientations.
+	r'''
+	@section@Built in posets@
+	Returns the face poset of the cubical complex obtained from a $2\times\dots\times2$ grid of $n=\verb|len(orientations)|$-cubes via a series of gluings as indicated by the parameter \verb|orientations|.
 
-	If orientations is [1,...,1] the n-Torus is constructed and if orientations is [-1,...,-1] the
-	projective space of dimension n is constructed.
+	If \verb|orientations| is \verb|[1,...,1]| the $n$-torus is constructed and if \verb|orientations| is \verb|[-1,...,-1]| the
+	projective space of dimension $n$ is constructed.
 
-	The dimension of the cubes is len(orientations).
 
-	If orientations[i] == 1 the two ends of the large cube are glued so that points with the same
-	image under projecting out the ith coordinate are identified.
+	If \verb|orientations[i] == 1| the two ends of the large cube are glued so that points with the same
+	image under projecting out the $i$th coordinate are identified.
 
-	If orientations[i] == -1 points on the two ends of the large cube are identified with their antiodes.
+	If \verb|orientations[i] == -1| points on the two ends of the large cube are identified with their antipodes.
 
-	If orientations[i] is any other value no gluing is performed for that component.
+	If \verb|orientations[i]| is any other value no gluing is performed for that component.
+
+	\begin{center}
+		\includegraphics{figures/gluedcube.pdf}
+
+		The poset \verb|GluedCube([-1,1])|.
+	\end{center}
+
+	@exec@
+	make_fig(GluedCube([-1,1]),'gluedcube',height=8,width=15)
 	'''
 	#2-torus by default
 	if orientations == None:
@@ -413,20 +442,31 @@ def GluedCube(orientations = None):
 	return P
 
 def KleinBottle():
-	'''
-	Returns the face poset of a cubical complex homeomorphic to the KleinBottle().
+	r'''
+	@section@Built in posets@
+	Returns the face poset of a cubical complex homeomorphic to the Klein Bottle.
 
-	Pseudonym for GluedCube([-1,1]).
+	Pseudonym for \verb|GluedCube([-1,1])|.
 	'''
 	P = GluedCube([-1,1])
 	P.name = "Klein Bottle"
 	return P
 
 def ProjectiveSpace(n=2):
-	'''
-	Returns the face poset of a Cubical complex homeomorphic to Project space of dimension n.
+	r'''
+	@section@Built in posets@
+	Returns the face poset of a Cubical complex homeomorphic to projective space of dimension $n$.
 
-	Pseudonym for GluedCube([-1,...,-1]).
+	Pseudonym for \verb|GluedCube([-1,...,-1])|.
+
+	\begin{center}
+		\includegraphics{figures/projectiveSpace.pdf}
+
+		The poset \verb|ProjectiveSpace(2)|.
+	\end{center}
+
+	@exec@
+	make_fig(ProjectiveSpace(), 'projectiveSpace', height=8, width=15)
 	'''
 	P = GluedCube([-1]*n)
 	P.name = str(n)+"-dimensional projective space"
@@ -439,8 +479,18 @@ def ProjectiveSpace(n=2):
 	return P
 
 def Grid(n=2,d=None):
-	'''
-	Returns the face poset of the cubical complex that forms a d[0]x...xd[-1] grid of n-cubes.
+	r'''
+	@section@Built in posets@
+	Returns the face poset of the cubical complex that forms a $\verb|d[0]|\times\dots\times\verb|d[-1]|$ grid of $n$-cubes.
+
+	\begin{center}
+		\includegraphics{figures/grid.pdf}
+
+		The poset \verb|Grid(2,[1,1])|.
+	\end{center}
+
+	@exec@
+	make_fig(Grid(2,[1,2]),'grid',height=8,width=15)
 	'''
 	if d == None: d = [2]*n
 	cube = Cube(n).complSubposet([0])
@@ -483,14 +533,24 @@ def Grid(n=2,d=None):
 #copied from uncrossing.py
 #from https://github.com/WilliamGustafson/cdIndexCalculator
 def Uncrossing(t, upper=False):
-	'''
-	Returns either a lower interval [0,t] or the upper interval [t,1] in the uncrossing poset.
+	r'''
+	@section@Built in posets@
+	Returns either a lower interval $[\widehat{0},t]$ or the upper interval $[t,\widehat{1}]$ in the uncrossing poset.
 
-	The parameter t should be either a pairing encoded as a list [s_1,t_1,...,s_n,t_n] where
-	s_i is paired to t_i or an integer greater than 1. If t is an integer the entire uncrossing
+	The parameter \verb|t| should be either a pairing encoded as a list \verb|[s_1,t_1,...,s_n,t_n]| where
+	\verb|s_i| is paired to \verb|t_i| or \verb|t| can be an integer greater than 1. If t is an integer the entire uncrossing
 	poset is returned.
 
 	For more info on the uncrossing poset see: https://arxiv.org/abs/1406.5671
+
+	\begin{center}
+		\includegraphics{figures/uc.pdf}
+
+		The poset \verb|Uncrossing(3)==Uncrossing([1,4,2,5,3,6])|.
+	\end{center}
+
+	@exec@
+	make_fig(Uncrossing(3), 'uc', height=15, width=15, nodescale=0.75)
 	'''
 	#Throughout pairings are encoded as lists of numbers, each number encodes
 	#a pair as two bits set. For example the pairing {{1,3},{2,4}} is encoded
@@ -691,10 +751,20 @@ def Uncrossing(t, upper=False):
 	return P
 
 def Bnq(n=2, q=2):
-	'''
-	Returns the poset of subspaces of the vector space F_q^n where F_q is the field with q elements.
+	r'''
+	@section@Built in posets@
+	Returns the poset of subspaces of the vector space $\F_q^n$ where $\F_q$ is the field with q elements.
 
 	Currently only implemented for q a prime. Raises a not implemented error if q is not prime.
+
+	\begin{center}
+		\includegraphics{figures/Bnq.pdf}
+
+		The poset \verb|Bnq(3,2)|.
+	\end{center}
+
+	@exec@
+	make_fig(Bnq(3,2),'Bnq',height=6,width=8)
 	'''
 	def isprime(x):
 		d = 2
@@ -764,8 +834,18 @@ def Bnq(n=2, q=2):
 	return Poset(elements = spaces, less = lambda i,j: i!=j and i&j == i)
 
 def DistributiveLattice(P, indices=False):
-	'''
+	r'''
+	@section@Built in posets@
 	Returns the lattice of ideals of a given poset.
+
+	\begin{center}
+		\includegraphics{figures/DL.pdf}
+
+		The poset \verb|DistributiveLattice(Root(3))|.
+	\end{center}
+
+	@exec@
+	make_fig(DistributiveLattice(Root(3)),'DL',height=6,width=4)
 	'''
 	#make principal ideals
 	M = P.incMat
@@ -821,25 +901,43 @@ def DistributiveLattice(P, indices=False):
 #		elems = [i for i in range(1<<len(P)) if (1<<i)&I!=0]
 #		return [i for i in elems if all(P.incMat[i][j]!=1 for j in elems]
 #	achains = [maximal(I) for I in D]
-#	
+#
 
 
 def LatticeOfFlats(data):
-	'''
-	Returns the lattice of flats given either a list of edges of a graph or a the rank function of a (poly)matroid.
+	r'''
+	@section@Built in posets@
+	Returns the lattice of flats given either a list of edges of a graph or the rank function of a (poly)matroid.
 
-	When the input represents a graph it should be in the format [[i_1,j_1],...,[i_n,j_n]]
-	where the pair [i_k,j_k] represents an edge between i and j in the graph.
+	When the input represents a graph it should be in the format \verb|[[i_1,j_1],...,[i_n,j_n]]|
+	where the pair \verb|[i_k,j_k]| represents an edge between \verb|i_k| and \verb|j_k| in the graph.
 
 	When the input represents a (poly)matroid the input should be a list of the ranks of
 	sets ordered reverse lexicographically (i.e. binary order). For example, if f is the
 	rank function of a (poly)matroid with ground set size 3 the input should be
-		[f({}),f({1}),f({2}),f({1,2}),f({3}),f({1,3}),f({2,3}),f({1,2,3})].
+		\[
+		\verb|[f({}),f({1}),f({2}),f({1,2}),f({3}),f({1,3}),f({2,3}),f({1,2,3})]|.
+		\]
 
-	Input representing a polymatroid need not actually represent a polymatroid, no checks
-	are done for the axioms. This function may return a poset that isn't a lattice if
+	This function may return a poset that isn't a lattice if
 	the input function isn't submodular or a preorder that isn't a poset if the input
 	is not order-preserving.
+
+	\begin{center}
+		\includegraphics{figures/lof_triangle.pdf}
+
+		The poset \verb|LatticeOfFlats([[1,2],[2,3],[3,1]])|.
+	\end{center}
+
+	\begin{center}
+		\includegraphics{figures/lof_poly.pdf}
+
+		The poset \verb|LatticeOfFlats([0,1,2,2,1,3,3,3])|.
+	\end{center}
+
+	@exec@
+	make_fig(LatticeOfFlats([[1,2],[2,3],[1,3]]),'lof_triangle',height=5,width=6)
+	make_fig(LatticeOfFlats([0,1,2,2,1,3,3,3]),'lof_poly',height=6,width=4)
 	'''
 	def int_to_tuple(i): #converts an into to a tuple of the set bits (1-indexed)
 		b = bin(i)[2:][::-1]
@@ -916,14 +1014,14 @@ def LatticeOfFlats(data):
 	return ret
 
 def PartitionLattice(n=3):
-	'''
-	Returns the lattice of partitions of a 1,...,n ordered by refinement.
+	r'''@section@Built in posets@
+	Returns the lattice of partitions of a $1,\dots,n$ ordered by refinement.
 	'''
 	return LatticeOfFlats(itertools.combinations(range(1,n+1),2))
 
 def NoncrossingPartitionLattice(n=3):
-	'''
-	Returns the lattice of noncrossing partitions of 1,...,n ordered by refinement.
+	r'''@section@Built in posets@
+	Returns the lattice of noncrossing partitions of $1,\dots,n$ ordered by refinement.
 	'''
 	def noncrossing(p):
 		for i in range(len(p)):
@@ -943,8 +1041,8 @@ def NoncrossingPartitionLattice(n=3):
 	return Pi.subposet([p for p in Pi if noncrossing(p)])
 
 def UniformMatroid(n=3,r=3,q=1):
-	'''
-	Returns the lattice of flats of the uniform (q-)matroid of rank r on n elements.
+	r'''@section@Built in posets@
+	Returns the lattice of flats of the uniform ($q$-)matroid of rank $r$ on $n$ elements.
 	'''
 	if q==1:
 		return Boolean(n).rankSelection(list(range(r))+[n])
@@ -952,10 +1050,10 @@ def UniformMatroid(n=3,r=3,q=1):
 		return Bnq(n,q).rankSelection(list(range(r))+[n])
 
 def MinorPoset(L,genL=None, weak=False):
-	'''
-	Returns the minor poset given a lattice L and a list of generators genL.
+	r'''@section@Built in posets@
+	Returns the minor poset given a lattice \verb|L| and a list of generators \verb|genL|.
 
-	The join irreducibles are automatically added to L. If genL is not provided the generating set will be only the
+	The join irreducibles are automatically added to \verb|genL|. If \verb|genL| is not provided the generating set will be only the
 	join irreducibles.
 
 	For more info on minor posets see: https://arxiv.org/abs/2205.01200
