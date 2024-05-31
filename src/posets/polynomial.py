@@ -15,17 +15,17 @@ def iter_join(i, x):
 		pass
 
 class Polynomial:
-	r'''
-	A barebones class encoding polynomials in noncommutative variables (used by Poset class to compute the cd-index).
+	r'''@is_section@
+	A barebones class encoding polynomials in noncommutative variables (used by the \verb|Poset| class to compute the cd-index).
 
-	This is basically a wrapper around a dictionary representation for polynomials (e.g. $3ab+2bb$ is encoded as \\verb|{'ab':3, 'bb':2}|)
+	This is basically a wrapper around a dictionary representation for polynomials (e.g. $3ab+2bb$ is encoded as \verb|{'ab':3, 'bb':2}|)
 	and provides methods to add, multiple, subtract polynomials, to substitute a polynomial
-	for a variable in another polynomial and to convert ab-polynomials into cd-polynomials (when possible) and vice versa. You can also get and set
+	for a variable in another polynomial and to convert ab-polynomials to cd-polynomials (when possible) and vice versa. You can also get and set
 	coefficients as if this were a dictionary.
 	'''
 	def __init__(this, data):
-		'''
-		Returns a Polynomial given a list of pairs [c,m] with c a coefficient and m a string representing a monomial.
+		r'''
+		Returns a \verb|Polynomial| given a list of pairs \verb|[c,m]| with \verb|c| a coefficient and \verb|m| a string representing a monomial.
 		'''
 		this.data = data if type(data)==dict else {d[1]:d[0] for d in data}
 
@@ -62,10 +62,8 @@ class Polynomial:
 
 
 	def sub(this, poly, monom):
-		'''
-		Returns the polynomial obtained by substituting the Polynomial p for the monomial m (given as a string) in this.
-
-		this, p and m should not have any variable containing the filler character filler_char
+		r'''
+		Returns the polynomial obtained by substituting the \verb|Polynomial| \verb|poly| for the monomial \verb|m| (given as a string) in \verb|this|.
 		'''
 		ret = Polynomial({}) #initialize to zero
 		for m,c in this.data.items():
@@ -104,7 +102,7 @@ class Polynomial:
 
 	def abToCd(this):
 		'''
-		Given an ab-polynomial return the corresponding cd-polynomial if possible and the given polynomial if not.
+		Given an ab-polynomial returns the corresponding cd-polynomial if possible and the given polynomial if not.
 		'''
 		if len(this.data)==0: return this
 		#substitue a->c+e and b->c-e
@@ -124,8 +122,7 @@ class Polynomial:
 
 	def cdToAb(this):
 		'''
-		Given a cd-polynomial expand into
-		an ab-polynomial.
+		Given a cd-polynomial returns the corresponding ab-polynomial.
 		'''
 		return this.sub(Polynomial({'a':1,'b':1}, 'c')).sub(Polynomial({'ab':1,'ba':1}))
 

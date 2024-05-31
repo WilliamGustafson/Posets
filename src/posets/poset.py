@@ -1575,7 +1575,7 @@ class Poset:
 	def fromSage(P):
 		r'''
 		@section@Miscellaneous@
-		Convert an instance of \verb|sage.combinat.posets.poset.FinitePoset| to an instance of Poset.
+		Convert an instance of \verb|sage.combinat.posets.poset.FinitePoset| to an instance of \verb|Poset|.
 		'''
 		rels = [ [x,y] for x,y in P.relations() if x!=y]
 		return Poset(relations=rels)

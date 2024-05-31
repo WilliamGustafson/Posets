@@ -22,22 +22,3 @@
 
 !tests/posets_test.py
 !tests/convertPosets.m2
-#*
-#**
-#
-#*.swp
-#*.zip
-#bak.*
-#*.tex
-#*.pdf
-#*.log
-#*.aux
-#*.out
-#__pycache__
-#dist
-#*.html
-#test*
-#*.save
-#*.pyc
-#*.csv
-#archive

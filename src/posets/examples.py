@@ -1,5 +1,6 @@
 from .poset import Poset
 from .hasseDiagram import HasseDiagram
+import itertools
 ##############
 #Built in posets
 ##############
@@ -294,7 +295,7 @@ def Torus(n=2, m=2):
 	Let~$\ell_m$ be the $m$th letter of the alphabet.
 	When $m\le 26$ the set is $\{0,1,\dots,m-1,A,B,\dots,\ell_m\}^n$ and otherwise is $\{0,\dots,m-1,*0,\dots*[m-1]\}^n$.
 	The order relation is
-	componentwise where $0<A,\ell_m, 1<A,B,..., m-1<\ell_{m-1},\ell_m$  for $m\le26$, and $0<*1,*2 ... m-1<*[m-1],*0$ for $m>26$.
+	componentwise where $0<A,\ell_m\ 1<A,B\ \dots\ m-1<\ell_{m-1},\ell_m$  for $m\le26$, and $0<*1,*2\ \dots\  m-1<*[m-1],*0$ for $m>26$.
 
 	\begin{center}
 		\includegraphics{figures/torus.pdf}
@@ -376,12 +377,11 @@ def Torus(n=2, m=2):
 def GluedCube(orientations = None):
 	r'''
 	@section@Built in posets@
-	Returns the face poset of the cubical complex obtained from a $2\times\dots\times2$ grid of $n$-cubes via a series of gluings as indicated by the parameter orientations.
+	Returns the face poset of the cubical complex obtained from a $2\times\dots\times2$ grid of $n=\verb|len(orientations)|$-cubes via a series of gluings as indicated by the parameter \verb|orientations|.
 
-	If orientations is \verb|[1,...,1]| the $n$-Torus is constructed and if orientations is \verb|[-1,...,-1]| the
-	projective space of dimension n is constructed.
+	If \verb|orientations| is \verb|[1,...,1]| the $n$-torus is constructed and if \verb|orientations| is \verb|[-1,...,-1]| the
+	projective space of dimension $n$ is constructed.
 
-	The dimension of the cubes is \verb|len(orientations)|.
 
 	If \verb|orientations[i] == 1| the two ends of the large cube are glued so that points with the same
 	image under projecting out the $i$th coordinate are identified.
@@ -455,7 +455,7 @@ def KleinBottle():
 def ProjectiveSpace(n=2):
 	r'''
 	@section@Built in posets@
-	Returns the face poset of a Cubical complex homeomorphic to Project space of dimension $n$.
+	Returns the face poset of a Cubical complex homeomorphic to projective space of dimension $n$.
 
 	Pseudonym for \verb|GluedCube([-1,...,-1])|.
 
@@ -535,7 +535,7 @@ def Grid(n=2,d=None):
 def Uncrossing(t, upper=False):
 	r'''
 	@section@Built in posets@
-	Returns either a lower interval $[0,t]$ or the upper interval $[t,1]$ in the uncrossing poset.
+	Returns either a lower interval $[\widehat{0},t]$ or the upper interval $[t,\widehat{1}]$ in the uncrossing poset.
 
 	The parameter \verb|t| should be either a pairing encoded as a list \verb|[s_1,t_1,...,s_n,t_n]| where
 	\verb|s_i| is paired to \verb|t_i| or \verb|t| can be an integer greater than 1. If t is an integer the entire uncrossing
@@ -907,10 +907,10 @@ def DistributiveLattice(P, indices=False):
 def LatticeOfFlats(data):
 	r'''
 	@section@Built in posets@
-	Returns the lattice of flats given either a list of edges of a graph or a the rank function of a (poly)matroid.
+	Returns the lattice of flats given either a list of edges of a graph or the rank function of a (poly)matroid.
 
 	When the input represents a graph it should be in the format \verb|[[i_1,j_1],...,[i_n,j_n]]|
-	where the pair \verb|[i_k,j_k]| represents an edge between i and j in the graph.
+	where the pair \verb|[i_k,j_k]| represents an edge between \verb|i_k| and \verb|j_k| in the graph.
 
 	When the input represents a (poly)matroid the input should be a list of the ranks of
 	sets ordered reverse lexicographically (i.e. binary order). For example, if f is the
@@ -919,8 +919,7 @@ def LatticeOfFlats(data):
 		\verb|[f({}),f({1}),f({2}),f({1,2}),f({3}),f({1,3}),f({2,3}),f({1,2,3})]|.
 		\]
 
-	Input representing a polymatroid need not actually represent a polymatroid, no checks
-	are done for the axioms. This function may return a poset that isn't a lattice if
+	This function may return a poset that isn't a lattice if
 	the input function isn't submodular or a preorder that isn't a poset if the input
 	is not order-preserving.
 
@@ -1052,7 +1051,7 @@ def UniformMatroid(n=3,r=3,q=1):
 
 def MinorPoset(L,genL=None, weak=False):
 	r'''@section@Built in posets@
-	Returns the minor poset given a lattice $L$ and a list of generators \verb|genL|.
+	Returns the minor poset given a lattice \verb|L| and a list of generators \verb|genL|.
 
 	The join irreducibles are automatically added to \verb|genL|. If \verb|genL| is not provided the generating set will be only the
 	join irreducibles.
