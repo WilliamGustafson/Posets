@@ -55,10 +55,34 @@ class Polynomial:
 		return Polynomial(ret)
 
 	def __neg__(this):
-		return Polynomial({m:-c for m,c in this.data.items})
+		return Polynomial({m:-c for m,c in this.data.items()})
 
 	def __sub__(this, that):
 		return this+(-that)
+
+	def __ge__(this, that):
+		if isinstance(that, int):
+			return all(v >= that for v in this.data.values())
+		if isinstance(that, Polynomial):
+			return all((m in this and this[m]>=that[m]) or (that[m]<=0) for m in that)
+
+	def __gt__(this, that):
+		if isinstance(that, int):
+			return all(v > that for v in this.data.values())
+		if isinstance(that, Polynomial):
+			return this!=that and all((m in this and this[m]>=that[m]) or (that[m]<=0) for m in that)
+
+	def __le__(this, that):
+		if isinstance(that, int):
+			return all(v <= that for v in this.data.values())
+		if isinstance(that, Polynomial):
+			return all((m in this and this[m]<=that[m]) or (that[m]>=0) for m in that)
+
+	def __lt__(this, that):
+		if isinstance(that, int):
+			return all(v < that for v in this.data.values())
+		if isinstance(that, Polynomial):
+			return this!=that and all((m in this and this[m]<=that[m]) or (that[m]>=0) for m in that)
 
 
 	def sub(this, poly, monom):
