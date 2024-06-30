@@ -905,6 +905,55 @@ class Poset:
 					table[i][2] += sign*(2*(len(table[j][0])%2)-1)*table[j][1]
 		return table
 
+	def sparseKVector(this):
+		r'''
+		@section@Invariants@
+		Returns the sparse $k$-vector $k_S = \sum_{T\subseteq S}f_S$.
+
+		The sparse $k$-vector only has entries $k_S$ for sparse sets $S$,
+		that is, sets $S\subseteq[n-1]$ such that if $i\in S$ then $i+1\not\in S$.
+		The sparse $k$-vector is returned as a dictionary whose keys are tuples.
+		'''
+		n = len(this.ranks)-2
+		def sparseSubsets(X):
+			'''
+			Generator for all the sparse subsets of a given list.
+			'''
+			if len(X)<=1:
+				yield tuple()
+				return
+			if len(X)==2:
+				yield tuple(X[:1])
+				yield tuple()
+				return
+			for i in range(len(X[:-1])-1,-1,-1):
+				for S in sparseSubsets(X[i+2:]):
+					yield itertools.chain(itertools.repeat(X[i],1), S)
+			yield tuple()
+
+		def fVectorCalc(ranks,S,M,i,count,f,truncated_S):
+			newCount = count
+			if len(S)==0: return 1
+			for j in ranks[S[-1]]:
+				if M[i][j] == -1:
+					newCount += fVectorCalc(ranks, S[:-1], M, j, count, f,truncated_S+(S[-1],))
+			return newCount
+		fVector = {}
+		for S in sparseSubsets(tuple(range(1,n+1))):
+			S = tuple(S)
+			if S in fVector: break
+			fVector[S] = fVectorCalc(this.ranks,S,this.incMat,this.ranks[-1][0],0,fVector,tuple())
+
+		kVector = {}
+		for S in fVector:
+			kv = 0
+			for T in itertools.chain(*(itertools.combinations(S,k) for k in range(len(S)+1))):
+				T = tuple(T)
+				l = len(S)-len(T)
+				kv += (1 if l%2==0 else -1) * (fVector[T]<<l)
+			kVector[S] = kv
+		return kVector
+
 
 	def flagVectorsLatex(this):
 		r'''
@@ -942,7 +991,7 @@ class Poset:
 
 		return Polynomial(ab)
 
-	@cached_method
+	@cached_method()
 	def cdIndex(this):
 		r'''
 		@section@Invariants@
@@ -956,95 +1005,34 @@ class Poset:
 			\verb|this.cdIndex().sub('c',Polynomial({'a':1,'b':1})).sub('d',Polynomial({'ab':1,'ba':1})) == this.abIndex()|
 		\end{center}
 
-		For more info on the \textbf{cd}-index see \url{https://arxiv.org/abs/1901.04939}
+		Here we use the sparse $k$-vector formula see Proposition 7.1 in \url{https://www.ms.uky.edu/~jrge/Papers/Monotone.pdf}. For more info on the \textbf{cd}-index see \url{https://arxiv.org/abs/1901.04939}
 		'''
-		n = len(this.ranks)-2
-		flag = {tuple():1}
-		###########################################################
-
-		def domIdeal(v,minvalue=0,strict=False):
-			v = tuple(v)
-			n = len(v)-1
-			u = v
-			offset = 1 if strict else 0
-			while True:
-				yield u
-				found_index = False
-
-				for i in range(n,0,-1):
-					if u[i]>u[i-1]+offset:
-						found_index = True
-						break
-				if not found_index:
-					if u[0] == minvalue:
-						return
-					i = 0
-				u = u[:i] +(u[i]-1,)+ v[i+1:]
-		def fibSets(n, prefix, start):
-			if n<=1: return [tuple(prefix)]
-			if n==2: return [tuple(prefix),tuple(prefix)+(start,)]
-			return fibSets(n-1, prefix, start+1) + fibSets(n-2, prefix+[start], start+2)
-
-		def fibSet_str(W,n):
-			ret = []
+		def cdMonom(W,n):
 			if len(W)==0: return 'c'*n
-			for i in W:
-				while len(ret)+1 < i: ret.append('c')
-				ret.append('d')
-				ret.append('d')
-			ret.append('c'*(n-len(ret)))
-			return ''.join(ret).replace('dd','d')
-
-		###########################################################
-		def fVectorCalc(ranks,S,M, i, count):
-			newCount = count
-			if len(S)==0: return 1
-			for j in ranks[S[0]]:
-				if M[i][j] == 1:
-					newCount += fVectorCalc(ranks, S[1:], M, j, count)
-			return newCount
-
-		if len(this.ranks)<=2: return table
-
+			ret = []
+			num_d = 0
+			i = 1
+			while i <= n:
+				if i in W:
+					ret.append('d')
+					i += 1
+				else:
+					ret.append('c')
+				i += 1
+			return ''.join(ret)
+		def theOrder(X,Y):
+			return len(X)==0 or (X[0]<=Y[0] and all(X[i]<=Y[i] and X[i]>=Y[i-1]+2 for i in range(1,len(X))))
+		phi = Polynomial()
+		k = this.sparseKVector()
 		n = len(this.ranks)-2
-		if n%2==1:
-			v = tuple(i for i in range(2,n+1,2))
-		else:
-			v = tuple(i for i in range(1,n,2))
-		for i in range(0,len(v)):
-			u = v[i:]
-			for S in domIdeal(u,1,True):
-				flag[S] = fVectorCalc(this.ranks,S,this.incMat,this.ranks[0][0],0)
-		###########################################################
-		FS = fibSets(n,[],1)[1:] #non c^n coefficients
-		psi = [] #cd-index
-
-		for W in FS:
+		for S in k:
 			coeff = 0
-			for v in domIdeal(W):
-				sumW = sum(W)
-				skip = False
-				eq_count = 0
-				eq_inds=[]
-				if v[0]==0:
-					if W[0]%2==0: continue
-					eq_count = 1
-					eq_inds+=[0]
-				for i in range(1,len(v)):
-					if v[i]==v[i-1]:
-						if(v[i]+W[i])%2==0:
-							skip = True
-							break
-						eq_count += 1
-						eq_inds+=[i]
-				if skip: continue
-				v_eqsum = sum(v[i] for i in eq_inds)
-				sumv = sum(v)
-				v = tuple(sorted(list(set(i for i in v if i!=0))))
-				coeff += (flag[v]<<eq_count) if ((sumv+sumW)%2==0) else -(flag[v]<<eq_count)
-			if coeff!=0: psi.append([coeff,fibSet_str(W,n)])
-		return Polynomial(psi+[[1,'c'*n]])
-
+			for T in k:
+				if len(T)!=len(S): continue
+				if not theOrder(T,S): continue
+				coeff += (-1)**(sum(T)+sum(S)) * k[T]
+			phi[cdMonom(S,n)] = coeff
+		return phi
 
 	@requires(np)
 	@cached_method
