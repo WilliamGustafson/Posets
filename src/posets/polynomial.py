@@ -23,11 +23,11 @@ class Polynomial:
 	for a variable in another polynomial and to convert ab-polynomials to cd-polynomials (when possible) and vice versa. You can also get and set
 	coefficients as if this were a dictionary.
 	'''
-	def __init__(this, data):
+	def __init__(this, data=None):
 		r'''
 		Returns a \verb|Polynomial| given a list of pairs \verb|[c,m]| with \verb|c| a coefficient and \verb|m| a string representing a monomial.
 		'''
-		this.data = data if type(data)==dict else {d[1]:d[0] for d in data}
+		this.data = {} if data==None else data if type(data)==dict else {d[1]:d[0] for d in data}
 
 	def __mul__(*args):
 		'''
