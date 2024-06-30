@@ -473,10 +473,12 @@ class HasseDiagram:
 					canvas.create_text(x,y,text=str(i) if this.indices_for_nodes else this.nodeLabel(this,i),anchor='c')
 
 		for i,J in this.P.covers(True).items():
+			xi = float(this.loc_x(this,i))*this.scale + width/2 + this.padding
+			yi = 2*this.padding+height-(float(this.loc_y(this,i))*this.scale + this.padding)
 			for j in J:
 				xj = float(this.loc_x(this,j))*this.scale + width/2 + this.padding
 				yj = 2*this.padding+height-(float(this.loc_y(this,j))*this.scale + this.padding)
-				canvas.create_line(x,y-this.scale*this.offset,xj,yj+this.scale*this.offset)#,color=this.color)
+				canvas.create_line(xi,yi-this.scale*this.offset,xj,yj+this.scale*this.offset)#,color=this.color)
 		root.mainloop() #makes this function blocking so you can actually see the poset when ran in a script
 		this.__dict__.update(defaults)
 
