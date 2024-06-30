@@ -1,4 +1,4 @@
-r'''@is_section@
+r'''@is_section@exec@version='0.0.1'@
 This module provides a class \verb|Poset| that encodes a finite
 partially ordered set (poset). The class provides methods to construct
 new posets via operations such as Cartesian products and disjoint unions,
@@ -10,13 +10,15 @@ encodes an isomorphism class of a poset.
 
 After cloaning the repository from the root directory
 run \verb|hatch build| to build distribution files and then
-\verb|python -m pip install dist/posets-[version]-py3-none-any.whl|
+\verb|python -m pip install dist/posets-@eval@version@-py3-none-any.whl|
 to install the built wheel file.
 
-\subsection{Example session}
+\subsection{Overview}
+Here we give a quuck introduction to using the posets module by way of examples.
 
 First import the module.
-\begin{center}from posets import *\end{center}
+
+\verb|from posets import *|
 
 You can construct a poset in several ways, by specifying the relations
 either as a list or dictionary, by providing a function \verb|less|
@@ -30,33 +32,19 @@ P = Poset(elements=['a','b','ab'], less=lambda x,y: return x in y and x!=y)
 P = Poset(incMat = [[0,0,1],[0,0,1],[0,0,0]], elements=['a','b','ab'])
 \end{verbatim}\end{center}
 
-The main data of a \verb|Poset| object are a list \verb|elements| that
-specifies the names of the elements and a linear order, a matrix
-(list of row lists) \verb|incMat| that specifies the order relation
-and a list of lists \verb|ranks| that specifies the length of each element
-that is, the maximum length of a chain ending at that element;
-\verb|ranks[i]| is a list of indices into \verb|elements| of the length
-$i$ elements.
+Printing a poset via \verb|print(P)| will list the elements, the zeta function (a matrix $\zeta$ with entries $\zeta_{i,j}==1$ if $i<=j$ and 0 otherwise as well as a list \verb|ranks|; \verb|ranks[i]| is a list of all indices \verb|j| such that \verb|elements[j]| is length \verb|i|
+(the length if $p\in P$ is the length of the longest chain in $P$ with maximum $p$).
 
-You can display a poset in a new window with \verb|P.show()|
-or generate tikz code with \verb|P.latex()|. The \verb|latex| method
-allows for fine grained control of the output via the keyword arguments.
-Setting a reasonable value for \verb|height| and \verb|width|, and maybe
-\verb|nodescale| if element names are large, is usually enough to generate
-a nice figure (though the aesthetics strongly depend on the ordering
-of \verb|elements|). The elements are placed vertically in rows by their
-rank and within a rank elements are sorted as they occur in \verb|elements|.
+You can display the Hasse diagram of a poset in a new window with \verb|P.show()|
+or generate tikz code with \verb|P.latex()|. Both methods take keyword arguments to control the output, e.g. \verb|height|, \verb|width|, \verb|nodescale|.
+The \verb|latex| method allows for finer grain control of the output compared to \verb|show| but must be compiled before viewing. Note the aesthetics of larger posets are heavily impacted by the ordering of \verb|elements|.
 
-Printing a poset via \verb|print(P)| shows the elements, zeta matrix
-(the matrix indexed by the elements with 1 when $p\le q$ and 0 otherwise)
-and the ranks list. You can get the zeta matrix via \verb|P.zeta()|.
-
-The module contains various examples of posets, e.g.
+This module contains various examples of posets, e.g.
 \verb|Boolean|, \verb|Cube|, and \verb|Bruhat|. For example,
 you can construct
-the poset of all subsets of $\{1,2,3,4\}$ via \verb|B5 = Boolean(5)|.
+the poset of all subsets of $\{1,2,3,4,5\}$ via \verb|B5 = Boolean(5)|.
 
-Various operations are given as methods you call on a \verb|Poset| object.
+Various operations are given as methods you call on a \verb|Poset| object
 For example, to construct the face poset of a triangle crossed with a
 square use the \verb|diamondProduct| method:
 \verb|Q = Boolean(3).diamondProduct(Cube(2))|.
