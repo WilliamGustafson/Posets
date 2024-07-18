@@ -879,20 +879,46 @@ def DistributiveLattice(P, indices=False):
 			elements.append(tuple(P[i] for i in range(len(P)) if (1<<i)&I!=0))
 		def less(I,J):
 			return I!=J and all(i in J for i in I)
+	def irr_nodeName(this, i):
+		return 'irr_'+HasseDiagram.nodeName(this,i)
+	def make_node_options(S):
+		def node_options(this, i):
+			if i in S:
+				return 'color=black'
+			return 'color=gray'
+		return node_options
+	def make_line_options(S):
+		def line_options(this,i,j):
+			if i in S and j in S:
+				return 'color=black'
+			return 'color=gray'
+		return line_options
 	class DistributiveHasseDiagram(HasseDiagram):
-		def __init__(this,JP,P,**kwargs):
-			super().__init__(this,P,**kwargs)
+		def __init__(this,JP,P,indices=False,**kwargs):
+			super().__init__(JP,**kwargs)
 			this.Irr = P
-		def nodeDraw(this, i):
-			IrrArgs = {k[4:]:v for k,v in kwargs.items() if k[:4]=='irr.'}
-			IrrArgs['color'] = 'gray'
-			IrrLatex = this.Irr.hasseDiagram.latex(IrrArgs)
+			#everything in HasseDiagram uses indices so we need to store ideals as lists of indices
+			if not indices:
+				this.P.elements = [[this.Irr.elements.index(e) for e in J] for J in this.P.elements]
+		def latex(this, **kwargs):
+			irrArgs = {k[4:]:v for k,v in kwargs.items() if k[:4]=='irr_'}
+			irrDefaults = this.Irr.hasseDiagram.__dict__.copy()
+			this.Irr.hasseDiagram.__dict__.update(irrArgs)
+			this.Irr.hasseDiagram.nodeName = irr_nodeName
 
-			ideal = this.Irr.subposet(this.P[i])
-#			idealLatex = ideal.latex()....?
+			ret = super().latex(**kwargs)
+
+			this.Irr.hasseDiagram.__dict__.update(irrDefaults)
+			return ret
+
+		def nodeLabel(this, i):
+			idealLatex = this.Irr.latex(node_options = make_node_options(this.P[i]), line_options = make_line_options(this.P[i]))
+			idealLatex = ''.join(idealLatex.split('\n')[2:-1])
+#			idealLatex = idealLatex[len('\\begin{tikzpicture}') : -1*len('\\end{tikzpicture}')]
+			return '\\begin{tikzpicture}\\begin{scope}\n'+idealLatex+'\n\\end{scope}\\end{tikzpicture}'
 
 	JP = Poset(elements = elements, less = less)
-#	JP.hasseDiagram = DistributiveHasseDiagram(JP,P)
+	JP.hasseDiagram = DistributiveHasseDiagram(JP,P,indices)
 	return JP
 
 #def SignedBirkhoff(P):
@@ -1014,14 +1040,34 @@ def LatticeOfFlats(data):
 	return ret
 
 def PartitionLattice(n=3):
-	r'''@section@Built in posets@
+	r'''
+	@section@Built in posets@
 	Returns the lattice of partitions of a $1,\dots,n$ ordered by refinement.
+
+	\begin{center}
+		\includegraphics{figures/Pi.pdf}
+
+		The partition lattice $\Pi_4$.
+	\end{center}
+
+	@exec@
+	make_fig(PartitionLattice(4),'Pi',width=12,height=8,nodescale=0.75)
 	'''
 	return LatticeOfFlats(itertools.combinations(range(1,n+1),2))
 
 def NoncrossingPartitionLattice(n=3):
-	r'''@section@Built in posets@
+	r'''
+	@section@Built in posets@
 	Returns the lattice of noncrossing partitions of $1,\dots,n$ ordered by refinement.
+
+	\begin{center}
+		\includegraphics{figures/NC.pdf}
+
+		The noncrossing partition lattice $\text{NC}_4$.
+	\end{center}
+
+	@exec@
+	make_fig(NoncrossingPartitionLattice(4),'NC',height=8,width=12,nodescale=0.75)
 	'''
 	def noncrossing(p):
 		for i in range(len(p)):
@@ -1041,8 +1087,25 @@ def NoncrossingPartitionLattice(n=3):
 	return Pi.subposet([p for p in Pi if noncrossing(p)])
 
 def UniformMatroid(n=3,r=3,q=1):
-	r'''@section@Built in posets@
+	r'''
+	@section@Built in posets@
 	Returns the lattice of flats of the uniform ($q$-)matroid of rank $r$ on $n$ elements.
+
+	\begin{center}
+		\includegraphics{figures/unif.pdf}
+
+		The uniform matroid of rank $3$ on $4$ elements.
+	\end{center}
+
+	\begin{center}
+		\includegraphics{figures/qunif.pdf}
+
+		The uniform $2$-matroid of rank $3$ of dimension $4$.
+	\end{center}
+
+	@exec@
+	make_fig(UniformMatroid(4,3,1),'unif',height=5,width=5)
+	make_fig(UniformMatroid(4,3,2),'qunif',height=8,width=12,labels=False)
 	'''
 	if q==1:
 		return Boolean(n).rankSelection(list(range(r))+[n])

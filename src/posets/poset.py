@@ -1382,6 +1382,25 @@ class Poset:
 		'''
 		return this.hasseDiagram.latex(**kwargs)
 
+	def pdf(this, tmpfile='a.tex', tmpdir=None, **kwargs):
+		r'''
+		@section@Miscellaneous@
+		Produces latex code (via calling \verb|latex()|) compiles it with pdflatex and returns a \verb|wand.image.Image| object constructed from the pdf.
+
+		When called in a Jupyter notebook this will display the poset in the output cell. By default \verb|tmpdir| is \verb|tempfile.gettempdir()|.
+
+		Keyword arguments are passed to \verb|latex()| but \verb|standalone| is set
+		to \verb|True| as otherwise the pdf will not compile.
+		'''
+		from wand.image import Image as WImage
+		import os
+		import tempfile
+		if tmpdir==None: tmpdir = tempfile.gettempdir()
+		kwargs['standalone']=True #otherwise it won't compile
+		with open(os.path.join(tmpdir, tmpfile),'w') as f: f.write(this.latex(**kwargs))
+		os.system('pdflatex --output-directory={} {} >/dev/null 2>&1'.format(tmpdir,os.path.join(tmpdir,tmpfile)))
+		return WImage(filename=os.path.join(tmpdir,tmpfile.replace('.tex','.pdf')))
+
 	def show(this, **kwargs):
 		r'''
 		@section@Miscellaneous@

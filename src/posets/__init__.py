@@ -2,19 +2,19 @@ r'''@is_section@exec@version='0.0.1'@
 This module provides a class \verb|Poset| that encodes a finite
 partially ordered set (poset). The class provides methods to construct
 new posets via operations such as Cartesian products and disjoint unions,
-select subposets, compute invariants such as flag vectors, the \av\bv-index
+select subposets and compute invariants such as flag vectors, the \av\bv-index
 and the \cv\dv-index. There is also a class \verb|PosetIsoClass| that
 encodes an isomorphism class of a poset.
 
 \subsection{Installation}
 
-After cloaning the repository from the root directory
+After cloning the repository from the root directory
 run \verb|hatch build| to build distribution files and then
 \verb|python -m pip install dist/posets-@eval@version@-py3-none-any.whl|
 to install the built wheel file.
 
 \subsection{Overview}
-Here we give a quuck introduction to using the posets module by way of examples.
+Here we give a quick introduction to using the posets module by way of examples.
 
 First import the module.
 
@@ -32,7 +32,7 @@ P = Poset(elements=['a','b','ab'], less=lambda x,y: return x in y and x!=y)
 P = Poset(incMat = [[0,0,1],[0,0,1],[0,0,0]], elements=['a','b','ab'])
 \end{verbatim}\end{center}
 
-Printing a poset via \verb|print(P)| will list the elements, the zeta function (a matrix $\zeta$ with entries $\zeta_{i,j}==1$ if $i<=j$ and 0 otherwise as well as a list \verb|ranks|; \verb|ranks[i]| is a list of all indices \verb|j| such that \verb|elements[j]| is length \verb|i|
+Printing a poset via \verb|print(P)| will list the elements, the zeta function (a matrix $\zeta$ with entries $\zeta_{i,j}=1$ if $i\le j$ and 0 otherwise as well as a list \verb|ranks|; \verb|ranks[i]| is a list of all indices \verb|j| such that \verb|elements[j]| is length \verb|i|
 (the length if $p\in P$ is the length of the longest chain in $P$ with maximum $p$).
 
 You can display the Hasse diagram of a poset in a new window with \verb|P.show()|
