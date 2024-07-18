@@ -271,10 +271,26 @@ class HasseDiagram:
 			The default value is \verb|'1'|.
 		}
 
-		\item[]{\verb|line_options| -- Tikz options to be included on every line drawn, i.e. lines
-			will be written as \verb|'\\draw['+line_options+'](...'|.
+		\item[]{\verb|line_options| -- Tikz options to be included on lines drawn, i.e. lines
+			will be written as
+			\begin{verbatim}'\\draw['+line_options+'](...'\end{verbatim}
+			The value for
+			\verb|line_options| can be either a string or a function; when it is
+			a string the same options are placed on every line and when the value
+			is a function it is passed \verb|this|, the \verb|HasseDiagram| object,
+			\verb|i|, the index to the element at the bottom of the cover
+			and \verb|j|, the index to the element at the top of the cover.
 
 			The default value is \verb|''|.
+		}
+
+		\item[]{\verb|node_options| -- Tikz options to be included on nodes drawn,
+			i.e. nodes will be written as
+			\begin{verbatim}'\\node['+node_options_'](...'\end{verbatim}
+			Just as with \verb|line_options| the value for \verb|node_options| can
+			be either a string or a function; if it is a function it is passed
+			\verb|this|, the \verb|HasseDiagram| object, and \verb|i|, the
+			index to the element being drawn.
 		}
 
 		\item[]{\verb|northsouth| -- If \verb|True| lines are not drawn between nodes directly but from
@@ -354,6 +370,8 @@ class HasseDiagram:
 			'loc_y': type(this).loc_y,
 			'nodeLabel': type(this).nodeLabel,
 			'nodeName': type(this).nodeName,
+			'node_options': type(this).node_options,
+			'line_options': type(this).line_options,
 			'indices_for_nodes': False,
 			'jiggle': 0,
 			'jiggle_x': 0,
@@ -369,12 +387,24 @@ class HasseDiagram:
 			if k in kwargs: this.__dict__[k] = kwargs[k]
 			else: this.__dict__[k] = v
 
+		this.validate()
+
 	def decoration(this,i,j):
 		r'''
-		This is the default implementation of \verb|decoration|,it returns an empty string.
+		This is the default implementation of \verb|decoration|, it returns an empty string.
 		'''
 		return ''
 
+	def line_options(this,i,j):
+		r'''
+		This is the default implementation of \verb|line_options|, it returns an empty string.
+		'''
+		return ''
+	def node_options(this,i):
+		r'''
+		This is the default implementation of \verb|node_options|, it returns an empty string.
+		'''
+		return ''
 	def loc_x(this, i):
 		r'''
 		This is the default implementation of \verb|loc_x|.
@@ -439,6 +469,17 @@ class HasseDiagram:
 		this.canvas.create_oval(x-ptsize/2,y-ptsize/2,x+ptsize/2,y+ptsize/2, fill=this.color)
 		return
 
+	def validate(this):
+		r'''
+		Validates and corrects any variables on \verb|this| that may need preprocessing before drawing.
+		'''
+		if type(this.node_options)==str:
+			node_options = this.node_options
+			this.node_options = lambda hd,i: node_options
+		if type(this.line_options)==str:
+			line_options = this.line_options
+			this.line_options = lambda hd,i: line_options
+
 	@requires(tk)
 	def tkinter(this, **kwargs):
 		r'''
@@ -450,6 +491,7 @@ class HasseDiagram:
 		defaults = this.__dict__.copy()
 		#update parameters from kwargs
 		this.__dict__.update(kwargs)
+		this.validate()
 		this.in_tkinter = True
 
 		this.maxrksize = max([len(r) for r in this.P.ranks])
@@ -488,10 +530,15 @@ class HasseDiagram:
 
 		The keyword arguments are described in |HasseDiagram|.
 		'''
-		this.maxrksize = max([len(r) for r in this.P.ranks])
 		defaults = this.__dict__.copy()
 		this.__dict__.update(kwargs)
+		this.validate()
 		this.in_latex = True
+
+		if len(this.P.ranks)==0:
+			this.maxrksize = 0
+		else:
+			this.maxrksize = max([len(r) for r in this.P.ranks])
 
 		if this.northsouth:
 			this.lowsuffix = '.north'
@@ -529,11 +576,11 @@ class HasseDiagram:
 				for r in rk:
 					name=this.nodeName(this, r)
 					ret.append('\\coordinate('+name+')at('+this.loc_x(this, r)+','+this.loc_y(this, r)+');\n')
-					ret.append('\\fill[color='+this.color+']('+name+')circle('+this.ptsize+');\n')
+					ret.append('\\fill('+name+')circle('+this.ptsize+');\n')
 		else:
 			for rk in this.P.ranks:
 				for r in rk:
-					ret.append('\\node[color='+this.color+']('+this.nodeName(this, r)+')at('+this.loc_x(this, r)+','+this.loc_y(this, r)+')\n{')
+					ret.append('\\node['+this.node_options(this,r)+']('+this.nodeName(this, r)+')at('+this.loc_x(this, r)+','+this.loc_y(this, r)+')\n{')
 					ret.append('\\scalebox{'+str(this.nodescale)+"}{")
 					ret.append(str(r) if this.indices_for_nodes else this.nodeLabel(this, r))
 					ret.append('}};\n\n')
@@ -541,7 +588,7 @@ class HasseDiagram:
 		#draw lines for covers
 		for i,J in this.P.covers(True).items():
 			for j in J:
-				options=this.decoration(this, i,j)+(','+this.line_options if this.line_options!='' else "")
+				options=this.line_options(this,i,j)
 				if len(options)>0: options='['+options+']'
 				ret.append('\\draw[color='+this.color+']'+options+'('+this.nodeName(this, i)+this.lowsuffix+')--('+this.nodeName(this, j)+this.highsuffix+");\n")
 		ret.append('\\end{tikzpicture}')
