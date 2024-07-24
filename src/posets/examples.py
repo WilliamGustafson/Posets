@@ -1229,6 +1229,7 @@ def MinorPoset(L,genL=None, weak=False):
 	class Genlatt(Poset):
 		def __init__(this, G, *args, **kwargs):
 			super().__init__(*args, **kwargs)
+			this.hasseDiagram.P = this
 			this.G = G
 			this.edges = {}
 			#find all extra edges of diagram
@@ -1236,11 +1237,12 @@ def MinorPoset(L,genL=None, weak=False):
 				this.edges[l] = []
 				for g in G:
 					lg = this.join(l,g)
-					if lg == l or len(this.interval(l,lg))==2: continue
-					this.edges[l].append(lg)
-			#overwrite L's covers function so hasse diagram does all edges
-			def covers(this):
-				return this.edges
+					if lg == l: continue
+					this.edges[l].append(L_set.index(lg))
+		#overwrite L's covers function so hasse diagram does all edges
+		def covers(this,indices=False):
+			if not indices: raise NotImplementedError
+			return this.edges
 
 	class MinorPosetHasseDiagram(HasseDiagram):
 
@@ -1250,6 +1252,7 @@ def MinorPoset(L,genL=None, weak=False):
 
 		def latex(this, **kwargs):
 			latt_args = {k[5:] : v for k,v in kwargs.items() if k[:5] == 'latt_'}
+			print('latt_args',latt_args)
 			latt_defaults = this.L.hasseDiagram.__dict__.copy()
 			this.L.hasseDiagram.__dict__.update(latt_args)
 			this.L.hasseDiagram.nodeName = latt_nodeName
@@ -1269,10 +1272,9 @@ def MinorPoset(L,genL=None, weak=False):
 
 	P = Poset(minors_M, minors, minors_ranks)
 	P.elements = [tuple([L_set[M[0]],tuple(L_set[g] for g in M[1])]) for M in P]
-	print('P.elements',P.elements)
-	print('L_set',L_set)
 	P = P.adjoin_zerohat()
 	P.hasseDiagram = MinorPosetHasseDiagram(P,L_P,genL)
+	P.hasseDiagram.L.latex()
 	#cache some values for queries
 	P.cache['isRanked()']=True
 	P.cache['isEulerian()']=True
