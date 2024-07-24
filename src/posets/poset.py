@@ -9,8 +9,6 @@
 #
 #add comment of what imports are for
 #
-#latex and draw should get lines via covers
-#
 #standardize incMat convention (sign and diagonal)
 #
 #standardize choice of camelcase versus underscores
@@ -27,16 +25,6 @@
 #
 #add a nodeName function for built ins (default just does index)
 #
-#make latex() dump its arguments in the first line
-#
-#make a HasseDiagram subclass for MinorPoset
-#	needs to use the HasseDiagram on the lattice to find node placement for the
-#	minors' diagrams.
-#
-#	Maybe we should add an option to tkinter to draw to a canvas and also make
-#	HasseDiagram have an edge set it computes that we can set to be different
-#	for genlatts
-#
 #Set HasseDiagram defaults for Bqn
 #
 #Make HasseDiagram subclass for Distributive lattices
@@ -45,8 +33,8 @@
 #for polymatroids and graph is using partitions
 #	Subclass HasseDiagram for the Boolean algebra and use that same class for (poly)matroids?
 #
-#We should have different functions for text for tikz and tkinter with the defaults the
-#same function
+#Move custom hasse diagram classes for DistributiveLattice and MinorPoset out of the function
+#and into hasseDiagram.py, also clean them up
 #
 #Write README with some examples.
 ##########################################

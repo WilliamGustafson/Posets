@@ -1,9 +1,7 @@
 import random
 import math
 from .utils import *
-##############
-#HasseDiagram
-##############
+
 try:
 	import tkinter as tk
 except:
@@ -597,8 +595,3 @@ class HasseDiagram:
 
 		this.__dict__.update(defaults)
 		return ''.join(ret)
-
-
-##############
-#End HasseDiagram
-##############

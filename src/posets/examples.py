@@ -1,9 +1,7 @@
 from .poset import Poset
 from .hasseDiagram import HasseDiagram
 import itertools
-##############
-#Built in posets
-##############
+
 def Empty():
 	r'''
 	@section@Built in posets@
@@ -1200,73 +1198,83 @@ def MinorPoset(L,genL=None, weak=False):
 				if minor not in new: new.append(minor)
 	Poset.transClose(minors_M)
 
-	class GenlattDiagram:
+	##############
+	#set up hasse diagram
+	##############
+	import types
+	def minor_contains(KH,i):
+		if i==L_set.index(KH[0]): return True
+		if not L_P.lesseq(L_set.index(KH[0]),i,True): return False
+		#join all generators of KH below i
+		if len([h for h in KH[1] if L_P.lesseq(L_set.index(h),i)])==0: return False
+		if len([h for h in KH[1] if L_P.lesseq(L_set.index(h),i)])==1: return i in [L_set.index(h) for h in KH[1]]
+		k = list(itertools.accumulate([L_P.min(True)[0]]+list(h for h in KH[1] if L_P.lesseq(L_set.index(h),i,True)), lambda x,y: L_P.join(x,L_set.index(y),True)))[-1]
+		return k == i
 
-		def __init__(this, L, G, **kwargs):
-			super().__init__(L, **kwargs)
+	def latt_nodeName(this, i):
+		return 'latt_'+HasseDiagram.nodeName(this,i)
+
+	def make_node_options(KH):
+		def node_options(this, i):
+			if minor_contains(KH,i): return 'color=black'
+			return 'color=gray'
+		return node_options
+
+	def make_line_options(KH):
+		def line_options(this, i, j):
+			if minor_contains(KH,i) and minor_contains(KH,j): return 'color=black'
+			return 'color=gray'
+		return line_options
+
+	class Genlatt(Poset):
+		def __init__(this, G, *args, **kwargs):
+			super().__init__(*args, **kwargs)
 			this.G = G
-			this.edges = set()
+			this.edges = {}
 			#find all extra edges of diagram
-			for l in L:
+			for l in this.complSubposet(this.max()):
+				this.edges[l] = []
 				for g in G:
-					lg = L.join(l,g)
-					if lg == l or len(L.interval(l,lg))==2: continue
-					this.edges.add( (l,lg) )
+					lg = this.join(l,g)
+					if lg == l or len(this.interval(l,lg))==2: continue
+					this.edges[l].append(lg)
+			#overwrite L's covers function so hasse diagram does all edges
+			def covers(this):
+				return this.edges
+
+	class MinorPosetHasseDiagram(HasseDiagram):
+
+		def __init__(this, P, L, G, **kwargs):
+			super().__init__(P, **kwargs)
+			this.L = Genlatt(G,L)
 
 		def latex(this, **kwargs):
+			latt_args = {k[5:] : v for k,v in kwargs.items() if k[:5] == 'latt_'}
+			latt_defaults = this.L.hasseDiagram.__dict__.copy()
+			this.L.hasseDiagram.__dict__.update(latt_args)
+			this.L.hasseDiagram.nodeName = latt_nodeName
+
 			ret = super().latex(**kwargs)
-			end_index = ret.index('\\end{tikzpicture}')
-			head = ret[:end_index]
-			tail = ret[ret.index:]
 
+			this.L.hasseDiagram.__dict__.update(latt_defaults)
 
-
-	class MinorPosetHasseDiagram:
-
-		def __init__(this, P, **kwargs):
-			super().__init__(P, **kwargs)
-			if 'nodewidth' in kwargs:
-				this.nodewidth = kwargs['nodewidth']
-			else:
-				this.nodewidth = 0.9*(this.width / max([len(r) for r in this.P.ranks]))
-
-			if 'nodeheight' in kwargs:
-				this.nodeheight = kwargs['nodeheight']
-			else:
-				this.nodeheight = 0.5*(this.height / len(this.P.ranks))
+			return ret
 
 		def nodeLabel(this, i):
-			if this.in_latex:
-				beginning = '\\langle'
-				ending = '\\rangle'
-				sep = '\\vert'
-			else:
-				beginning = '<'
-				ending = '>'
-				sep = '|'
-
-			return beginning + ','.join([str(x) for x in this.P[i][1]]) + setp + str(this.P[i][0])+ending
-
-		def nodeName(this, i):
-			return '/'.join(str(this.P[i][0])+[str(x) for x in this.P[i][1]])
-
-		def nodeDraw(this, i):
-			pass
-			#Draw the lattice in gray
-
-			#Draw the minor in black
-
+			if i in this.P.min(): return '$\\emptyset$'
+			minorLatex = this.L.latex(node_options = make_node_options(this.P[i]), line_options = make_line_options(this.P[i]))
+			minorLatex = ''.join(minorLatex.split('\n')[2:-1])
+			return '\\begin{tikzpicture}\\begin{scope}\n'+minorLatex+'\n\\end{scope}\\end{tikzpicture}'
 
 
 	P = Poset(minors_M, minors, minors_ranks)
 	P.elements = [tuple([L_set[M[0]],tuple(L_set[g] for g in M[1])]) for M in P]
+	print('P.elements',P.elements)
+	print('L_set',L_set)
 	P = P.adjoin_zerohat()
+	P.hasseDiagram = MinorPosetHasseDiagram(P,L_P,genL)
 	#cache some values for queries
 	P.cache['isRanked()']=True
 	P.cache['isEulerian()']=True
 	P.cache['isGorenstein()']=True
 	return P
-
-##############
-#End Built in posets
-##############
