@@ -1,6 +1,3 @@
-##############
-#Polynomial class
-##############
 import math
 import itertools
 
@@ -198,9 +195,3 @@ class Polynomial:
 
 	def __eq__(this,that):
 		return this.data == that.data
-
-
-
-##############
-#End Polynomial class
-##############
