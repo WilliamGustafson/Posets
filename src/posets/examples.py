@@ -1,3 +1,15 @@
+#TODO:
+#Incorporate Grassmann necklaces into Uncrossing and Bruhat (and make circular Bruhat?)
+#
+#From Postnikov's total positivity, Grassmannians and networks
+#$r_{ab}(\pi^:)$ is the number of shifted anti-exceedances of $\pi^:$ i.e. $r_{ab}(\pi^:)=\abs{I_a\cap\{a,\dots,b\}$.
+#We have $\pi^:\le\sigma^:$ if and only if $r_{ab}(\pi^:)\le r_{ab}(\sigma^:)$ for all $a,b\in[n]$.
+#anti-exceedance means $\pi^{-1}(i)>i$ or $\pi(i)=i$ and $\col(i)=-1$
+#The shifted anti-exceedance set is $I_r(\pi^:)$ the set of $i$ such that $i<_r\pi^{-1}(i)$ or $\pi(i)=i$ and $\col(i)=-1$,
+#where $r<_rr+1<_r\dots<_rn<_r1<_r\dots<_rr-1$.
+#
+#So we can make Uncrossing poset in the obvious way, make all pairings, then calc $r_{ij}$ mats and compare.
+#Can do same for Bruhat
 from .poset import Poset
 from .hasseDiagram import HasseDiagram
 import itertools
@@ -527,6 +539,26 @@ def Grid(n=2,d=None):
 	P.cache['isGorenstein()']= all([x == 1 for x in d])
 	return P
 
+def Uncrossing_new(n):
+	#j>_i\pi(j)
+	def iless(j,k):
+		if (j>i)==(k>i): return j<k
+		return not j<k
+	def ri(s,i):
+		return sum(1 if iless(t[1],t[0]) else 0 for t in s)
+	def r(s):
+		return tuple(ri(s,i) for i in range(2*n))
+
+	def _pairings(S,p):
+		if len(S)==2:
+			yield tuple(sorted(p+[tuple(sorted(S))]))
+		for i in range(1,len(S)):
+			for t in _pairings(S[1:i]+S[i+1:], p+[(S[0],S[i])]): yield t
+
+	def pairings(S):
+		for p in _pairings(list(S),[]): yield p
+
+	print([x for x in pairings(range(1,2*n+1))])
 
 #copied from uncrossing.py
 #from https://github.com/WilliamGustafson/cdIndexCalculator
