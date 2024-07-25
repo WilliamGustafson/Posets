@@ -1,4 +1,5 @@
 import decorator
+import time
 class Timer:
 	r'''
 	@is_section@section_key@1@

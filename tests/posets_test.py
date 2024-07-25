@@ -40,10 +40,12 @@ Arguments:
 ##########################################
 #general utilities setup
 ##########################################
-from posets import *
 import sys
-import subprocess
 import os
+sys.path.append(os.path.join('..','src'))
+from posets import *
+import subprocess
+
 
 success = True
 test_flags = ['-'+f for f in ['s','m','co','ex','op','qu','sp','ic','in','mi']]

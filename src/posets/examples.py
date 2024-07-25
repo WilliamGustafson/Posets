@@ -1,3 +1,15 @@
+#TODO:
+#Incorporate Grassmann necklaces into Uncrossing and Bruhat (and make circular Bruhat?)
+#
+#From Postnikov's total positivity, Grassmannians and networks
+#$r_{ab}(\pi^:)$ is the number of shifted anti-exceedances of $\pi^:$ i.e. $r_{ab}(\pi^:)=\abs{I_a\cap\{a,\dots,b\}$.
+#We have $\pi^:\le\sigma^:$ if and only if $r_{ab}(\pi^:)\le r_{ab}(\sigma^:)$ for all $a,b\in[n]$.
+#anti-exceedance means $\pi^{-1}(i)>i$ or $\pi(i)=i$ and $\col(i)=-1$
+#The shifted anti-exceedance set is $I_r(\pi^:)$ the set of $i$ such that $i<_r\pi^{-1}(i)$ or $\pi(i)=i$ and $\col(i)=-1$,
+#where $r<_rr+1<_r\dots<_rn<_r1<_r\dots<_rr-1$.
+#
+#So we can make Uncrossing poset in the obvious way, make all pairings, then calc $r_{ij}$ mats and compare.
+#Can do same for Bruhat
 from .poset import Poset
 from .hasseDiagram import HasseDiagram
 import itertools
@@ -29,6 +41,44 @@ def Weak(n):
 				ret.append(p[:i]+(p[i+1],p[i])+tuple([p[j] for j in range(i+2,n)]))
 		return ret
 	return Poset(relations={p:covers(p) for p in itertools.permutations(range(1,n+1))})
+
+def Bruhat_new(n):
+	def inv(pi):
+		return sum(len([j for j in range(i+1,n) if pi[j]<pi[i]]) for i in range(n))
+	#j>_i\pi(j)
+	def cycl_range(s,e):
+		if s<=e: return range(s,e)
+		return itertools.chain(range(s,n+1), range(1,e))
+	def iless(j,k,i):
+		if (j>=i)==(k>=i): return j<k
+		return j>k
+	for (i,j,k) in itertools.product(range(1,n+1),range(1,n+1),range(1,n+1)): print(i,j,k,iless(i,j,k))
+	def rij(pi,i,j):
+#		return len([k for k in range(n) if i<=s[k][1] and j>=s[k][1]])
+#		return sum(1 if iless(t[1],t[0],i) else 0 for t in s[min(i,j):max(i,j)+1])
+		print('pi',pi,'i',i,'j',j)
+		print('rij',[k for k in range(n) if iless(pi[k],j,i) and k+1>pi[k]])
+		return len([k for k in range(n) if iless(pi[k],j,i) and k+1>pi[k]])
+		#return len([k for k in cycl_range(i,j+1) if iless(pi[k-1],k,i)])
+#		def exc(k):
+#			return iless(pi[k],j,i) and iless(s[k][0],s[k][1],i)
+#		def rev_exc(k):
+#			return iless(s[k][1],j,i) and iless(s[k][1],s[k][0],i)
+#		return len([k for k in range(n) if exc(k) or rev_exc(k)])
+	def r(pi):
+		return tuple(rij(pi,i,j) for (i,j) in itertools.product(range(1,n+1),range(1,n+1)))
+	elements = list(itertools.permutations(range(1,n+1)))
+	ranks = [[] for i in range(-1,n*(n-1)//2)]
+	for i in range(len(elements)): ranks[inv(elements[i])].append(i)
+	r_dict = {pi : r(pi) for pi in elements}
+	print('r_dict',r_dict)
+	print('inversions',[inv(pi) for pi in elements])
+	def less(i, j):
+		if i==j: return False
+		ri=r_dict[i]
+		rj=r_dict[j]
+		return all(ri[k]<=rj[k] for k in range(len(ri)))
+	return Poset(elements=elements,less=less)#,ranks=ranks)
 
 def Bruhat(n):
 	r'''
@@ -183,9 +233,10 @@ def Boolean(n, X=None):
 	P.name = "Rank "+str(n)+" Boolean algebra"
 
 	def nodeLabel(hasseDiagram, i):
-		S = hasseDiagram.P.elements[i]
-		s = str(S).replace(',','') if len(S) <= 1 else str(S)
-		return s.replace('(','\\{' if hasseDiagram.in_latex else '{').replace(')','\\}' if hasseDiagram.in_latex else '}').replace(',',', ')
+		return str(hasseDiagram.P.elements[i])
+#		S = hasseDiagram.P.elements[i]
+#		s = str(S).replace(',','') if len(S) <= 1 else str(S)
+#		return s.replace('(','\\{' if hasseDiagram.in_latex else '{').replace(')','\\}' if hasseDiagram.in_latex else '}').replace(',',', ')
 	P.hasseDiagram.nodeLabel = nodeLabel
 	#cache some values for queries
 	P.cache['isRanked()']=True
@@ -527,6 +578,48 @@ def Grid(n=2,d=None):
 	P.cache['isGorenstein()']= all([x == 1 for x in d])
 	return P
 
+def Uncrossing_new(n):
+	#j>_i\pi(j)
+	def iless(j,k,i):
+		if (j>i)==(k>i): return j<k
+		return not j<k
+	def rij(s,i,j):
+#		return len([k for k in range(n) if i<=s[k][1] and j>=s[k][1]])
+#		return sum(1 if iless(t[1],t[0],i) else 0 for t in s[min(i,j):max(i,j)+1])
+		def exc(k):
+			return iless(s[k][0],j,i) and iless(s[k][0],s[k][1],i)
+		def rev_exc(k):
+			return iless(s[k][1],j,i) and iless(s[k][1],s[k][0],i)
+		return len([k for k in range(n) if exc(k) or rev_exc(k)])
+	def r(s):
+		return tuple(rij(s,i,j) for (i,j) in itertools.product(range(1,2*n+1),range(1,2*n+1)))
+
+	def _pairings(S,p):
+		if len(S)==2:
+			yield tuple(sorted(p+[tuple(sorted(S))]))
+		for i in range(1,len(S)):
+			for t in _pairings(S[1:i]+S[i+1:], p+[(S[0],S[i])]): yield t
+
+	def pairings(S):
+		for p in _pairings(list(S),[]): yield p
+
+	elements = [x for x in pairings(range(1,2*n+1))]
+	r_dict ={p : r(p) for p in elements}
+	def less(i, j):
+		if i==j: return False
+		ri=r_dict[i]
+		rj=r_dict[j]
+		return all(ri[k]<=rj[k] for k in range(len(ri)))
+	def c(p):
+		ret = 0
+		for i in range(len(p)-1):
+			for j in range(i+1,len(p)):
+				if p[i][1]>p[j][0] and p[i][1]<p[j][1]: ret+=1
+		return ret
+	ranks = [[] for i in range(n*(n-1)//2+1)]
+	for i in range(len(elements)): ranks[c(elements[i])].append(i)
+	P = Poset(elements=elements, less=less, ranks=ranks)
+	return P.adjoin_zerohat()
 
 #copied from uncrossing.py
 #from https://github.com/WilliamGustafson/cdIndexCalculator
@@ -1238,7 +1331,8 @@ def MinorPoset(L,genL=None, weak=False):
 				for g in G:
 					lg = this.join(l,g)
 					if lg == l: continue
-					this.edges[l].append(L_set.index(lg))
+					this.edges[l].append(lg)
+#					this.edges[l].append(L_set.index(lg))
 		#overwrite L's covers function so hasse diagram does all edges
 		def covers(this,indices=False):
 			if not indices: raise NotImplementedError
@@ -1273,6 +1367,8 @@ def MinorPoset(L,genL=None, weak=False):
 	P = Poset(minors_M, minors, minors_ranks)
 	P.elements = [tuple([L_set[M[0]],tuple(L_set[g] for g in M[1])]) for M in P]
 	P = P.adjoin_zerohat()
+	print(genL)
+	print(L_P.elements)
 	P.hasseDiagram = MinorPosetHasseDiagram(P,L_P,genL)
 	P.hasseDiagram.L.latex()
 	#cache some values for queries

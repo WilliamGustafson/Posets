@@ -21,13 +21,13 @@
 	#kind of moot cause like I said it's fixed
 	#but I want to know cause that's so strange
 #
-#Find and add non-eulerian dehn sommerville posets?
-#
 #add a nodeName function for built ins (default just does index)
 #
 #Set HasseDiagram defaults for Bqn
 #
-#Make HasseDiagram subclass for Distributive lattices
+#Set HasseDiagram defaults for DistributiveLattice
+#
+#Set HasseDiagram defaults for MinorPoset
 #
 #Set HasseDiagram defaults for lattices of flats, should be same as BooleanAlgebra
 #for polymatroids and graph is using partitions
@@ -224,14 +224,25 @@ class Poset:
 		elif less != None:
 			this.incMat = [[0]*len(elements) for e in elements]
 			Less = less if indices else (lambda x,y: less(elements[x],elements[y]))
-			for i in range(len(elements)):
-				for j in range(i+1,len(elements)):
-					if Less(i,j):
-						this.incMat[i][j] = 1
-						this.incMat[j][i] = -1
-					elif Less(j,i):
-						this.incMat[i][j] = -1
-						this.incMat[j][i] = 1
+			if False and ranks!=None:
+				for r in range(len(ranks)-1):
+					for i in ranks[r]:
+						for j in ranks[r+1]:
+							if Less(i, j):
+								this.incMat[i][j]==1
+								this.incMat[i][j]=-1
+							elif Less(j, i):
+								this.incMat[i][j]=-1
+								this.incMat[j][i]=1
+			else: #ranks==None
+				for i in range(len(elements)):
+					for j in range(i+1,len(elements)):
+						if Less(i,j):
+							this.incMat[i][j] = 1
+							this.incMat[j][i] = -1
+						elif Less(j,i):
+							this.incMat[i][j] = -1
+							this.incMat[j][i] = 1
 		elif incMat != None:
 			this.incMat = incMat
 
@@ -1375,10 +1386,14 @@ class Poset:
 		@section@Miscellaneous@
 		Produces latex code (via calling \verb|latex()|) compiles it with pdflatex and returns a \verb|wand.image.Image| object constructed from the pdf.
 
-		When called in a Jupyter notebook this will display the poset in the output cell. By default \verb|tmpdir| is \verb|tempfile.gettempdir()|.
+		In a Jupyter notebook calling \verb|display| on the return value with display the Hasse diagram in the output cell.
+		By default \verb|tmpdir| is \verb|tempfile.gettempdir()|.
 
-		Keyword arguments are passed to \verb|latex()| but \verb|standalone| is set
-		to \verb|True| as otherwise the pdf will not compile.
+		This function converts the compiled pdf to an image using imagemagick, this may fail to imagemagick's default security policies.
+		See more info here \url{https://askubuntu.com/questions/1127260/imagemagick-convert-not-allowed}.
+
+		Keyword arguments are passed to \verb|latex()| but \verb|standalone| is alwasy set
+		to \verb|True| (otherwise the pdf would not compile).
 		'''
 		from wand.image import Image as WImage
 		import os
