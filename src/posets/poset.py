@@ -224,14 +224,25 @@ class Poset:
 		elif less != None:
 			this.incMat = [[0]*len(elements) for e in elements]
 			Less = less if indices else (lambda x,y: less(elements[x],elements[y]))
-			for i in range(len(elements)):
-				for j in range(i+1,len(elements)):
-					if Less(i,j):
-						this.incMat[i][j] = 1
-						this.incMat[j][i] = -1
-					elif Less(j,i):
-						this.incMat[i][j] = -1
-						this.incMat[j][i] = 1
+			if False and ranks!=None:
+				for r in range(len(ranks)-1):
+					for i in ranks[r]:
+						for j in ranks[r+1]:
+							if Less(i, j):
+								this.incMat[i][j]==1
+								this.incMat[i][j]=-1
+							elif Less(j, i):
+								this.incMat[i][j]=-1
+								this.incMat[j][i]=1
+			else: #ranks==None
+				for i in range(len(elements)):
+					for j in range(i+1,len(elements)):
+						if Less(i,j):
+							this.incMat[i][j] = 1
+							this.incMat[j][i] = -1
+						elif Less(j,i):
+							this.incMat[i][j] = -1
+							this.incMat[j][i] = 1
 		elif incMat != None:
 			this.incMat = incMat
 

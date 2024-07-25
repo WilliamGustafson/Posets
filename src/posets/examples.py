@@ -42,6 +42,44 @@ def Weak(n):
 		return ret
 	return Poset(relations={p:covers(p) for p in itertools.permutations(range(1,n+1))})
 
+def Bruhat_new(n):
+	def inv(pi):
+		return sum(len([j for j in range(i+1,n) if pi[j]<pi[i]]) for i in range(n))
+	#j>_i\pi(j)
+	def cycl_range(s,e):
+		if s<=e: return range(s,e)
+		return itertools.chain(range(s,n+1), range(1,e))
+	def iless(j,k,i):
+		if (j>=i)==(k>=i): return j<k
+		return j>k
+	for (i,j,k) in itertools.product(range(1,n+1),range(1,n+1),range(1,n+1)): print(i,j,k,iless(i,j,k))
+	def rij(pi,i,j):
+#		return len([k for k in range(n) if i<=s[k][1] and j>=s[k][1]])
+#		return sum(1 if iless(t[1],t[0],i) else 0 for t in s[min(i,j):max(i,j)+1])
+		print('pi',pi,'i',i,'j',j)
+		print('rij',[k for k in range(n) if iless(pi[k],j,i) and k+1>pi[k]])
+		return len([k for k in range(n) if iless(pi[k],j,i) and k+1>pi[k]])
+		#return len([k for k in cycl_range(i,j+1) if iless(pi[k-1],k,i)])
+#		def exc(k):
+#			return iless(pi[k],j,i) and iless(s[k][0],s[k][1],i)
+#		def rev_exc(k):
+#			return iless(s[k][1],j,i) and iless(s[k][1],s[k][0],i)
+#		return len([k for k in range(n) if exc(k) or rev_exc(k)])
+	def r(pi):
+		return tuple(rij(pi,i,j) for (i,j) in itertools.product(range(1,n+1),range(1,n+1)))
+	elements = list(itertools.permutations(range(1,n+1)))
+	ranks = [[] for i in range(-1,n*(n-1)//2)]
+	for i in range(len(elements)): ranks[inv(elements[i])].append(i)
+	r_dict = {pi : r(pi) for pi in elements}
+	print('r_dict',r_dict)
+	print('inversions',[inv(pi) for pi in elements])
+	def less(i, j):
+		if i==j: return False
+		ri=r_dict[i]
+		rj=r_dict[j]
+		return all(ri[k]<=rj[k] for k in range(len(ri)))
+	return Poset(elements=elements,less=less)#,ranks=ranks)
+
 def Bruhat(n):
 	r'''
 	@section@Built in posets@
@@ -541,13 +579,19 @@ def Grid(n=2,d=None):
 
 def Uncrossing_new(n):
 	#j>_i\pi(j)
-	def iless(j,k):
+	def iless(j,k,i):
 		if (j>i)==(k>i): return j<k
 		return not j<k
-	def ri(s,i):
-		return sum(1 if iless(t[1],t[0]) else 0 for t in s)
+	def rij(s,i,j):
+#		return len([k for k in range(n) if i<=s[k][1] and j>=s[k][1]])
+#		return sum(1 if iless(t[1],t[0],i) else 0 for t in s[min(i,j):max(i,j)+1])
+		def exc(k):
+			return iless(s[k][0],j,i) and iless(s[k][0],s[k][1],i)
+		def rev_exc(k):
+			return iless(s[k][1],j,i) and iless(s[k][1],s[k][0],i)
+		return len([k for k in range(n) if exc(k) or rev_exc(k)])
 	def r(s):
-		return tuple(ri(s,i) for i in range(2*n))
+		return tuple(rij(s,i,j) for (i,j) in itertools.product(range(1,2*n+1),range(1,2*n+1)))
 
 	def _pairings(S,p):
 		if len(S)==2:
@@ -558,7 +602,23 @@ def Uncrossing_new(n):
 	def pairings(S):
 		for p in _pairings(list(S),[]): yield p
 
-	print([x for x in pairings(range(1,2*n+1))])
+	elements = [x for x in pairings(range(1,2*n+1))]
+	r_dict ={p : r(p) for p in elements}
+	def less(i, j):
+		if i==j: return False
+		ri=r_dict[i]
+		rj=r_dict[j]
+		return all(ri[k]<=rj[k] for k in range(len(ri)))
+	def c(p):
+		ret = 0
+		for i in range(len(p)-1):
+			for j in range(i+1,len(p)):
+				if p[i][1]>p[j][0] and p[i][1]<p[j][1]: ret+=1
+		return ret
+	ranks = [[] for i in range(n*(n-1)//2+1)]
+	for i in range(len(elements)): ranks[c(elements[i])].append(i)
+	P = Poset(elements=elements, less=less, ranks=ranks)
+	return P.adjoin_zerohat()
 
 #copied from uncrossing.py
 #from https://github.com/WilliamGustafson/cdIndexCalculator
