@@ -233,9 +233,10 @@ def Boolean(n, X=None):
 	P.name = "Rank "+str(n)+" Boolean algebra"
 
 	def nodeLabel(hasseDiagram, i):
-		S = hasseDiagram.P.elements[i]
-		s = str(S).replace(',','') if len(S) <= 1 else str(S)
-		return s.replace('(','\\{' if hasseDiagram.in_latex else '{').replace(')','\\}' if hasseDiagram.in_latex else '}').replace(',',', ')
+		return str(hasseDiagram.P.elements[i])
+#		S = hasseDiagram.P.elements[i]
+#		s = str(S).replace(',','') if len(S) <= 1 else str(S)
+#		return s.replace('(','\\{' if hasseDiagram.in_latex else '{').replace(')','\\}' if hasseDiagram.in_latex else '}').replace(',',', ')
 	P.hasseDiagram.nodeLabel = nodeLabel
 	#cache some values for queries
 	P.cache['isRanked()']=True
@@ -1330,7 +1331,8 @@ def MinorPoset(L,genL=None, weak=False):
 				for g in G:
 					lg = this.join(l,g)
 					if lg == l: continue
-					this.edges[l].append(L_set.index(lg))
+					this.edges[l].append(lg)
+#					this.edges[l].append(L_set.index(lg))
 		#overwrite L's covers function so hasse diagram does all edges
 		def covers(this,indices=False):
 			if not indices: raise NotImplementedError
@@ -1365,6 +1367,8 @@ def MinorPoset(L,genL=None, weak=False):
 	P = Poset(minors_M, minors, minors_ranks)
 	P.elements = [tuple([L_set[M[0]],tuple(L_set[g] for g in M[1])]) for M in P]
 	P = P.adjoin_zerohat()
+	print(genL)
+	print(L_P.elements)
 	P.hasseDiagram = MinorPosetHasseDiagram(P,L_P,genL)
 	P.hasseDiagram.L.latex()
 	#cache some values for queries
