@@ -574,7 +574,7 @@ class HasseDiagram:
 				for r in rk:
 					name=this.nodeName(this, r)
 					ret.append('\\coordinate('+name+')at('+this.loc_x(this, r)+','+this.loc_y(this, r)+');\n')
-					ret.append('\\fill('+name+')circle('+this.ptsize+');\n')
+					ret.append('\\fill['+this.node_options(this,r)+']('+name+')circle('+this.ptsize+');\n')
 		else:
 			for rk in this.P.ranks:
 				for r in rk:
@@ -585,6 +585,8 @@ class HasseDiagram:
 
 		#draw lines for covers
 		for i,J in this.P.covers(True).items():
+			print('HasseDiagram.latex drawing cover')
+			print('i',i,'J',J)
 			for j in J:
 				options=this.line_options(this,i,j)
 				if len(options)>0: options='['+options+']'
@@ -595,3 +597,59 @@ class HasseDiagram:
 
 		this.__dict__.update(defaults)
 		return ''.join(ret)
+##############
+#begin MinorPosetHasseDiagram class
+##############
+
+class MinorPosetHasseDiagram(HasseDiagram):
+
+		def __init__(this, P, L, **kwargs):
+			super().__init__(P, **kwargs)
+			this.L = L
+			this.L.hasseDiagram.__dict__.update({k[5:] : v for k,v in kwargs.items() if k[:5]=='latt_'})
+			print('latt defaults in constructor\n',{k[5:] : v for k,v in kwargs.items() if k[:5]=='latt_'})
+
+		def latex(this, **kwargs):
+			latt_args = {k[5:] : v for k,v in kwargs.items() if k[:5] == 'latt_'}
+			latt_defaults = this.L.hasseDiagram.__dict__.copy()
+			this.L.hasseDiagram.__dict__.update(latt_args)
+			this.L.hasseDiagram.nodeName = MinorPosetHasseDiagram.latt_nodeName
+
+			ret = super().latex(**kwargs)
+
+			this.L.hasseDiagram.__dict__.update(latt_defaults)
+
+			return ret
+
+		def nodeLabel(this, i):
+			if i in this.P.min(): return '$\\emptyset$'
+			args = {
+				'node_options' : MinorPosetHasseDiagram.make_node_options(this.P[i]),
+				'line_options' : MinorPosetHasseDiagram.make_line_options(this.P[i]),
+				}
+			args.update({k[5:] : v for (k,v) in this.__dict__.items() if k[:5]=='latt_'})
+			minorLatex = this.L.latex(**args)
+			print('='*100,'\n','args\n',args,'\n','='*100)
+			minorLatex = ''.join(minorLatex.split('\n')[2:-1])
+			return '\\begin{tikzpicture}\\begin{scope}\n'+minorLatex+'\n\\end{scope}\\end{tikzpicture}'
+
+		def latt_nodeName(this, i):
+			return 'latt_'+HasseDiagram.nodeName(this,i)
+
+		def make_node_options(KH):
+			def node_options(this, i):
+				if this.P.elements[i] in KH: return 'color=black'
+				return 'color=gray'
+			return node_options
+
+		def make_line_options(KH):
+			def line_options(this, i, j):
+				if this.P.elements[i] in KH and this.P.elements[j] in KH: return 'color=black'
+				return 'color=gray'
+			return line_options
+
+
+##############
+#end MinorPosetHasseDiagram class
+##############
+

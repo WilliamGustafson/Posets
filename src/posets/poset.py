@@ -1,6 +1,21 @@
 ##########################################
 #TODO
 ##########################################
+#MinorPoset doesn't quite draw right cause it
+#doesn't correctly calculate the edges to be drawn
+#(see B_2 with \onehat as a generator). To fix this
+#I suggest making Genlatt a more complete class:
+#	>implement contraction and deletion methods
+#	>to make the MinorPoset first make the genlatt
+#	then use those methods
+#	>For drawing a genlatt we just have the right
+#	covers metod already so it's ez now.
+#Also, U_2_3 is totally bugged out, but if rewrite anyways
+#we probably don't have to worry about it.
+#
+#In HasseDiagram.latex do a loop to make coords
+#then draw the covers then draw the nodes
+#
 #Make Bruhat directly should be faster
 #
 #PartitionLattice and those after needs figures
@@ -1678,4 +1693,104 @@ for f in dir(PosetIsoClass):
 del attr
 ##############
 #End Poset Iso Class
+##############
+
+##############
+#Genlatt class
+##############
+class Genlatt(Poset):
+	def __init__(this, *args, G=None, G_indices=False, **kwargs):
+		super().__init__(*args, **kwargs)
+		this.hasseDiagram.P = this
+		if G==None:
+			covers=super().covers()
+			G = [p for p in this.properPart() if len(covers[p])==1]
+		this.G = tuple(this.elements[i] for i in G) if G_indices else tuple(G)
+	#overwrite L's covers function so hasse diagram does all edges
+	@cached_method
+	def covers(this, indices=False):
+		edges={}
+		Gens = [this.elements.index(g) for g in this.G] if indices else this.G
+
+		L = this.complSubposet(this.max(indices),indices)
+		if indices: L = L.relabel()
+		for l in L:
+			edges[l] = []
+			for g in Gens:
+				print('indices',indices,'l',l,'g',g)
+				lg = this.join(l,g,indices)
+				if lg == l or lg in edges[l]: continue
+				edges[l].append(lg)
+		return edges
+
+	def minor(this,H,z):
+		elements = set()
+		for I in itertools.chain.from_iterable(itertools.combinations(H,k) for k in range(len(H)+1)):
+			for l in itertools.accumulate(I, this.join, initial=z): pass
+			elements.add(l)
+		return Genlatt(this.subposet(elements),G=H)
+
+	def contract(this, g):
+		print('contract')
+		print('this',this)
+		print('g',g)
+		H = [this.join(g,h) for h in this.G]
+		if g in H: H.remove(g)
+		return this.minor(H,g)
+
+	def delete(this, g):
+		H = [h for h in this.G if h!=g]
+		return this.minor(H,this.min()[0])
+
+	def _minors(this, minors, rels, i):
+		rels[i]=[]
+		for g in this.G:
+			for M in (this.delete(g),this.contract(g)):
+				if M in minors:
+					Mi = minors.index(M)
+				else:
+					Mi = len(minors)
+					minors.append(M)
+				rels[i].append(Mi)
+				M._minors(minors,rels,Mi)
+		return
+
+	def minors(this):
+		minors = [this]
+		rels = {}
+		this._minors(minors, rels, 0)
+		return minors, rels
+
+	def __eq__(this,that):
+		return isinstance(that,Genlatt) and super().__eq__(that) and set(this.G) == set(that.G)
+
+	@cached_method
+	def __hash__(this):
+		return hash((super().__hash__(), this.G))
+	def __str__(this):
+		return super().__str__() + '\nG = '+str(this.G)
+	def __repr__(this):
+		return super().__repr__()[:-1] + ', G='+repr(this.G)+')'
+	def minorPoset(this):
+		minors, rels = this.minors()
+		if this.name=='': name = 'Minor poset of a generator-enriched lattice'
+		else: name = 'Minor poset of '+this.name
+		M = Poset(
+			elements=minors,
+			relations=rels,
+			indices=True,
+			name=name,
+			hasse_class=MinorPosetHasseDiagram,
+			latt_height=2,
+			latt_width=1,
+			latt_nodescale=0.5,
+			L=this,
+			)
+		M.cache['isRanked()']=True
+		M.cache['isEulerian()']=True
+		M.cache['isGorenstein()']=True
+		return M.dual().adjoin_zerohat()
+
+##############
+#End Genlatt class
 ##############
