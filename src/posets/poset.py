@@ -1699,16 +1699,55 @@ del attr
 #Genlatt class
 ##############
 class Genlatt(Poset):
+	r'''
+	@is_section@
+	A class to encode a ``generator-enriched lattice'' which is a lattice $L$
+	along with a set $G\subseteq L\wout\{\zerohat\}$ that generates $L$
+	under the join operation.
+
+	This class is mainly provided for the \verb|minorPoset| method.
+
+	Construct arguments are the same as for \verb|Poset| except that
+	this constructor accepts two additional keyword only arguments:
+		\begin{itemize}
+			\item{\verb|G| - An iterable specifying the
+				generating set, can either contain
+				elements of the lattice or indices into
+				the lattice. The join irreducibles are automatically
+				added and may be omitted. If \verb|G| is not
+				provided the generating set will consist of the
+				join irreducibles.}
+			\item{\verb|G_indices| - If \verb|True| then the provided
+				argument \verb|G| should
+				consist of indices otherwise \verb|G| should
+				consist of elements.}
+		\end{itemize}
+	'''
 	def __init__(this, *args, G=None, G_indices=False, **kwargs):
+		r'''
+		See \verb|Genlatt|.
+		'''
 		super().__init__(*args, **kwargs)
 		this.hasseDiagram.P = this
+		irrs = [i for i in range(len(this)) if i not in this.max(True)+this.min(True)] if G_indices else [p for p in this.properPart() if len(covers[p])==1]
 		if G==None:
 			covers=super().covers()
-			G = [p for p in this.properPart() if len(covers[p])==1]
-		this.G = tuple(this.elements[i] for i in G) if G_indices else tuple(G)
+			G = irrs
+		this.G = tuple(set([this.elements[i] for i in G]+irrs) if G_indices else tuple(set(G+irrs))
 	#overwrite L's covers function so hasse diagram does all edges
 	@cached_method
 	def covers(this, indices=False):
+		r'''
+		Returns a dictionary specifying the diagram edges of the genlatt (the name is a misnomer but is used for compatibility with \verb|HasseDiagram|).
+
+		The edges of the diagram are pairs ($\ell,\ell\vee g)$ where
+		$\ell$ is a lattice element and $g$ is a generator (and
+		$\ell\ne\ell\vee g$. The return value is a dictionary in
+		the same form as the return value of \verb|Poset.covers|,
+		that is, keys are nonmaximal elements $\ell$ and values
+		are lists of elements $k$ such that there is an edge from
+		$\ell$ to $k$.
+		'''
 		edges={}
 		Gens = [this.elements.index(g) for g in this.G] if indices else this.G
 
@@ -1724,6 +1763,10 @@ class Genlatt(Poset):
 		return edges
 
 	def minor(this,H,z):
+		r'''
+		Given an iterable \verb|H| of generators and an element \verb|z| returns the \verb|Genlatt| with minimum \verb|z| and generating
+		set \verb|H| and with the same order as \verb|this|.
+		'''
 		elements = set()
 		for I in itertools.chain.from_iterable(itertools.combinations(H,k) for k in range(len(H)+1)):
 			for l in itertools.accumulate(I, this.join, initial=z): pass
@@ -1731,6 +1774,9 @@ class Genlatt(Poset):
 		return Genlatt(this.subposet(elements),G=H)
 
 	def contract(this, g):
+		r'''
+		Return the \verb|Genlatt| obtained by contracting the generator \verb|g|.
+		'''
 		print('contract')
 		print('this',this)
 		print('g',g)
@@ -1739,10 +1785,16 @@ class Genlatt(Poset):
 		return this.minor(H,g)
 
 	def delete(this, g):
+		r'''
+		Return the \verb|Genlatt| obtained by deleting the generator \verb|g|.
+		'''
 		H = [h for h in this.G if h!=g]
 		return this.minor(H,this.min()[0])
 
 	def _minors(this, minors, rels, i):
+		r'''
+		Recursion backend to \verb|minors|.
+		'''
 		rels[i]=[]
 		for g in this.G:
 			for M in (this.delete(g),this.contract(g)):
@@ -1756,6 +1808,13 @@ class Genlatt(Poset):
 		return
 
 	def minors(this):
+		r'''
+		Returns a list of minors of the given \verb|Genlatt| instance
+		and an incomplete dictionary of relations.
+
+		The relations when transitively closed yield the relations
+		for the minor poset.
+		'''
 		minors = [this]
 		rels = {}
 		this._minors(minors, rels, 0)
@@ -1772,6 +1831,9 @@ class Genlatt(Poset):
 	def __repr__(this):
 		return super().__repr__()[:-1] + ', G='+repr(this.G)+')'
 	def minorPoset(this):
+		r'''
+		Returns the minor poset of the given \verb|Genlatt| instance.
+		'''
 		minors, rels = this.minors()
 		if this.name=='': name = 'Minor poset of a generator-enriched lattice'
 		else: name = 'Minor poset of '+this.name
