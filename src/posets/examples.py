@@ -1204,175 +1204,37 @@ def UniformMatroid(n=3,r=3,q=1):
 		return Bnq(n,q).rankSelection(list(range(r))+[n])
 
 def MinorPoset(L,genL=None, weak=False):
-	r'''@section@Built in posets@
+	r'''
+	@section@Built in posets@
 	Returns the minor poset given a lattice \verb|L| and a list of generators \verb|genL|.
 
 	The join irreducibles are automatically added to \verb|genL|. If \verb|genL| is not provided the generating set will be only the
 	join irreducibles.
 
 	For more info on minor posets see: https://arxiv.org/abs/2205.01200
+
+	\begin{center}
+		\includegraphics{figures/M_lof_triangle.pdf}
+
+		The poset \verb|MinorPoset(LatticeOfFlats([[1,2],[2,3],[3,1]]))|.
+	\end{center}
+
+	\begin{center}
+		\includegraphics{figures/M_lof_poly.pdf}
+
+		The poset \verb|MinorPoset(LatticeOfFlats([0,1,2,2,1,3,3,3]))|.
+	\end{center}
+
+	\begin{center}
+		\includegraphics{figures/M_B_2.pdf}
+
+		The poset \verb|MinorPoset(LatticeOfFlats(Boolean(2),Boolean(2)[1:4]))|.
+	\end{center}
+
+	@exec@
+	make_fig(MinorPoset(LatticeOfFlats([[1,2],[2,3],[1,3]])),'M_lof_triangle',height=10,width=8,latt_height=0.75,latt_width=1,latt_labels=False)
+	make_fig(MinorPoset(LatticeOfFlats([0,1,2,2,1,3,3,3])),'M_lof_poly',height=10,width=8,latt_height=1,latt_width=1,latt_labels=False)
+	make_fig(MinorPoset(Boolean(2),Boolean(2)[1:4]), 'M_B_2',height=10,width=8,latt_height=1,latt_width=1,latt_labels=False)
 	'''
-	if genL == None: genL = []
-	genL = [L.elements.index(g) for g in genL]
-	#make L the incMat so we can copy code, L_P is the poset
-	L_set = L.elements
-	L_P = L.copy()
-	L = L_P.incMat
-	L_P.elements = list(range(len(L_P.elements)))
-	##################################
-	#compute a table of all joins in L
-	##################################
-	joins = [[0 for i in range(0,len(L))]for j in range(0,len(L))]
-	for i in range(0,len(L)):
-		for j in range(i,len(L)):
-			k = L_P.join(i,j,True)
-			if k == None:
-				raise Exception('input L to MinorPoset must be a lattice')
-			joins[i][j]=k
-			joins[j][i]=k
-	L_Pmin = L_P.min()
-	if len(L_Pmin)>1: raise Exception('input L to MinorPoset must be a lattice')
-	zerohat = L_Pmin[0]
-	#find irreducibles and make sure they're in genL
-	for l in L_P.elements:
-		if len(L_P.interval(zerohat, l).complSubposet([l]).max()) == 1:
-			if l not in genL:
-				genL.append(l)
-	######################################################
-	#compute all the minors
-	#minors are encoded as a list whose first element
-	#is the minimal element and the second element is the
-	#list of generators
-	######################################################
-	minors = [[0,genL]]
-	minors_M = [[0]]
-	minors_ranks = [[] for i in range(0,len(genL)+1)]
-	minors_ranks[len(genL)].append(0) #will add a zerohat later at index 0
-	new = [[0,genL]]
-	while len(new)>0:
-		old = new
-		new = []
-		for l in old:
-			r = minors.index(l)
-			for i in range(0,len(l[1])):
-				minor=[l[0],l[1][:i]+l[1][i+1:]] #delete i
-				if minor in minors:
-					s = minors.index(minor) #save index to adjust incidence matrix
-				else:
-					#add the minor and add a row and column to the incidence matrix
-					s = len(minors_M)
-					minors_ranks[len(minor[1])].append(s)
-					minors.append(minor)
-					for x in minors_M: x.append(0)
-					minors_M.append([0 for x in range(-1,s)])
-				minors_M[r][s] = -1
-				minors_M[s][r] = 1
-				if minor not in new: new.append(minor)
-
-				#contract i
-				temp = set([joins[l[1][i]][j] for j in l[1]])
-				temp.remove(l[1][i])
-				minor=[l[1][i],sorted(list(temp))]
-				if weak: #extra deletions
-					contr_gens = [L_P.join(g, l[0], indices=True) for g in genL]
-					extra_del = [L_P.join(g, l[1][i], indices=True) for g in contr_gens if g not in l[1]]
-					minor[1] = [g for g in minor[1] if g not in extra_del]
-					if minor[0] in extra_del: continue
-				if minor in minors:
-					s = minors.index(minor)
-				else:
-					s = len(minors_M)
-					minors_ranks[len(minor[1])].append(s)
-					minors.append(minor)
-					for x in minors_M: x.append(0)
-					minors_M.append([0 for x in range(-1,s)])
-				minors_M[r][s] = -1
-				minors_M[s][r] = 1
-				if minor not in new: new.append(minor)
-	Poset.transClose(minors_M)
-
-	##############
-	#set up hasse diagram
-	##############
-	import types
-	def minor_contains(KH,i):
-		if i==L_set.index(KH[0]): return True
-		if not L_P.lesseq(L_set.index(KH[0]),i,True): return False
-		#join all generators of KH below i
-		if len([h for h in KH[1] if L_P.lesseq(L_set.index(h),i)])==0: return False
-		if len([h for h in KH[1] if L_P.lesseq(L_set.index(h),i)])==1: return i in [L_set.index(h) for h in KH[1]]
-		k = list(itertools.accumulate([L_P.min(True)[0]]+list(h for h in KH[1] if L_P.lesseq(L_set.index(h),i,True)), lambda x,y: L_P.join(x,L_set.index(y),True)))[-1]
-		return k == i
-
-	def latt_nodeName(this, i):
-		return 'latt_'+HasseDiagram.nodeName(this,i)
-
-	def make_node_options(KH):
-		def node_options(this, i):
-			if minor_contains(KH,i): return 'color=black'
-			return 'color=gray'
-		return node_options
-
-	def make_line_options(KH):
-		def line_options(this, i, j):
-			if minor_contains(KH,i) and minor_contains(KH,j): return 'color=black'
-			return 'color=gray'
-		return line_options
-
-	class Genlatt(Poset):
-		def __init__(this, G, *args, **kwargs):
-			super().__init__(*args, **kwargs)
-			this.hasseDiagram.P = this
-			this.G = G
-			this.edges = {}
-			#find all extra edges of diagram
-			for l in this.complSubposet(this.max()):
-				this.edges[l] = []
-				for g in G:
-					lg = this.join(l,g)
-					if lg == l: continue
-					this.edges[l].append(lg)
-#					this.edges[l].append(L_set.index(lg))
-		#overwrite L's covers function so hasse diagram does all edges
-		def covers(this,indices=False):
-			if not indices: raise NotImplementedError
-			return this.edges
-
-	class MinorPosetHasseDiagram(HasseDiagram):
-
-		def __init__(this, P, L, G, **kwargs):
-			super().__init__(P, **kwargs)
-			this.L = Genlatt(G,L)
-
-		def latex(this, **kwargs):
-			latt_args = {k[5:] : v for k,v in kwargs.items() if k[:5] == 'latt_'}
-			print('latt_args',latt_args)
-			latt_defaults = this.L.hasseDiagram.__dict__.copy()
-			this.L.hasseDiagram.__dict__.update(latt_args)
-			this.L.hasseDiagram.nodeName = latt_nodeName
-
-			ret = super().latex(**kwargs)
-
-			this.L.hasseDiagram.__dict__.update(latt_defaults)
-
-			return ret
-
-		def nodeLabel(this, i):
-			if i in this.P.min(): return '$\\emptyset$'
-			minorLatex = this.L.latex(node_options = make_node_options(this.P[i]), line_options = make_line_options(this.P[i]))
-			minorLatex = ''.join(minorLatex.split('\n')[2:-1])
-			return '\\begin{tikzpicture}\\begin{scope}\n'+minorLatex+'\n\\end{scope}\\end{tikzpicture}'
-
-
-	P = Poset(minors_M, minors, minors_ranks)
-	P.elements = [tuple([L_set[M[0]],tuple(L_set[g] for g in M[1])]) for M in P]
-	P = P.adjoin_zerohat()
-	print(genL)
-	print(L_P.elements)
-	P.hasseDiagram = MinorPosetHasseDiagram(P,L_P,genL)
-	P.hasseDiagram.L.latex()
-	#cache some values for queries
-	P.cache['isRanked()']=True
-	P.cache['isEulerian()']=True
-	P.cache['isGorenstein()']=True
-	return P
+	if weak: raise NotImplementedError
+	return Genlatt(L, G=genL).minorPoset()
