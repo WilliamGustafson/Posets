@@ -1229,10 +1229,6 @@ class Poset:
 			return None
 
 		def nextchoice(map, i, jstart):
-			#print('nextchoice:')
-			#print('\ti',i)
-			#print('\tmap',map)
-			#print('\tjstart',jstart)
 			if i==len(this): return map, -1, True
 			cands = d2Inv[d1[i]]
 			for j_ in range(jstart,len(cands)):
@@ -1243,19 +1239,10 @@ class Poset:
 			return None, j_+1, True
 
 		def prevchoice(map, i, jstarts):
-			#print('prevchoice:')
-			#print('\tmap',map)
-			#print('\ti',i)
-			#print('\tjstarts',jstarts)
 			while i>=0 and jstarts[i] >= len(d2Inv[d1[i]]):
 				jstarts[i] = 0
 				i -= 1
 			if i==-1:
-				#print('prevchoice i got to -1, returning None,None,None')
-				#print('jstarts',jstarts)
-				#print('map',map)
-				#print('candidate lengths:',[len(d2Inv[d1[k]]) for k in range(len(this))])
-				#print('candidates:',[d2Inv[d1[k]] for k in range(len(this))])
 				return None,None,None
 			map = [m for m in map if m[0]<i]
 	#		jstarts[i] += 1
@@ -1267,12 +1254,6 @@ class Poset:
 		map_built = False
 		i = 0
 		while not map_built and len(map)<len(this):
-			#print('*'*14)
-			#print('i',i)
-			#print('jstarts',jstarts)
-			#print('map',map)
-			#print('map_built',map_built)
-			#print('*'*14)
 			new_map, j, map_built = nextchoice(map, i, jstarts[i])
 			jstarts[i] = j
 			if new_map == None:
@@ -1550,6 +1531,7 @@ class Poset:
 			elements = list(range(len(this)))
 		ret = Poset(this)
 		ret.elements = elements
+		ret.cache = {}
 		return ret
 
 	def reorder(this, perm, indices=False):
@@ -1618,13 +1600,6 @@ class Poset:
 			for l in left:
 				loi = [i for i in range(len(incMat)) if incMat[i][l]==1]
 				if all([i in preranks.keys() for i in loi]): break
-#			try:
-#				assert(all([i in preranks.keys() for i in loi]))
-#			except Exception as e:
-#				print('Assertion in Poset.make_ranks failed')
-#				print('loi',loi)
-#				print('preranks',preranks)
-#				raise e
 			preranks[l] = 1+max([-1]+[preranks[i] for i in loi])
 			left.remove(l)
 		return [[j for j in range(len(incMat)) if preranks[j]==i] for i in range(1+max(preranks.values()))]
@@ -1700,14 +1675,14 @@ del attr
 ##############
 class Genlatt(Poset):
 	r'''
-	@is_section@
+	@is_section@section_key@1@subclass@
 	A class to encode a ``generator-enriched lattice'' which is a lattice $L$
 	along with a set $G\subseteq L\wout\{\zerohat\}$ that generates $L$
 	under the join operation.
 
 	This class is mainly provided for the \verb|minorPoset| method.
 
-	Construct arguments are the same as for \verb|Poset| except that
+	Constructor arguments are the same as for \verb|Poset| except that
 	this constructor accepts two additional keyword only arguments:
 		\begin{itemize}
 			\item{\verb|G| - An iterable specifying the
@@ -1728,12 +1703,15 @@ class Genlatt(Poset):
 		See \verb|Genlatt|.
 		'''
 		super().__init__(*args, **kwargs)
+		covers = super().covers()
+		if 'covers(False,)' in this.cache: del this.cache['covers(False,)']
+		if 'covers(True,)' in this.cache: del this.cache['covers(True,)']
 		this.hasseDiagram.P = this
 		irrs = [i for i in range(len(this)) if i not in this.max(True)+this.min(True)] if G_indices else [p for p in this.properPart() if len(covers[p])==1]
 		if G==None:
 			covers=super().covers()
 			G = irrs
-		this.G = tuple(set([this.elements[i] for i in G]+irrs) if G_indices else tuple(set(G+irrs))
+		this.G = tuple(set([this.elements[i] for i in G]+irrs)) if G_indices else tuple(set(G+irrs))
 	#overwrite L's covers function so hasse diagram does all edges
 	@cached_method
 	def covers(this, indices=False):
@@ -1751,12 +1729,11 @@ class Genlatt(Poset):
 		edges={}
 		Gens = [this.elements.index(g) for g in this.G] if indices else this.G
 
-		L = this.complSubposet(this.max(indices),indices)
-		if indices: L = L.relabel()
+		L = this.relabel() if indices else Poset(this)
+		L = L.complSubposet(L.max())
 		for l in L:
 			edges[l] = []
 			for g in Gens:
-				print('indices',indices,'l',l,'g',g)
 				lg = this.join(l,g,indices)
 				if lg == l or lg in edges[l]: continue
 				edges[l].append(lg)
@@ -1777,9 +1754,6 @@ class Genlatt(Poset):
 		r'''
 		Return the \verb|Genlatt| obtained by contracting the generator \verb|g|.
 		'''
-		print('contract')
-		print('this',this)
-		print('g',g)
 		H = [this.join(g,h) for h in this.G]
 		if g in H: H.remove(g)
 		return this.minor(H,g)
@@ -1851,7 +1825,13 @@ class Genlatt(Poset):
 		M.cache['isRanked()']=True
 		M.cache['isEulerian()']=True
 		M.cache['isGorenstein()']=True
-		return M.dual().adjoin_zerohat()
+		hd = M.hasseDiagram
+		M = M.dual().adjoin_zerohat()
+		nodeLabel = hd.nodeLabel
+		hd.nodeLabel = lambda this,i : '$\\emptyset$' if i in this.P.min(True) else nodeLabel(this,i)
+		M.hasseDiagram = hd
+		M.hasseDiagram.P = M
+		return M
 
 ##############
 #End Genlatt class

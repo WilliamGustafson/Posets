@@ -566,31 +566,48 @@ class HasseDiagram:
 			ret.append('\\begin{document}\n\\pagestyle{empty}\n')
 		ret.append('\\begin{tikzpicture}\n')
 
+		if not this.labels:
+			##############
+			#write coords for elements
+			##############
+			for i in range(len(this.P)):
+				ret.append('\\coordinate('+this.nodeName(this,i)+')at('+this.loc_x(this,i)+','+this.loc_y(this,i)+');\n')
+
+			##############
+			#draw lines for covers
+			##############
+			for i,J in this.P.covers(True).items():
+				for j in J:
+					options=this.line_options(this,i,j)
+					if len(options)>0: options='['+options+']'
+					ret.append('\\draw[color='+this.color+']'+options+'('+this.nodeName(this, i)+this.lowsuffix+')--('+this.nodeName(this, j)+this.highsuffix+");\n")
 		###############
 		#write nodes for the poset elements
 		###############
-		if not this.labels:
 			for rk in this.P.ranks:
 				for r in rk:
 					name=this.nodeName(this, r)
-					ret.append('\\coordinate('+name+')at('+this.loc_x(this, r)+','+this.loc_y(this, r)+');\n')
 					ret.append('\\fill['+this.node_options(this,r)+']('+name+')circle('+this.ptsize+');\n')
-		else:
+#					ret.append('\\coordinate('+name+')at('+this.loc_x(this, r)+','+this.loc_y(this, r)+');\n')
+#					ret.append('\\fill['+this.node_options(this,r)+']('+name+')circle('+this.ptsize+');\n')
+		else: #this.labels==True
 			for rk in this.P.ranks:
 				for r in rk:
+#					ret.append('\\node['+this.node_options(this,r)+']('+this.nodeName(this, r)+')at('+this.nodeName(this,r)+')\n{')
 					ret.append('\\node['+this.node_options(this,r)+']('+this.nodeName(this, r)+')at('+this.loc_x(this, r)+','+this.loc_y(this, r)+')\n{')
 					ret.append('\\scalebox{'+str(this.nodescale)+"}{")
 					ret.append(str(r) if this.indices_for_nodes else this.nodeLabel(this, r))
 					ret.append('}};\n\n')
-
-		#draw lines for covers
-		for i,J in this.P.covers(True).items():
-			print('HasseDiagram.latex drawing cover')
-			print('i',i,'J',J)
-			for j in J:
-				options=this.line_options(this,i,j)
-				if len(options)>0: options='['+options+']'
-				ret.append('\\draw[color='+this.color+']'+options+'('+this.nodeName(this, i)+this.lowsuffix+')--('+this.nodeName(this, j)+this.highsuffix+");\n")
+			##############
+			#draw lines for covers
+			##############
+			for i,J in this.P.covers(True).items():
+				for j in J:
+					options=this.line_options(this,i,j)
+					if len(options)>0: options='['+options+']'
+					ret.append('\\draw[color='+this.color+']'+options+'('+this.nodeName(this, i)+this.lowsuffix+')--('+this.nodeName(this, j)+this.highsuffix+");\n")
+		##############
+		##############
 		ret.append('\\end{tikzpicture}')
 		if this.standalone:
 			ret.append('\n\\end{document}')
@@ -602,51 +619,53 @@ class HasseDiagram:
 ##############
 
 class MinorPosetHasseDiagram(HasseDiagram):
+	r'''
+	@is_section@no_children@
+	TODO \verb|__doc__| string
+	'''
+	def __init__(this, P, L, **kwargs):
+		super().__init__(P, **kwargs)
+		this.P = P
+		this.L = L
+		this.L.hasseDiagram.__dict__.update({k[5:] : v for k,v in kwargs.items() if k[:5]=='latt_'})
 
-		def __init__(this, P, L, **kwargs):
-			super().__init__(P, **kwargs)
-			this.L = L
-			this.L.hasseDiagram.__dict__.update({k[5:] : v for k,v in kwargs.items() if k[:5]=='latt_'})
-			print('latt defaults in constructor\n',{k[5:] : v for k,v in kwargs.items() if k[:5]=='latt_'})
+	def latex(this, **kwargs):
+		latt_args = {k[5:] : v for k,v in kwargs.items() if k[:5] == 'latt_'}
+		latt_defaults = this.L.hasseDiagram.__dict__.copy()
+		this.L.hasseDiagram.__dict__.update(latt_args)
+		this.L.hasseDiagram.nodeName = MinorPosetHasseDiagram.latt_nodeName
 
-		def latex(this, **kwargs):
-			latt_args = {k[5:] : v for k,v in kwargs.items() if k[:5] == 'latt_'}
-			latt_defaults = this.L.hasseDiagram.__dict__.copy()
-			this.L.hasseDiagram.__dict__.update(latt_args)
-			this.L.hasseDiagram.nodeName = MinorPosetHasseDiagram.latt_nodeName
+		ret = super().latex(**kwargs)
 
-			ret = super().latex(**kwargs)
+		this.L.hasseDiagram.__dict__.update(latt_defaults)
 
-			this.L.hasseDiagram.__dict__.update(latt_defaults)
+		return ret
 
-			return ret
+	def nodeLabel(this, i):
+		if i in this.P.min(): return '$\\emptyset$'
+		args = {
+			'node_options' : MinorPosetHasseDiagram.make_node_options(this.P[i]),
+			'line_options' : MinorPosetHasseDiagram.make_line_options(this.P[i]),
+			}
+		args.update({k[5:] : v for (k,v) in this.__dict__.items() if k[:5]=='latt_'})
+		minorLatex = this.L.latex(**args)
+		minorLatex = ''.join(minorLatex.split('\n')[2:-1])
+		return '\\begin{tikzpicture}\\begin{scope}\n'+minorLatex+'\n\\end{scope}\\end{tikzpicture}'
 
-		def nodeLabel(this, i):
-			if i in this.P.min(): return '$\\emptyset$'
-			args = {
-				'node_options' : MinorPosetHasseDiagram.make_node_options(this.P[i]),
-				'line_options' : MinorPosetHasseDiagram.make_line_options(this.P[i]),
-				}
-			args.update({k[5:] : v for (k,v) in this.__dict__.items() if k[:5]=='latt_'})
-			minorLatex = this.L.latex(**args)
-			print('='*100,'\n','args\n',args,'\n','='*100)
-			minorLatex = ''.join(minorLatex.split('\n')[2:-1])
-			return '\\begin{tikzpicture}\\begin{scope}\n'+minorLatex+'\n\\end{scope}\\end{tikzpicture}'
+	def latt_nodeName(this, i):
+		return 'latt_'+HasseDiagram.nodeName(this,i)
 
-		def latt_nodeName(this, i):
-			return 'latt_'+HasseDiagram.nodeName(this,i)
+	def make_node_options(KH):
+		def node_options(this, i):
+			if this.P.elements[i] in KH: return 'color=black'
+			return 'color=gray'
+		return node_options
 
-		def make_node_options(KH):
-			def node_options(this, i):
-				if this.P.elements[i] in KH: return 'color=black'
-				return 'color=gray'
-			return node_options
-
-		def make_line_options(KH):
-			def line_options(this, i, j):
-				if this.P.elements[i] in KH and this.P.elements[j] in KH: return 'color=black'
-				return 'color=gray'
-			return line_options
+	def make_line_options(KH):
+		def line_options(this, i, j):
+			if this.P.elements[i] in KH and this.P.elements[j] in KH: return 'color=black'
+			return 'color=gray'
+		return line_options
 
 
 ##############
