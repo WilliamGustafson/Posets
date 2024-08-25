@@ -1,4 +1,5 @@
-r'''@is_section@exec@version='0.0.1'@
+r'''
+@is_section@exec@version='0.0.1'@
 This module provides a class \verb|Poset| that encodes a finite
 partially ordered set (poset). The class provides methods to construct
 new posets via operations such as Cartesian products and disjoint unions,

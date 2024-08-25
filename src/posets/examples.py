@@ -1,3 +1,6 @@
+'''
+EGGS
+'''
 #TODO:
 #Incorporate Grassmann necklaces into Uncrossing and Bruhat (and make circular Bruhat?)
 #
@@ -10,7 +13,7 @@
 #
 #So we can make Uncrossing poset in the obvious way, make all pairings, then calc $r_{ij}$ mats and compare.
 #Can do same for Bruhat
-from .poset import Poset
+from .poset import Poset,Genlatt
 from .hasseDiagram import HasseDiagram
 import itertools
 
@@ -43,6 +46,7 @@ def Weak(n):
 	return Poset(relations={p:covers(p) for p in itertools.permutations(range(1,n+1))})
 
 def Bruhat_new(n):
+	'''@no_list@'''
 	def inv(pi):
 		return sum(len([j for j in range(i+1,n) if pi[j]<pi[i]]) for i in range(n))
 	#j>_i\pi(j)
@@ -1233,7 +1237,7 @@ def MinorPoset(L,genL=None, weak=False):
 
 	@exec@
 	make_fig(MinorPoset(LatticeOfFlats([[1,2],[2,3],[1,3]])),'M_lof_triangle',height=10,width=8,latt_height=0.75,latt_width=1,latt_labels=False)
-	make_fig(MinorPoset(LatticeOfFlats([0,1,2,2,1,3,3,3])),'M_lof_poly',height=10,width=8,latt_height=1,latt_width=1,latt_labels=False)
+	make_fig(MinorPoset(LatticeOfFlats([0,1,2,2,1,3,3,3])),'M_lof_poly',height=10,width=12,latt_height=1,latt_width=1,latt_labels=False)
 	make_fig(MinorPoset(Boolean(2),Boolean(2)[1:4]), 'M_B_2',height=10,width=8,latt_height=1,latt_width=1,latt_labels=False)
 	'''
 	if weak: raise NotImplementedError
