@@ -974,48 +974,9 @@ def DistributiveLattice(P, indices=False):
 			elements.append(tuple(P[i] for i in range(len(P)) if (1<<i)&I!=0))
 		def less(I,J):
 			return I!=J and all(i in J for i in I)
-	def irr_nodeName(this, i):
-		return 'irr_'+HasseDiagram.nodeName(this,i)
-	def make_node_options(S):
-		def node_options(this, i):
-			if i in S:
-				return 'color=black'
-			return 'color=gray'
-		return node_options
-	def make_line_options(S):
-		def line_options(this,i,j):
-			if i in S and j in S:
-				return 'color=black'
-			return 'color=gray'
-		return line_options
-	class DistributiveHasseDiagram(HasseDiagram):
-		def __init__(this,JP,P,indices=False,**kwargs):
-			super().__init__(JP,**kwargs)
-			this.Irr = P
-			#everything in HasseDiagram uses indices so we need to store ideals as lists of indices
-			if not indices:
-				this.P.elements = [[this.Irr.elements.index(e) for e in J] for J in this.P.elements]
-		def latex(this, **kwargs):
-			irrArgs = {k[4:]:v for k,v in kwargs.items() if k[:4]=='irr_'}
-			irrDefaults = this.Irr.hasseDiagram.__dict__.copy()
-			this.Irr.hasseDiagram.__dict__.update(irrArgs)
-			this.Irr.hasseDiagram.nodeName = irr_nodeName
 
-			ret = super().latex(**kwargs)
-
-			this.Irr.hasseDiagram.__dict__.update(irrDefaults)
-			return ret
-
-		def nodeLabel(this, i):
-			idealLatex = this.Irr.latex(node_options = make_node_options(this.P[i]), line_options = make_line_options(this.P[i]))
-			idealLatex = ''.join(idealLatex.split('\n')[2:-1])
-#			idealLatex = idealLatex[len('\\begin{tikzpicture}') : -1*len('\\end{tikzpicture}')]
-			return '\\begin{tikzpicture}\\begin{scope}\n'+idealLatex+'\n\\end{scope}\\end{tikzpicture}'
-
-	JP = Poset(elements = elements, less = less)
-	JP.hasseDiagram = DistributiveHasseDiagram(JP,P,indices)
+	JP = Poset(elements = elements, less = less, hasse_class = lambda JP,**kwargs: DistributiveHasseDiagram(JP,P,indices,**kwargs))
 	return JP
-
 #def SignedBirkhoff(P):
 #	D = DistributiveLattice(P, indices=True)
 #	def maximal(I):

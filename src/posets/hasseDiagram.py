@@ -618,57 +618,110 @@ class HasseDiagram:
 #begin MinorPosetHasseDiagram class
 ##############
 
-class MinorPosetHasseDiagram(HasseDiagram):
+class SubposetsHasseDiagram(HasseDiagram):
 	r'''
 	@is_section@no_children@
-	TODO \verb|__doc__| string
+	This is a class to draw posets whose elements are themselves posets, intended
+	for use where all these posets are subposets of a given poset such as the lattice of
+	ideals of a poset or the poset of intervals of a poset.
 	'''
-	def __init__(this, P, L, **kwargs):
-		super().__init__(P, **kwargs)
+	def __init__(this, P, Q, is_in=__in__, prefix='Q', **kwargs):
+		r'''
+		'''
+		this.prefix=prefix+'_'
+		this.prefix_len = len(this.prefix)
+		super().__init__(P, {k:v for k,v in **kwargs.items() if k[:len(this.prefix)]==this.prefix)
 		this.P = P
-		this.L = L
-		this.L.hasseDiagram.__dict__.update({k[5:] : v for k,v in kwargs.items() if k[:5]=='latt_'})
+		this.Q = Q
+		this.is_in = is_in
+		this.Q.hasseDiagram.__dict__.update({k[len(this.prefix):] : v for k,v in kwargs.items() if k[:len(this.prefix)]==this.prefix})
 
 	def latex(this, **kwargs):
-		latt_args = {k[5:] : v for k,v in kwargs.items() if k[:5] == 'latt_'}
-		latt_defaults = this.L.hasseDiagram.__dict__.copy()
-		this.L.hasseDiagram.__dict__.update(latt_args)
-		this.L.hasseDiagram.nodeName = MinorPosetHasseDiagram.latt_nodeName
+		Q_args = {k[len(this.prefix):] : v for k,v in kwargs.items() if k[:len(this.prefix)]==this.prefix}
+		Q_defaults = this.Q.hasseDiagram.__dict__.copy()
+		this.Q.hasseDiagram.__dict__.update(Q_args)
+		this.Q.hasseDiagram.nodeName = MinorPosetHasseDiagram.latt_nodeName
 
 		ret = super().latex(**kwargs)
 
-		this.L.hasseDiagram.__dict__.update(latt_defaults)
+		this.Q.hasseDiagram.__dict__.update(Q_defaults)
 
 		return ret
 
 	def nodeLabel(this, i):
 		if i in this.P.min(): return '$\\emptyset$'
 		args = {
-			'node_options' : MinorPosetHasseDiagram.make_node_options(this.P[i]),
-			'line_options' : MinorPosetHasseDiagram.make_line_options(this.P[i]),
+			'node_options' : SubposetsHasseDiagram.make_node_options(this.P[i]),
+			'line_options' : SubposetsHasseDiagram.make_line_options(this.P[i]),
 			}
-		args.update({k[5:] : v for (k,v) in this.__dict__.items() if k[:5]=='latt_'})
-		minorLatex = this.L.latex(**args)
-		minorLatex = ''.join(minorLatex.split('\n')[2:-1])
-		return '\\begin{tikzpicture}\\begin{scope}\n'+minorLatex+'\n\\end{scope}\\end{tikzpicture}'
+		args.update({k[len(this.prefix):] : v for (k,v) in this.__dict__.items() if k[:len(this.prefix)]==this.prefix})
+		Q_Latex = this.Q.latex(**args)
+		Q_Latex = ''.join(Q_Latex.split('\n')[2:-1])
+		return '\\begin{tikzpicture}\\begin{scope}\n'+Q_Latex+'\n\\end{scope}\\end{tikzpicture}'
 
 	def latt_nodeName(this, i):
 		return 'latt_'+HasseDiagram.nodeName(this,i)
 
-	def make_node_options(KH):
+	def make_node_options(q):
 		def node_options(this, i):
-			if this.P.elements[i] in KH: return 'color=black'
+			if this.is_in(this.P.elements[i],q): return 'color=black'
 			return 'color=gray'
 		return node_options
 
-	def make_line_options(KH):
+	def make_line_options(q):
 		def line_options(this, i, j):
-			if this.P.elements[i] in KH and this.P.elements[j] in KH: return 'color=black'
+			if this.is_in(this.P.elements[i],q) and this.is_in(this.P.elements[j],q): return 'color=black'
 			return 'color=gray'
 		return line_options
-
-
 ##############
 #end MinorPosetHasseDiagram class
 ##############
 
+##############
+#DistributiveLatticeHasseDiagram class
+##############
+#class DistributiveHasseDiagram(HasseDiagram):
+#	r'''
+#	@subclass@is_section@
+#	TODO \verb|__doc__| string
+#	'''
+#	def __init__(this,JP,P,indices=False,**kwargs):
+#		super().__init__(JP,**kwargs)
+#		this.Irr = P
+#		#everything in HasseDiagram uses indices so we need to store ideals as lists of indices
+#		if not indices:
+#			this.P.elements = [[this.Irr.elements.index(e) for e in J] for J in this.P.elements]
+#		this.Irr.hasseDiagram.__dict__.update({k[4:] : v for k,v in kwargs.items() if k[:4]=='irr_'})
+#	def irr_nodeName(this, i):
+#			return 'irr_'+HasseDiagram.nodeName(this,i)
+#	def make_node_options(S):
+#		def node_options(this, i):
+#			if i in S:
+#				return 'color=black'
+#			return 'color=gray'
+#		return node_options
+#	def make_line_options(S):
+#		def line_options(this,i,j):
+#			if i in S and j in S:
+#				return 'color=black'
+#			return 'color=gray'
+#		return line_options
+#	def latex(this, **kwargs):
+#		irrArgs = {k[4:]:v for k,v in kwargs.items() if k[:4]=='irr_'}
+#		irrDefaults = this.Irr.hasseDiagram.__dict__.copy()
+#		this.Irr.hasseDiagram.__dict__.update(irrArgs)
+#		this.Irr.hasseDiagram.nodeName = irr_nodeName
+#
+#		ret = super().latex(**kwargs)
+#
+#		this.Irr.hasseDiagram.__dict__.update(irrDefaults)
+#		return ret
+#
+#	def nodeLabel(this, i):
+#		idealLatex = this.Irr.latex(node_options = make_node_options(this.P[i]), line_options = make_line_options(this.P[i]))
+#		idealLatex = ''.join(idealLatex.split('\n')[2:-1])
+##			idealLatex = idealLatex[len('\\begin{tikzpicture}') : -1*len('\\end{tikzpicture}')]
+#		return '\\begin{tikzpicture}\\begin{scope}\n'+idealLatex+'\n\\end{scope}\\end{tikzpicture}'
+##############
+#end DistributiveLatticeHasseDiagram class
+##############
