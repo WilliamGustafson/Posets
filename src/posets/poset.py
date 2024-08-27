@@ -1804,7 +1804,7 @@ class Genlatt(Poset):
 		return super().__str__() + '\nG = '+str(this.G)
 	def __repr__(this):
 		return super().__repr__()[:-1] + ', G='+repr(this.G)+')'
-	def minorPoset(this):
+	def minorPoset(this, **kwargs):
 		r'''
 		Returns the minor poset of the given \verb|Genlatt| instance.
 		'''
@@ -1816,7 +1816,6 @@ class Genlatt(Poset):
 			relations=rels,
 			indices=True,
 			name=name,
-			hasse_class=MinorPosetHasseDiagram,
 			latt_height=2,
 			latt_width=1,
 			latt_nodescale=0.5,
@@ -1825,12 +1824,10 @@ class Genlatt(Poset):
 		M.cache['isRanked()']=True
 		M.cache['isEulerian()']=True
 		M.cache['isGorenstein()']=True
-		hd = M.hasseDiagram
 		M = M.dual().adjoin_zerohat()
-		nodeLabel = hd.nodeLabel
-		hd.nodeLabel = lambda this,i : '$\\emptyset$' if i in this.P.min(True) else nodeLabel(this,i)
-		M.hasseDiagram = hd
-		M.hasseDiagram.P = M
+
+		nodeLabel = lambda this,i : '$\\emptyset$' if i in this.P.min(True) else nodeLabel(this,i)
+		M.hasseDiagram = SubposetsHasseDiagram(M, this, prefix='L', **kwargs)
 		return M
 
 ##############

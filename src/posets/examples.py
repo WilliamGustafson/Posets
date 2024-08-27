@@ -14,7 +14,7 @@ EGGS
 #So we can make Uncrossing poset in the obvious way, make all pairings, then calc $r_{ij}$ mats and compare.
 #Can do same for Bruhat
 from .poset import Poset,Genlatt
-from .hasseDiagram import HasseDiagram
+from .hasseDiagram import *
 import itertools
 
 def Empty():
@@ -940,7 +940,7 @@ def DistributiveLattice(P, indices=False):
 	\end{center}
 
 	@exec@
-	make_fig(DistributiveLattice(Root(3)),'DL',height=6,width=4)
+	make_fig(DistributiveLattice(Root(3)),'DL',height=10,width=6,irr_height=0.75,irr_width=1,irr_labels=False)
 	'''
 	#make principal ideals
 	M = P.incMat
@@ -975,7 +975,7 @@ def DistributiveLattice(P, indices=False):
 		def less(I,J):
 			return I!=J and all(i in J for i in I)
 
-	JP = Poset(elements = elements, less = less, hasse_class = lambda JP,**kwargs: DistributiveHasseDiagram(JP,P,indices,**kwargs))
+	JP = Poset(elements = elements, less = less, hasse_class = SubposetsHasseDiagram, prefix='irr',Q=P)
 	return JP
 #def SignedBirkhoff(P):
 #	D = DistributiveLattice(P, indices=True)
@@ -1197,9 +1197,9 @@ def MinorPoset(L,genL=None, weak=False):
 	\end{center}
 
 	@exec@
-	make_fig(MinorPoset(LatticeOfFlats([[1,2],[2,3],[1,3]])),'M_lof_triangle',height=10,width=8,latt_height=0.75,latt_width=1,latt_labels=False)
-	make_fig(MinorPoset(LatticeOfFlats([0,1,2,2,1,3,3,3])),'M_lof_poly',height=10,width=12,latt_height=1,latt_width=1,latt_labels=False)
-	make_fig(MinorPoset(Boolean(2),Boolean(2)[1:4]), 'M_B_2',height=10,width=8,latt_height=1,latt_width=1,latt_labels=False)
+	make_fig(MinorPoset(LatticeOfFlats([[1,2],[2,3],[1,3]])),'M_lof_triangle',height=10,width=8,L_height=0.75,L_width=1,L_labels=False)
+	make_fig(MinorPoset(LatticeOfFlats([0,1,2,2,1,3,3,3])),'M_lof_poly',height=10,width=12,L_height=1,L_width=1,L_labels=False)
+	make_fig(MinorPoset(Boolean(2),Boolean(2)[1:4]), 'M_B_2',height=10,width=8,L_height=1,L_width=1,L_labels=False)
 	'''
 	if weak: raise NotImplementedError
 	return Genlatt(L, G=genL).minorPoset()

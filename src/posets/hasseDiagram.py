@@ -625,12 +625,12 @@ class SubposetsHasseDiagram(HasseDiagram):
 	for use where all these posets are subposets of a given poset such as the lattice of
 	ideals of a poset or the poset of intervals of a poset.
 	'''
-	def __init__(this, P, Q, is_in=__in__, prefix='Q', **kwargs):
+	def __init__(this, P, Q, is_in=lambda x,X:x in X, prefix='Q', **kwargs):
 		r'''
 		'''
 		this.prefix=prefix+'_'
 		this.prefix_len = len(this.prefix)
-		super().__init__(P, {k:v for k,v in **kwargs.items() if k[:len(this.prefix)]==this.prefix)
+		super().__init__(P, **{k:v for k,v in kwargs.items() if k[:len(this.prefix)]==this.prefix})
 		this.P = P
 		this.Q = Q
 		this.is_in = is_in
@@ -640,7 +640,7 @@ class SubposetsHasseDiagram(HasseDiagram):
 		Q_args = {k[len(this.prefix):] : v for k,v in kwargs.items() if k[:len(this.prefix)]==this.prefix}
 		Q_defaults = this.Q.hasseDiagram.__dict__.copy()
 		this.Q.hasseDiagram.__dict__.update(Q_args)
-		this.Q.hasseDiagram.nodeName = MinorPosetHasseDiagram.latt_nodeName
+		this.Q.hasseDiagram.nodeName = SubposetsHasseDiagram.latt_nodeName
 
 		ret = super().latex(**kwargs)
 
@@ -655,6 +655,7 @@ class SubposetsHasseDiagram(HasseDiagram):
 			'line_options' : SubposetsHasseDiagram.make_line_options(this.P[i]),
 			}
 		args.update({k[len(this.prefix):] : v for (k,v) in this.__dict__.items() if k[:len(this.prefix)]==this.prefix})
+		args['parent']=this
 		Q_Latex = this.Q.latex(**args)
 		Q_Latex = ''.join(Q_Latex.split('\n')[2:-1])
 		return '\\begin{tikzpicture}\\begin{scope}\n'+Q_Latex+'\n\\end{scope}\\end{tikzpicture}'
@@ -664,13 +665,13 @@ class SubposetsHasseDiagram(HasseDiagram):
 
 	def make_node_options(q):
 		def node_options(this, i):
-			if this.is_in(this.P.elements[i],q): return 'color=black'
+			if this.parent.is_in(this.P.elements[i],q): return 'color=black'
 			return 'color=gray'
 		return node_options
 
 	def make_line_options(q):
 		def line_options(this, i, j):
-			if this.is_in(this.P.elements[i],q) and this.is_in(this.P.elements[j],q): return 'color=black'
+			if this.parent.is_in(this.P.elements[i],q) and this.parent.is_in(this.P.elements[j],q): return 'color=black'
 			return 'color=gray'
 		return line_options
 ##############
