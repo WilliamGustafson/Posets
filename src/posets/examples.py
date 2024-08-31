@@ -925,8 +925,39 @@ def Bnq(n=2, q=2):
 #	for S in spaces: lengths[int(math.log(len([j for j in range(qn) if (1<<j)&S!=0]),q))].append(S)
 
 	spaces=sorted(list(spaces))
-#	for i in range(0,len(lengths)): lengths[i]=sorted(list(lengths[i]))
-	return Poset(elements = spaces, less = lambda i,j: i!=j and i&j == i)
+
+
+	def basis(S):
+		basis = []
+		span = 1 #zero space
+		span_filter=spaces
+		while span!=S:
+			#find first vector in S but not span
+			T = S^span
+			v = bin(T)[2:-1][::-1].index('1')+1
+			basis.append(v)
+			#intersect all spaces containing span and v
+			span = (1<<qn)-1 #whole space
+			span_filter = [W for W in span_filter if W&(1<<v)!=0]
+			for W in span_filter:
+				span &= W
+#			print('span',span,'S',S,'span_filter',span_filter,'v',v)
+		return tuple(basis)
+
+	def list_to_mat(B):
+#		B = basis(S)
+		return tuple(tuple(vec(b)) for b in B)
+
+	def nodeLabel(hd, i):
+		if i==0: return '$\\left(\\begin{matrix}'+' & '.join('0'*n)+'\\end{matrix}\\right)$'
+		return '$\\left(\\begin{matrix}' + r'\\'.join(' & '.join(str(x) for x in row) for row in hd.P[i])+'\\end{matrix}\\right)$'
+	P = Poset(elements = spaces, less = lambda i,j: i!=j and i&j == i, nodeLabel=nodeLabel,extra_packages='\\usepackage{amsmath}')
+
+	#sort ranks: revlex on bases induced by ordering vectors by interpreting them as base q representations of numbers
+	P.elements = [basis(S)[::-1] for S in P]
+	P = P.sort()
+	P.elements = [list_to_mat(B)[::-1] for B in P]
+	return P
 
 def DistributiveLattice(P, indices=False):
 	r'''
@@ -940,7 +971,7 @@ def DistributiveLattice(P, indices=False):
 	\end{center}
 
 	@exec@
-	make_fig(DistributiveLattice(Root(3)),'DL',height=10,width=6,irr_height=0.75,irr_width=1,irr_labels=False)
+	make_fig(DistributiveLattice(Root(3)),'DL',height=10,width=6,irr_height=0.75,irr_width=1,irr_scale='1',irr_labels=False)
 	'''
 	#make principal ideals
 	M = P.incMat
@@ -975,7 +1006,14 @@ def DistributiveLattice(P, indices=False):
 		def less(I,J):
 			return I!=J and all(i in J for i in I)
 
-	JP = Poset(elements = elements, less = less, hasse_class = SubposetsHasseDiagram, prefix='irr',Q=P)
+	JP = Poset(
+		elements = elements,
+		less = less,
+		hasse_class = SubposetsHasseDiagram,
+		prefix='irr',
+		Q=P,
+		irr_scale='0.1'
+		)
 	return JP
 #def SignedBirkhoff(P):
 #	D = DistributiveLattice(P, indices=True)
@@ -1201,5 +1239,4 @@ def MinorPoset(L,genL=None, weak=False):
 	make_fig(MinorPoset(LatticeOfFlats([0,1,2,2,1,3,3,3])),'M_lof_poly',height=10,width=12,L_height=1,L_width=1,L_labels=False)
 	make_fig(MinorPoset(Boolean(2),Boolean(2)[1:4]), 'M_B_2',height=10,width=8,L_height=1,L_width=1,L_labels=False)
 	'''
-	if weak: raise NotImplementedError
-	return Genlatt(L, G=genL).minorPoset()
+	return Genlatt(L, G=genL).minorPoset(weak)

@@ -1,5 +1,24 @@
 r'''
 @is_section@exec@version='0.0.1'@
+@exec@
+def eval_txt(s):
+	ret = [r'\color{input}\begin{verbatim}']
+	ret.append(s)
+	ret.append(r'\end{verbatim}\color{output}\begin{verbatim}')
+	ret.append(str(eval(s)))
+	ret.append(r'\end{verbatim}\color{black}')
+	return ''.join(ret)
+
+def exec_txt(s):
+	lines = s.split('\n')
+	ret = [r'\color{input}\begin{verbatim}']
+	ret.append(s)
+	ret.append(r'\end{verbatim}\color{output}\begin{verbatim}')
+	exec('\n'.join(lines[:-1]))
+	ret.append(str(eval(lines[-1])))
+	ret.append(r'\end{verbatim}\color{black}')
+	return ''.join(ret)
+@
 This module provides a class \verb|Poset| that encodes a finite
 partially ordered set (poset). The class provides methods to construct
 new posets via operations such as Cartesian products and disjoint unions,
@@ -14,6 +33,12 @@ run \verb|hatch build| to build distribution files and then
 \verb|python -m pip install dist/posets-@eval@version@-py3-none-any.whl|
 to install the built wheel file.
 
+The documentation can be built as a pdf by running
+\verb|pydox ../src/posets -i \*doc_funcs.py -c| from the docs directory.
+\verb|pydox| can be obtained from \url{github.com/WilliamGustafson/pydox.git}.
+Compilation requires \LaTeX to be installed with the packages pgf/tikz,
+graphicx, fancyvrb, amsmath, amsssymb, scrextend mdframed and hyperref.
+
 \subsection{Overview}
 Here we give a quick introduction to using the posets module by way of examples.
 
@@ -26,19 +51,38 @@ either as a list or dictionary, by providing a function \verb|less|
 that returns a Boolean value or by providing an incidence matrix.
 You can also copy a poset by passing a \verb|Poset| object to the constructor.
 The \verb|Poset| documentation contains a full explanation, below is
-an example of constructing the same poset in four ways.
-\begin{center}\begin{verbatim}P = Poset(relations={'a':'ab','b':'ab'})
+an example of constructing the same poset (depicted in Figure~\ref{v-poset-fig})
+in four ways.
+
+\begin{center}\begin{verbatim}P = Poset(relations={'a':['ab'],'b':['ab']})
 P = Poset(relations=[['a','ab'],['b','ab']])
 P = Poset(elements=['a','b','ab'], less=lambda x,y: return x in y and x!=y)
 P = Poset(incMat = [[0,0,1],[0,0,1],[0,0,0]], elements=['a','b','ab'])
 \end{verbatim}\end{center}
 
+\begin{figure}
+\centering
+\includegraphics{figures/v.pdf}
+\caption{The Hasse diagram of an example poset where $a\le ab$ and $b\le ab$.}
+\label{v-poset-fig}
+\end{figure}
+@exec@
+import os
+from posets import Poset
+P = Poset(relations={'a':['ab'],'b':['ab']})
+with open('figures/v.tex','w') as file:
+	file.write(P.latex(height=3,width=2,standalone=True))
+os.system('pdflatex --output-directory=figures figures/v.tex')
+@
+
 Printing a poset via \verb|print(P)| will list the elements, the zeta function (a matrix $\zeta$ with entries $\zeta_{i,j}=1$ if $i\le j$ and 0 otherwise as well as a list \verb|ranks|; \verb|ranks[i]| is a list of all indices \verb|j| such that \verb|elements[j]| is length \verb|i|
 (the length if $p\in P$ is the length of the longest chain in $P$ with maximum $p$).
+@eval@eval_txt('P')@
 
 You can display the Hasse diagram of a poset in a new window with \verb|P.show()|
 or generate tikz code with \verb|P.latex()|. Both methods take keyword arguments to control the output, e.g. \verb|height|, \verb|width|, \verb|nodescale|.
 The \verb|latex| method allows for finer grain control of the output compared to \verb|show| but must be compiled before viewing. Note the aesthetics of larger posets are heavily impacted by the ordering of \verb|elements|.
+Figure~\ref{v-poset-fig} was generated from the command \verb|P.latex(height=3,width=2,standalone=True)|.
 
 This module contains various examples of posets, e.g.
 \verb|Boolean|, \verb|Cube|, and \verb|Bruhat|. For example,
@@ -80,7 +124,7 @@ and flag $h$-vector (as a list of lists \verb|[S,f_S,h_S]|).
 and the \cv\dv-index respectively, encoded as an instance of the
 \verb|Polynomial| class provided by this module. Calling \verb|cdIndex|
 on a poset that does not have a \cv\dv-index will still return a \cv\dv-polynomial,
-but the result may not really be meaningful. This computes the \cv\dv-index
+but the result may not really be meaningful; this computes the \cv\dv-index
 of a semi-Eulerian poset correctly. Other invariants include
 M\"obius function values, Betti numbers
 and (the face poset of) the order complex.
