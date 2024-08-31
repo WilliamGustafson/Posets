@@ -564,7 +564,7 @@ class HasseDiagram:
 			ret.append('\n\\usepackage[psfixbb,graphics,tightpage,active]{preview}\n')
 			ret.append('\\PreviewEnvironment{tikzpicture}\n\\usepackage[margin=0in]{geometry}\n')
 			ret.append('\\begin{document}\n\\pagestyle{empty}\n')
-		ret.append('\\begin{tikzpicture}\n')
+		ret.append('\\begin{{tikzpicture}}[scale={}]\n'.format(this.scale))
 
 		if not this.labels:
 			##############
@@ -580,7 +580,7 @@ class HasseDiagram:
 				for j in J:
 					options=this.line_options(this,i,j)
 					if len(options)>0: options='['+options+']'
-					ret.append('\\draw[color='+this.color+']'+options+'('+this.nodeName(this, i)+this.lowsuffix+')--('+this.nodeName(this, j)+this.highsuffix+");\n")
+					ret.append('\\draw'+options+'('+this.nodeName(this, i)+')--('+this.nodeName(this, j)+");\n")
 		###############
 		#write nodes for the poset elements
 		###############
@@ -605,7 +605,7 @@ class HasseDiagram:
 				for j in J:
 					options=this.line_options(this,i,j)
 					if len(options)>0: options='['+options+']'
-					ret.append('\\draw[color='+this.color+']'+options+'('+this.nodeName(this, i)+this.lowsuffix+')--('+this.nodeName(this, j)+this.highsuffix+");\n")
+					ret.append('\\draw'+options+'('+this.nodeName(this, i)+this.lowsuffix+')--('+this.nodeName(this, j)+this.highsuffix+");\n")
 		##############
 		##############
 		ret.append('\\end{tikzpicture}')
@@ -620,7 +620,7 @@ class HasseDiagram:
 
 class SubposetsHasseDiagram(HasseDiagram):
 	r'''
-	@is_section@no_children@
+	@is_section@subclass@
 	This is a class to draw posets whose elements are themselves posets, intended
 	for use where all these posets are subposets of a given poset such as the lattice of
 	ideals of a poset or the poset of intervals of a poset.
@@ -658,7 +658,7 @@ class SubposetsHasseDiagram(HasseDiagram):
 		args['parent']=this
 		Q_Latex = this.Q.latex(**args)
 		Q_Latex = ''.join(Q_Latex.split('\n')[2:-1])
-		return '\\begin{tikzpicture}\\begin{scope}\n'+Q_Latex+'\n\\end{scope}\\end{tikzpicture}'
+		return '\\begin{{tikzpicture}}[scale={}]\\begin{{scope}}\n'.format(this.Q.hasseDiagram.scale)+Q_Latex+'\n\\end{scope}\\end{tikzpicture}'
 
 	def latt_nodeName(this, i):
 		return 'latt_'+HasseDiagram.nodeName(this,i)

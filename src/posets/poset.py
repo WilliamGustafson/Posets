@@ -1,24 +1,22 @@
 ##########################################
 #TODO
 ##########################################
-#MinorPoset doesn't quite draw right cause it
-#doesn't correctly calculate the edges to be drawn
-#(see B_2 with \onehat as a generator). To fix this
-#I suggest making Genlatt a more complete class:
-#	>implement contraction and deletion methods
-#	>to make the MinorPoset first make the genlatt
-#	then use those methods
-#	>For drawing a genlatt we just have the right
-#	covers metod already so it's ez now.
-#Also, U_2_3 is totally bugged out, but if rewrite anyways
-#we probably don't have to worry about it.
+#What is HasseDiagram could calc some stats
+#on how ``good'' your drawing is?
+#	length of lines drawn
+#	length of lines drawn per element per up/down
+#	identify elements with longest lines
+#	mean and variance of element line lengths
+#	mean and variance of line length
+#Then what if HasseDiagram could shuffle the poset a bunch
+#and pick the ``best'' reordering?
+#	add option to shuffle a bunch of times with the first time identity
+#	and select the best one. So you can try to make it good and
+#	ask HasseDiagram to make it better
 #
-#In HasseDiagram.latex do a loop to make coords
-#then draw the covers then draw the nodes
+#uhm, sort doesn't seem to use indices correctly
 #
 #Make Bruhat directly should be faster
-#
-#PartitionLattice and those after needs figures
 #
 #get rid of requires decorator and try warpped imports
 #
@@ -39,19 +37,21 @@
 #add a nodeName function for built ins (default just does index)
 #
 #Set HasseDiagram defaults for Bqn
+#	how to order ranks?
 #
 #Set HasseDiagram defaults for DistributiveLattice
 #
 #Set HasseDiagram defaults for MinorPoset
+#	order the ranks right
+#	add weak version
 #
 #Set HasseDiagram defaults for lattices of flats, should be same as BooleanAlgebra
 #for polymatroids and graph is using partitions
 #	Subclass HasseDiagram for the Boolean algebra and use that same class for (poly)matroids?
 #
-#Move custom hasse diagram classes for DistributiveLattice and MinorPoset out of the function
-#and into hasseDiagram.py, also clean them up
-#
 #Write README with some examples.
+#
+#Do you really have to avoid specifying equalities for the constructor? why?
 ##########################################
 r'''
 @no_list@sections_order@Poset@PosetIsoClass@HasseDiagram@Built in posets@Utilities@Timer@@
@@ -444,6 +444,8 @@ class Poset:
 		P.hasseDiagram.P = P
 		if 'isRanked()' in this.cache:
 			P.cache['isRanked()'] = this.cache['isRanked()']
+		if not this.isRanked():
+			this.ranks = Poset.make_ranks(this.incMat)
 		if 'isEulerian()' in this.cache:
 			P.cache['isEulerian()'] = this.cache['isEulerian()']
 		if 'isGorenstein()' in this.cache:
@@ -571,20 +573,21 @@ class Poset:
 		@section@Queries@
 		Checks whether the poset is ranked.
 		'''
-		for i in range(len(this)):
-			row = this.incMat[i]
-			rk = this.rank(i,indices=True)
-			found = True
-			for j in range(len(this)):
-				if row[j]==1:
-					if this.rank(j,indices=True)==rk+1:
-						found = True
-						break
-					else:
-						found = False
-			if not found:
-				return False
-		return True
+		return all(all(this.rank(v)==this.rank(k)+1 for v in V)for (k,V) in this.covers().items())
+#		for i in range(len(this)):
+#			row = this.incMat[i]
+#			rk = this.rank(i,indices=True)
+#			found = True
+#			for j in range(len(this)):
+#				if row[j]==1:
+#					if this.rank(j,indices=True)==rk+1:
+#						found = True
+#						break
+#					else:
+#						found = False
+#			if not found:
+#				return False
+#		return True
 
 	@cached_method
 	def isEulerian(this):
@@ -635,7 +638,13 @@ class Poset:
 
 		We say $q$ covers $p$ when $p<q$ and $p<r<q$ implies $r=p$ or $r=q$.
 		'''
-		if this.isRanked():
+		#isRanked calls covers so we can't call isRanked
+		#TODO: this branch will almost never be called right?
+		#except in built ins where we manually cache it I guess
+		#TODO: check times on like big Booleans or cubes or something
+		#is it worth it to have this branch that only gets called
+		#when the cache is manually set?
+		if 'isRanked()' in this.cache and this.isRanked():
 			ret = {}
 			non_max = [i for i in range(len(this)) if i not in this.max(indices=True)]
 			for i in non_max:
@@ -684,7 +693,7 @@ class Poset:
 			S = [this.elements.index(s) for s in S]
 		return this.subposet([i for i in range(len(this.incMat)) if i not in S],True)
 
-	def subposet(this, S, indices=False):
+	def subposet(this, S, indices=False, keep_hasseDiagram=True):
 		r'''
 		@section@Subposet Selection@
 		Returns the subposet of elements in \verb|S|.
@@ -693,10 +702,11 @@ class Poset:
 			S = [this.elements.index(s) for s in S]
 		elements = [this.elements[s] for s in S]
 		incMat = [[this.incMat[s][r] for r in S] for s in S]
-		return Poset(incMat, elements)
-#		ranks = [[S.index(r) for r in rk if r in S] for rk in this.ranks]
-#		ranks = [rk for rk in ranks if len(rk)>0]
-#		return Poset(incMat,elements,ranks)
+		P = Poset(incMat, elements)
+		if keep_hasseDiagram:
+			P.hasseDiagram = copy.copy(this.hasseDiagram)
+			P.hasseDiagram.P = P
+		return P
 
 	def interval(this, i, j, indices=False):
 		r'''
@@ -1707,11 +1717,11 @@ class Genlatt(Poset):
 		if 'covers(False,)' in this.cache: del this.cache['covers(False,)']
 		if 'covers(True,)' in this.cache: del this.cache['covers(True,)']
 		this.hasseDiagram.P = this
-		irrs = [i for i in range(len(this)) if i not in this.max(True)+this.min(True)] if G_indices else [p for p in this.properPart() if len(covers[p])==1]
+		irrs = [k for (k,v) in this.dual().covers(G_indices).items() if len(v)==1]
 		if G==None:
-			covers=super().covers()
 			G = irrs
 		this.G = tuple(set([this.elements[i] for i in G]+irrs)) if G_indices else tuple(set(G+irrs))
+		this.G = tuple(sorted(this.G, key=lambda x:this.elements.index(x)))
 	#overwrite L's covers function so hasse diagram does all edges
 	@cached_method
 	def covers(this, indices=False):
@@ -1739,6 +1749,10 @@ class Genlatt(Poset):
 				edges[l].append(lg)
 		return edges
 
+	@cached_method
+	def isRanked(this):
+		return all(all(this.rank(v)==this.rank(k)+1 for v in V)for (k,V) in super().covers().items())
+
 	def minor(this,H,z):
 		r'''
 		Given an iterable \verb|H| of generators and an element \verb|z| returns the \verb|Genlatt| with minimum \verb|z| and generating
@@ -1750,12 +1764,28 @@ class Genlatt(Poset):
 			elements.add(l)
 		return Genlatt(this.subposet(elements),G=H)
 
-	def contract(this, g):
+	def Del(this, K):
 		r'''
-		Return the \verb|Genlatt| obtained by contracting the generator \verb|g|.
+		Return the deletion set of the minor \verb|K|.
+
+		The deletion set of a minor $(K,H)$ of $(L,G)$ is the set
+		\[\text{Del}(K,H)=\{g\in G:g\join\zerohat_K\not\in H\cup\{\zerohat_K\}\}\]
+		This is the minimal set of generators that must be deleted
+		to form $(K,H)$ from $(L,G)$
+		'''
+		z = K.min()[0]
+		return [g for g in this.G if (not this.lesseq(g,z)) and (this.join(g,z) not in K.G)]
+
+	def contract(this, g, weak=False, L=None):
+		r'''
+		Return the \verb|Genlatt| obtained by contracting the generator \verb|g|, if \verb|weak| is \verb|True| performs the weak contraction with respect to \verb|L| (default value for \verb|L| is \verb|this|).
 		'''
 		H = [this.join(g,h) for h in this.G]
 		if g in H: H.remove(g)
+		if weak and L!=None:
+			D = [L.join(g,h) for h in L.Del(this)]
+			if g in D: return None
+			H = [h for h in H if h not in D]
 		return this.minor(H,g)
 
 	def delete(this, g):
@@ -1765,23 +1795,24 @@ class Genlatt(Poset):
 		H = [h for h in this.G if h!=g]
 		return this.minor(H,this.min()[0])
 
-	def _minors(this, minors, rels, i):
+	def _minors(this, minors, rels, i,weak,L):
 		r'''
 		Recursion backend to \verb|minors|.
 		'''
 		rels[i]=[]
 		for g in this.G:
-			for M in (this.delete(g),this.contract(g)):
+			for M in (this.delete(g),this.contract(g,weak,L)):
+				if M==None: continue #weak contraction not defined
 				if M in minors:
 					Mi = minors.index(M)
 				else:
 					Mi = len(minors)
 					minors.append(M)
 				rels[i].append(Mi)
-				M._minors(minors,rels,Mi)
+				M._minors(minors,rels,Mi,weak,L)
 		return
 
-	def minors(this):
+	def minors(this, weak=False):
 		r'''
 		Returns a list of minors of the given \verb|Genlatt| instance
 		and an incomplete dictionary of relations.
@@ -1791,7 +1822,7 @@ class Genlatt(Poset):
 		'''
 		minors = [this]
 		rels = {}
-		this._minors(minors, rels, 0)
+		this._minors(minors, rels, 0,weak,this)
 		return minors, rels
 
 	def __eq__(this,that):
@@ -1804,11 +1835,11 @@ class Genlatt(Poset):
 		return super().__str__() + '\nG = '+str(this.G)
 	def __repr__(this):
 		return super().__repr__()[:-1] + ', G='+repr(this.G)+')'
-	def minorPoset(this, **kwargs):
+	def minorPoset(this, weak=False, **kwargs):
 		r'''
 		Returns the minor poset of the given \verb|Genlatt| instance.
 		'''
-		minors, rels = this.minors()
+		minors, rels = this.minors(weak)
 		if this.name=='': name = 'Minor poset of a generator-enriched lattice'
 		else: name = 'Minor poset of '+this.name
 		M = Poset(
@@ -1821,13 +1852,30 @@ class Genlatt(Poset):
 			latt_nodescale=0.5,
 			L=this,
 			)
-		M.cache['isRanked()']=True
-		M.cache['isEulerian()']=True
-		M.cache['isGorenstein()']=True
-		M = M.dual().adjoin_zerohat()
+		if not weak:
+			M.cache['isRanked()']=True
+			M.cache['isEulerian()']=True
+			M.cache['isGorenstein()']=True
+
+		#sort ranks correctly for nice plotting: use the cube sorting (revlex from 0<*<1)
+		#and the weak minor poset join injection (0's are deletion setand 1's are zerohat ideal)
+		def sort_key(K):
+			D = this.Del(K)
+			z = K.min()[0]
+			C = [g for g in this.G if this.lesseq(g,z)]
+			return [0 if g in D else 2 if g in C else 1 for g in this.G][::-1]
+		M = M.sort(sort_key)
+		M = M.dual().adjoin_zerohat() #wrecks hasseDiagram
 
 		nodeLabel = lambda this,i : '$\\emptyset$' if i in this.P.min(True) else nodeLabel(this,i)
-		M.hasseDiagram = SubposetsHasseDiagram(M, this, prefix='L', **kwargs)
+		kwargs.update({
+			'prefix' : 'L',
+			'width' : 7.5,
+			'height' : 10,
+			'L_width' : 0.75,
+			'L_height' : 1
+			})
+		M.hasseDiagram = SubposetsHasseDiagram(M, this,**kwargs)
 		return M
 
 ##############
