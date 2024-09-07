@@ -1719,8 +1719,9 @@ class Genlatt(Poset):
 		this.hasseDiagram.P = this
 		irrs = [k for (k,v) in this.dual().covers(G_indices).items() if len(v)==1]
 		if G==None:
-			G = irrs
-		this.G = tuple(set([this.elements[i] for i in G]+irrs)) if G_indices else tuple(set(G+irrs))
+			this.G = irrs
+		else:
+			this.G = tuple(set([this.elements[i] for i in G]+irrs)) if G_indices else tuple(set(list(G)+irrs))
 		this.G = tuple(sorted(this.G, key=lambda x:this.elements.index(x)))
 	#overwrite L's covers function so hasse diagram does all edges
 	@cached_method
@@ -1781,7 +1782,7 @@ class Genlatt(Poset):
 		Return the \verb|Genlatt| obtained by contracting the generator \verb|g|, if \verb|weak| is \verb|True| performs the weak contraction with respect to \verb|L| (default value for \verb|L| is \verb|this|).
 		'''
 		H = [this.join(g,h) for h in this.G]
-		if g in H: H.remove(g)
+		H = [h for h in H if h!=g]
 		if weak and L!=None:
 			D = [L.join(g,h) for h in L.Del(this)]
 			if g in D: return None

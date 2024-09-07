@@ -75,8 +75,6 @@ def Bruhat_new(n):
 	ranks = [[] for i in range(-1,n*(n-1)//2)]
 	for i in range(len(elements)): ranks[inv(elements[i])].append(i)
 	r_dict = {pi : r(pi) for pi in elements}
-	print('r_dict',r_dict)
-	print('inversions',[inv(pi) for pi in elements])
 	def less(i, j):
 		if i==j: return False
 		ri=r_dict[i]
@@ -941,7 +939,6 @@ def Bnq(n=2, q=2):
 			span_filter = [W for W in span_filter if W&(1<<v)!=0]
 			for W in span_filter:
 				span &= W
-#			print('span',span,'S',S,'span_filter',span_filter,'v',v)
 		return tuple(basis)
 
 	def list_to_mat(B):
