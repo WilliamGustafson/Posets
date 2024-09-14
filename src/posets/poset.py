@@ -1,7 +1,10 @@
 ##########################################
 #TODO
 ##########################################
-#What is HasseDiagram could calc some stats
+#references with a real bib
+#Update tests
+#
+#What if HasseDiagram could calc some stats
 #on how ``good'' your drawing is?
 #	length of lines drawn
 #	length of lines drawn per element per up/down
@@ -14,23 +17,21 @@
 #	and select the best one. So you can try to make it good and
 #	ask HasseDiagram to make it better
 #
+#Suggested algorithm on HasseDiagram could order a poset itself:
+#	Goal is to minimize length of lines drawn then variance of lengths
+#	Pick the elements on each rank one by one like this:
+#	at each step pick the element that minimizes the length of the
+#	lines drawn to that new element plus the length of lines to
+#	all the future elements but replace by the barycenter
+#	Maybe break ties by calculating variance across the point already placed
+#
 #Make Bruhat directly should be faster
 #
-#get rid of requires decorator and try warpped imports
+#get rid of @requires decorator and the try wrapped imports
 #
 #add comment of what imports are for
 #
-#standardize incMat convention (sign and diagonal)
-#
 #standardize choice of camelcase versus underscores
-#
-#I had in adjoin_onehat() this.copy_from(...)
-#and it made it so that if you save a poset P
-#and then call adjoin_onehat() (keeping P the same value)
-#then you can't iterate over P (for p in P: throws an error)
-#What the heck is that?
-	#kind of moot cause like I said it's fixed
-	#but I want to know cause that's so strange
 #
 #add a nodeName function for built ins (default just does index)
 #
@@ -48,6 +49,10 @@
 #	Subclass HasseDiagram for the Boolean algebra and use that same class for (poly)matroids?
 #
 #Write README with some examples.
+#
+#Rework examples writing in overview
+#
+#Make sure docs are up to date
 ##########################################
 r'''
 @no_list@sections_order@Poset@PosetIsoClass@HasseDiagram@Built in posets@Utilities@Timer@@
@@ -266,7 +271,7 @@ class Poset:
 		if len(this.incMat)>0:
 			for i in range(len(trans_close)):
 				this.incMat[i][i]=0
-			Poset.transClose(this.incMat)
+			if trans_close: Poset.transClose(this.incMat)
 		#####
 		#####
 		if not hasattr(this, 'elements'):
@@ -931,7 +936,7 @@ class Poset:
 	def sparseKVector(this):
 		r'''
 		@section@Invariants@
-		Returns the sparse $k$-vector $k_S = \sum_{T\subseteq S}f_S$.
+		Returns the sparse $k$-vector $k_S = \sum_{T\subseteq S}(-1)^{\abs{S\wout T}h_T$.
 
 		The sparse $k$-vector only has entries $k_S$ for sparse sets $S$,
 		that is, sets $S\subseteq[n-1]$ such that if $i\in S$ then $i+1\not\in S$.
@@ -1129,7 +1134,7 @@ class Poset:
 	def zeta(this):
 		r'''
 		@section@Invariants@
-		Returns the zeta matrix, the matrix whose $i,j$ entry is $1$ if \verb|elements[i] <= elements[j]| and $0$ otherwise.
+		Returns the zeta matrix, the matrix whose $i,j$ entry is $1$ if \verb|this.lesseq(i,j,indices=True)| and $0$ otherwise.
 		'''
 		return [[1 if i==j or this.incMat[i][j]==1 else 0 for j in range(len(this.incMat))] for i in range(len(this.incMat))]
 
@@ -1574,8 +1579,6 @@ class Poset:
 		else:
 			perm = sorted(this.elements,key=key)
 		return this.reorder(perm)
-#		perm = sorted(this.elements, key = key)
-#		return this.reorder(perm, indices)
 
 	def shuffle(this):
 		r'''
