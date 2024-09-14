@@ -14,8 +14,6 @@
 #	and select the best one. So you can try to make it good and
 #	ask HasseDiagram to make it better
 #
-#uhm, sort doesn't seem to use indices correctly
-#
 #Make Bruhat directly should be faster
 #
 #get rid of requires decorator and try warpped imports
@@ -50,8 +48,6 @@
 #	Subclass HasseDiagram for the Boolean algebra and use that same class for (poly)matroids?
 #
 #Write README with some examples.
-#
-#Do you really have to avoid specifying equalities for the constructor? why?
 ##########################################
 r'''
 @no_list@sections_order@Poset@PosetIsoClass@HasseDiagram@Built in posets@Utilities@Timer@@
@@ -267,7 +263,10 @@ class Poset:
 			else:
 				this.incMat = [[0]*len(elements) for e in elements]
 
-		if len(this.incMat)>0 and trans_close: Poset.transClose(this.incMat)
+		if len(this.incMat)>0:
+			for i in range(len(trans_close)):
+				this.incMat[i][i]=0
+			Poset.transClose(this.incMat)
 		#####
 		#####
 		if not hasattr(this, 'elements'):
@@ -1570,8 +1569,13 @@ class Poset:
 		@section@Miscellaneous@
 		Returns a new \verb|Poset| object (representing the same poset) with the elements sorted.
 		'''
-		perm = sorted(this.elements, key = key)
-		return this.reorder(perm, indices)
+		if indices:
+			perm = sorted(this.elements, key = lambda p: key(this.index(p))
+		else:
+			perm = sorted(this.elements,key=key)
+		return this.reorder(perm)
+#		perm = sorted(this.elements, key = key)
+#		return this.reorder(perm, indices)
 
 	def shuffle(this):
 		r'''
