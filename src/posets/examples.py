@@ -17,6 +17,9 @@ from .poset import Poset,Genlatt
 from .hasseDiagram import *
 import itertools
 
+
+
+
 def Empty():
 	r'''
 	@section@Built in posets@
@@ -235,7 +238,7 @@ def Boolean(n, X=None):
 	P.name = "Rank "+str(n)+" Boolean algebra"
 
 	def nodeLabel(hasseDiagram, i):
-		return str(hasseDiagram.P.elements[i])
+		return '\\{'+str(hasseDiagram.P[i])[1:-1]+'\\}'
 #		S = hasseDiagram.P.elements[i]
 #		s = str(S).replace(',','') if len(S) <= 1 else str(S)
 #		return s.replace('(','\\{' if hasseDiagram.in_latex else '{').replace(')','\\}' if hasseDiagram.in_latex else '}').replace(',',', ')
@@ -1105,6 +1108,9 @@ def LatticeOfFlats(data):
 
 		def less(x,y): #reverse refinement
 			return x!=y and all([x[i]&y[i]==x[i] for i in range(len(x))])
+
+		def nodeLabel(hd,i):
+			return '/'.join(''.join(str(x) for x in y) for y in hd.P[i])
 	######
 	#data is a polymatroid
 	######
@@ -1122,11 +1128,14 @@ def LatticeOfFlats(data):
 		def less(x,y): #containment
 			return x!=y and x&y==x
 
+		def nodeLabel(hd,i):
+			return '\\{'+str(hd.P[i])[1:-1]+'\\}'
+
 		elem_conv = int_to_tuple
 	##############
 	#lattice is flats ordered under inclusion
 	##############
-	ret = Poset(elements=flats, less=less)
+	ret = Poset(elements=flats, less=less, nodeLabel=nodeLabel)
 	ret.elements = [elem_conv(e) for e in ret.elements]
 	return ret
 
