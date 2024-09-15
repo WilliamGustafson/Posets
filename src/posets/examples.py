@@ -27,28 +27,7 @@ def Empty():
 	'''
 	return Poset(elements = [], ranks = [], incMat = [])
 
-def Weak(n):
-	r'''
-	@section@Built in posets@
-	Returns the type $A_{n-1}$ weak order (the symmetric group $S_n$).
-
-	\begin{center}
-		\includegraphics{figures/weak_3.pdf}
-
-		The poset \verb|Weak(3)|.
-	\end{center}
-	@exec@
-	make_fig(Weak(3),'weak_3',height=4,width=3)
-	'''
-	def covers(p):
-		ret=[]
-		for i in range(n-1):
-			if p[i]<p[i+1]:
-				ret.append(p[:i]+(p[i+1],p[i])+tuple([p[j] for j in range(i+2,n)]))
-		return ret
-	return Poset(relations={p:covers(p) for p in itertools.permutations(range(1,n+1))})
-
-def Bruhat(n):
+def Bruhat(n,weak=False):
 	r'''
 	@section@Built in posets@
 	Returns the type $A_{n-1}$ Bruhat order (the symmetric group $S_n$).
@@ -71,11 +50,7 @@ def Bruhat(n):
 	def nodeLabel(hasseDiagram, i):
 		return ('' if n<=9 else ',').join([str(x) for x in hasseDiagram.P.elements[i]])
 
-	t = []
-	for i in range(1,n+1):
-		t.append(i)
-		t.append(2*n+1-i)
-	P = Uncrossing(t, upper=True)
+	P = Uncrossing(n, E_only=True,weak=weak,zerohat=False)
 	P.hasseDiagram.nodeLabel = nodeLabel
 	P.hasseDiagram.offset = 1
 
@@ -84,8 +59,8 @@ def Bruhat(n):
 
 	#cache some values for queries
 	P.cache['isRanked()']=True
-	P.cache['isEulerian()']=True
-	P.cache['isGorenstein()']=True
+	P.cache['isEulerian()']=not weak
+	P.cache['isGorenstein()']=not weak
 	return P
 def Root(n=3):
 	r'''
@@ -546,52 +521,7 @@ def Grid(n=2,d=None):
 	P.cache['isGorenstein()']= all([x == 1 for x in d])
 	return P
 
-def Uncrossing_new(n):
-	#j>_i\pi(j)
-	def iless(j,k,i):
-		if (j>i)==(k>i): return j<k
-		return not j<k
-	def rij(s,i,j):
-#		return len([k for k in range(n) if i<=s[k][1] and j>=s[k][1]])
-#		return sum(1 if iless(t[1],t[0],i) else 0 for t in s[min(i,j):max(i,j)+1])
-		def exc(k):
-			return iless(s[k][0],j,i) and iless(s[k][0],s[k][1],i)
-		def rev_exc(k):
-			return iless(s[k][1],j,i) and iless(s[k][1],s[k][0],i)
-		return len([k for k in range(n) if exc(k) or rev_exc(k)])
-	def r(s):
-		return tuple(rij(s,i,j) for (i,j) in itertools.product(range(1,2*n+1),range(1,2*n+1)))
-
-	def _pairings(S,p):
-		if len(S)==2:
-			yield tuple(sorted(p+[tuple(sorted(S))]))
-		for i in range(1,len(S)):
-			for t in _pairings(S[1:i]+S[i+1:], p+[(S[0],S[i])]): yield t
-
-	def pairings(S):
-		for p in _pairings(list(S),[]): yield p
-
-	elements = [x for x in pairings(range(1,2*n+1))]
-	r_dict ={p : r(p) for p in elements}
-	def less(i, j):
-		if i==j: return False
-		ri=r_dict[i]
-		rj=r_dict[j]
-		return all(ri[k]<=rj[k] for k in range(len(ri)))
-	def c(p):
-		ret = 0
-		for i in range(len(p)-1):
-			for j in range(i+1,len(p)):
-				if p[i][1]>p[j][0] and p[i][1]<p[j][1]: ret+=1
-		return ret
-	ranks = [[] for i in range(n*(n-1)//2+1)]
-	for i in range(len(elements)): ranks[c(elements[i])].append(i)
-	P = Poset(elements=elements, less=less, ranks=ranks)
-	return P.adjoin_zerohat()
-
-#copied from uncrossing.py
-#from https://github.com/WilliamGustafson/cdIndexCalculator
-def Uncrossing(t, upper=False):
+def Uncrossing(t, upper=False, weak=False, E_only=False, zerohat=True):
 	r'''
 	@section@Built in posets@
 	Returns either a lower interval $[\widehat{0},t]$ or the upper interval $[t,\widehat{1}]$ in the uncrossing poset.
@@ -599,6 +529,22 @@ def Uncrossing(t, upper=False):
 	The parameter \verb|t| should be either a pairing encoded as a list \verb|[s_1,t_1,...,s_n,t_n]| where
 	\verb|s_i| is paired to \verb|t_i| or \verb|t| can be an integer greater than 1. If t is an integer the entire uncrossing
 	poset is returned.
+
+	If \verb|weak| is \verb|True| then the weak subposet
+	is returned that has cover relations
+	$\sigma<\tau$ when $\sigma$ is
+	obtained from $\tau$ by removing a single crossing
+	via swapping two adjacent points. If \verb|E_only| is
+	\verb|True| only swaps $(i,j)$ such that the pairing
+	$\tau$ satisfies $\tau(i)<i$ and $\tau(j)<j$ are used.
+
+	These two flags are provided
+	because this function acts as a backend to \verb|Bruhat|,
+	calling \verb|Uncrossing(n,E_only=True)| constructs
+	the Bruhat order on $\mathfrak{S_n}$ and passing
+	\verb|weak=True| constructs the weak order on $\mathfrak{S}_n$.
+
+	If \verb|zerohat| is \verb|False| then no minimum is adjoined.
 
 	For more info on the uncrossing poset see: https://arxiv.org/abs/1406.5671
 
@@ -683,10 +629,39 @@ def Uncrossing(t, upper=False):
 		newLevel = [] #we build level for the next step during the current step here
 		newLeveli = [] #indices in to P for the next step
 		newRank = [] #the new rank indices to add
+		def I_set(tau):
+			if not E_only: return range(0,(len(t)<<1)-1)
+			def iterator():
+				for i in range(0,(len(t)<<1)-1):
+					pad = (1<<i)-1
+					if any(
+						(arc&(1<<i)!=0)
+						and
+						arc&pad==0
+						for arc in tau
+						): continue
+					yield i
+			return iterator()
+		def J_set(tau,i):
+			if not E_only: return range(0,(len(t)<<1))
+			possible=[i+1] if weak else range(0,(len(t)<<1))
+			def iterator():
+				for j in possible:
+					pad = (1<<j)-1
+					if any(
+						(arc&(1<<j)!=0)
+						and
+						arc&pad==0
+						for arc in tau
+						): continue
+					yield j
+			return iterator()
 		while len(level) > 0:
-			for i in range(0,(len(t)<<1)-1): #iterate over all pairs we can uncross
-				for j in range(i+1,len(t)<<1):
-					for k in range(0,len(level)): #do the uncross
+#			for i in range(0,(len(t)<<1)-1): #iterate over all pairs we can uncross
+#				for j in range(i+1,len(t)<<1):
+			for k in range(0,len(level)): #do the uncross
+				for i in I_set(level[k]):
+					for j in J_set(level[k],i):
 						temp = swap(level[k],i,j)
 						c_temp = c(temp)
 						if c_temp != c(level[k])+epsilon: continue
@@ -801,7 +776,7 @@ def Uncrossing(t, upper=False):
 	extra_packages = "\\def\\r{1}\n\\def\\n{"+str(n<<1)+"}\n\\newcommand{\\medial}{\n\\draw circle (\\r);\n\\foreach\\i in{1,...,\\n}\n\t{\n\t\\pgfmathsetmacro{\\j}{-90-360/\\n*(\\i-1)}\n\t\\fill (\\j:-\\r) circle (2pt) node [anchor=\\j] {$\\i$};\n\t\\coordinate (\\i) at (\\j:-\\r);\n\t}\n}"
 	P = Poset(M, P, ranks, name = name, hasse_class = UncrossingHasseDiagram, extra_packages = extra_packages)
 	if not upper:
-		P = P.adjoin_zerohat()
+		P = P.adjoin_zerohat() if zerohat else P
 		P.hasseDiagram = UncrossingHasseDiagram(P, extra_packages=extra_packages)
 	#cache some values for queries
 	P.cache['isRanked()']=True

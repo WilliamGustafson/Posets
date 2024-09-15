@@ -4,6 +4,18 @@
 #references with a real bib
 #Update tests
 #
+#standardize choice of camelcase versus underscores
+#
+#add a nodeName function for built ins (default just does index)
+#
+#Rework examples writing in overview
+#
+#Make sure docs are up to date
+#
+#snip some of the weird cd-index methods
+##########################################
+#fewchur
+##########################################
 #What if HasseDiagram could calc some stats
 #on how ``good'' your drawing is?
 #	length of lines drawn
@@ -24,33 +36,6 @@
 #	lines drawn to that new element plus the length of lines to
 #	all the future elements but replace by the barycenter
 #	Maybe break ties by calculating variance across the point already placed
-#
-#get rid of @requires decorator and the try wrapped imports
-#
-#add comment of what imports are for
-#
-#standardize choice of camelcase versus underscores
-#
-#add a nodeName function for built ins (default just does index)
-#
-#Set HasseDiagram defaults for Bqn
-#	how to order ranks?
-#
-#Set HasseDiagram defaults for DistributiveLattice
-#
-#Set HasseDiagram defaults for MinorPoset
-#	order the ranks right
-#	add weak version
-#
-#Set HasseDiagram defaults for lattices of flats, should be same as BooleanAlgebra
-#for polymatroids and graph is using partitions
-#	Subclass HasseDiagram for the Boolean algebra and use that same class for (poly)matroids?
-#
-#Write README with some examples.
-#
-#Rework examples writing in overview
-#
-#Make sure docs are up to date
 ##########################################
 r'''
 @no_list@sections_order@Poset@PosetIsoClass@HasseDiagram@Built in posets@Utilities@Timer@@
@@ -83,10 +68,7 @@ import random
 from .polynomial import *
 from .hasseDiagram import *
 from .utils import *
-try:
-	import numpy as np
-except:
-	np = "numpy"
+import numpy as np
 
 import time
 ###########################################
@@ -1060,7 +1042,6 @@ class Poset:
 			phi[cdMonom(S,n)] = coeff
 		return phi
 
-	@requires(np)
 	@cached_method
 	def cdIndex_IA(this, v=None):
 		r'''
@@ -1097,7 +1078,6 @@ class Poset:
 		return Polynomial(ret)
 
 
-	@requires(np)
 	@cached_method
 	def cd_coeff_mat(this, u):
 		r'''
@@ -1117,7 +1097,6 @@ class Poset:
 				X = np.matmul(X, np.matmul((-1)**(codeg+i)*alpha-deltas[-1],deltas[codeg+i]))
 		return X
 
-	@requires(np)
 	def cd_op(this, u, v=None):
 		r'''
 		@section@Invariants@
@@ -1136,7 +1115,6 @@ class Poset:
 		'''
 		return [[1 if i==j or this.incMat[i][j]==1 else 0 for j in range(len(this.incMat))] for i in range(len(this.incMat))]
 
-	@requires(np)
 	@cached_method
 	def bettiNumbers(this):
 		r'''
