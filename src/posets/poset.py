@@ -25,8 +25,6 @@
 #	all the future elements but replace by the barycenter
 #	Maybe break ties by calculating variance across the point already placed
 #
-#Make Bruhat directly should be faster
-#
 #get rid of @requires decorator and the try wrapped imports
 #
 #add comment of what imports are for
@@ -269,7 +267,7 @@ class Poset:
 				this.incMat = [[0]*len(elements) for e in elements]
 
 		if len(this.incMat)>0:
-			for i in range(len(trans_close)):
+			for i in range(len(this.incMat)):
 				this.incMat[i][i]=0
 			if trans_close: Poset.transClose(this.incMat)
 		#####
@@ -1575,7 +1573,7 @@ class Poset:
 		Returns a new \verb|Poset| object (representing the same poset) with the elements sorted.
 		'''
 		if indices:
-			perm = sorted(this.elements, key = lambda p: key(this.index(p))
+			perm = sorted(this.elements, key = lambda p: key(this.index(p)) )
 		else:
 			perm = sorted(this.elements,key=key)
 		return this.reorder(perm)

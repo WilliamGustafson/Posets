@@ -48,43 +48,6 @@ def Weak(n):
 		return ret
 	return Poset(relations={p:covers(p) for p in itertools.permutations(range(1,n+1))})
 
-def Bruhat_new(n):
-	'''@no_list@'''
-	def inv(pi):
-		return sum(len([j for j in range(i+1,n) if pi[j]<pi[i]]) for i in range(n))
-	#j>_i\pi(j)
-	def cycl_range(s,e):
-		if s<=e: return range(s,e)
-		return itertools.chain(range(s,n+1), range(1,e))
-	def iless(j,k,i):
-		if (j>=i)==(k>=i): return j<k
-		return j>k
-	for (i,j,k) in itertools.product(range(1,n+1),range(1,n+1),range(1,n+1)): print(i,j,k,iless(i,j,k))
-	def rij(pi,i,j):
-#		return len([k for k in range(n) if i<=s[k][1] and j>=s[k][1]])
-#		return sum(1 if iless(t[1],t[0],i) else 0 for t in s[min(i,j):max(i,j)+1])
-		print('pi',pi,'i',i,'j',j)
-		print('rij',[k for k in range(n) if iless(pi[k],j,i) and k+1>pi[k]])
-		return len([k for k in range(n) if iless(pi[k],j,i) and k+1>pi[k]])
-		#return len([k for k in cycl_range(i,j+1) if iless(pi[k-1],k,i)])
-#		def exc(k):
-#			return iless(pi[k],j,i) and iless(s[k][0],s[k][1],i)
-#		def rev_exc(k):
-#			return iless(s[k][1],j,i) and iless(s[k][1],s[k][0],i)
-#		return len([k for k in range(n) if exc(k) or rev_exc(k)])
-	def r(pi):
-		return tuple(rij(pi,i,j) for (i,j) in itertools.product(range(1,n+1),range(1,n+1)))
-	elements = list(itertools.permutations(range(1,n+1)))
-	ranks = [[] for i in range(-1,n*(n-1)//2)]
-	for i in range(len(elements)): ranks[inv(elements[i])].append(i)
-	r_dict = {pi : r(pi) for pi in elements}
-	def less(i, j):
-		if i==j: return False
-		ri=r_dict[i]
-		rj=r_dict[j]
-		return all(ri[k]<=rj[k] for k in range(len(ri)))
-	return Poset(elements=elements,less=less)#,ranks=ranks)
-
 def Bruhat(n):
 	r'''
 	@section@Built in posets@
