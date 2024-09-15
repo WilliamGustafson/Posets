@@ -1,11 +1,7 @@
 import random
 import math
 from .utils import *
-
-try:
-	import tkinter as tk
-except:
-	tk = "tkinter"
+import tkinter as tk
 
 class HasseDiagram:
 	r'''
@@ -478,7 +474,6 @@ class HasseDiagram:
 			line_options = this.line_options
 			this.line_options = lambda hd,i: line_options
 
-	@requires(tk)
 	def tkinter(this, **kwargs):
 		r'''
 		Opens a window using tkinter and draws the Hasse diagram.
