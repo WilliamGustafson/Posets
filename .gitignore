@@ -12,6 +12,7 @@
 
 !docs/doc_funcs.py
 !docs/posets.sty
+!docs/bib.bib
 
 !src/posets/poset.py
 !src/posets/examples.py

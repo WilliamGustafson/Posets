@@ -987,9 +987,9 @@ class Poset:
 
 		If the poset has a unique minimum and maximum but isn't ranked
 		this computes the \text{ab}-index considering the poset to be
-		quasigraded (in the sense of \url{https://doi.org/10.1016/j.aim.2014.09.008}) with $\overline{\zeta}=\zeta$ and $\rho$ the length function.
+		quasigraded (in the sense of \cite{ehrenborg-goresky-readdy-15}). with $\overline{\zeta}=\zeta$ and $\rho$ the length function.
 
-		For more information on the \text{ab}-index see: \url{https://arxiv.org/abs/1901.04939}
+		For more information on the \text{ab}-index see \cite{bayer-21}
 		'''
 		ab = []
 		for x in this.flagVectors():
@@ -1013,7 +1013,7 @@ class Poset:
 			\verb|this.cdIndex().sub('c',Polynomial({'a':1,'b':1})).sub('d',Polynomial({'ab':1,'ba':1})) == this.abIndex()|
 		\end{center}
 
-		Here we use the sparse $k$-vector formula see Proposition 7.1 in \url{https://www.ms.uky.edu/~jrge/Papers/Monotone.pdf}. For more info on the \textbf{cd}-index see \url{https://arxiv.org/abs/1901.04939}
+		Here we use the sparse $k$-vector formula see \cite[Proposition 7.1]{billera-ehrenborg-00}. For more info on the \textbf{cd}-index see \cite{bayer-21}.
 		'''
 		def cdMonom(W,n):
 			if len(W)==0: return 'c'*n
@@ -1048,7 +1048,7 @@ class Poset:
 		@section@Invariants@
 		Returns the \textbf{cd}-index as calculated via Karu's incidence algebra formula.
 
-		See Proposition 1.2 in \url{https://doi.org/10.1112/S0010437X06001928}
+		See \cite[Proposition 1.2]{karu-06}
 
 		The argument \verb|v| should be a vector indexed by the poset and by default is the all 1's vector.
 		This is the vector the incidence algebra functions are applied to.
@@ -1376,7 +1376,7 @@ class Poset:
 		By default \verb|tmpdir| is \verb|tempfile.gettempdir()|.
 
 		This function converts the compiled pdf to an image using imagemagick, this may fail to imagemagick's default security policies.
-		See more info here \url{https://askubuntu.com/questions/1127260/imagemagick-convert-not-allowed}.
+		For more info see \cite{askubuntu-imagemagick}.
 
 		Keyword arguments are passed to \verb|latex()| but \verb|standalone| is alwasy set
 		to \verb|True| (otherwise the pdf would not compile).

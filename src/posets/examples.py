@@ -1,24 +1,6 @@
-'''
-EGGS
-'''
-#TODO:
-#Incorporate Grassmann necklaces into Uncrossing and Bruhat (and make circular Bruhat?)
-#
-#From Postnikov's total positivity, Grassmannians and networks
-#$r_{ab}(\pi^:)$ is the number of shifted anti-exceedances of $\pi^:$ i.e. $r_{ab}(\pi^:)=\abs{I_a\cap\{a,\dots,b\}$.
-#We have $\pi^:\le\sigma^:$ if and only if $r_{ab}(\pi^:)\le r_{ab}(\sigma^:)$ for all $a,b\in[n]$.
-#anti-exceedance means $\pi^{-1}(i)>i$ or $\pi(i)=i$ and $\col(i)=-1$
-#The shifted anti-exceedance set is $I_r(\pi^:)$ the set of $i$ such that $i<_r\pi^{-1}(i)$ or $\pi(i)=i$ and $\col(i)=-1$,
-#where $r<_rr+1<_r\dots<_rn<_r1<_r\dots<_rr-1$.
-#
-#So we can make Uncrossing poset in the obvious way, make all pairings, then calc $r_{ij}$ mats and compare.
-#Can do same for Bruhat
 from .poset import Poset,Genlatt
 from .hasseDiagram import *
 import itertools
-
-
-
 
 def Empty():
 	r'''
@@ -546,7 +528,7 @@ def Uncrossing(t, upper=False, weak=False, E_only=False, zerohat=True):
 
 	If \verb|zerohat| is \verb|False| then no minimum is adjoined.
 
-	For more info on the uncrossing poset see: https://arxiv.org/abs/1406.5671
+	For more info on the uncrossing poset see \cite{lam-15}.
 
 	\begin{center}
 		\includegraphics{figures/uc.pdf}
@@ -1158,7 +1140,7 @@ def MinorPoset(L,genL=None, weak=False):
 	The join irreducibles are automatically added to \verb|genL|. If \verb|genL| is not provided the generating set will be only the
 	join irreducibles.
 
-	For more info on minor posets see: https://arxiv.org/abs/2205.01200
+	For more info on minor posets see \cite{gustafson-23}.
 
 	\begin{center}
 		\includegraphics{figures/M_lof_triangle.pdf}
