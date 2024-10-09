@@ -1,3 +1,4 @@
+'''@no_doc@no_children@'''
 import random
 import math
 from .utils import *
@@ -23,7 +24,7 @@ class HasseDiagram:
 	or \verb|tkinter()| to draw the diagram in a tkinter window the same keyword arguments can
 	be passed to control how the diagram is drawn during that particular operation.
 
-	Options such as \verb|height|, \verb|width|, \verb|scale|, etc. are values whose defaults can
+	Options that specify a constant value such as \verb|height|, \verb|width|, \verb|scale|, etc. are values whose defaults can
 	be overriden by passing keyword arguments  either to
 	the constructor or the functions themselves.
 
@@ -48,8 +49,8 @@ class HasseDiagram:
 	The code above will show a Hasse Diagram of \verb|P| with the elements labeled by
 	the M\"obius values $\mu(0,p)$.
 
-	When overriding function parameters the first argument is always the HasseDiagram
-	instance. HasseDiagram has an attribute for each option described below as well
+	When overriding function parameters the first argument is always the \verb|HasseDiagram|
+	instance. The class \verb|HasseDiagram| has an attribute for each of the options described later as well
 	as the following attributes:
 
 		\begin{itemize}
@@ -66,7 +67,7 @@ class HasseDiagram:
 
 	Note that any function parameters, such as \verb|nodeLabel|, are set via
 		\[\verb|this.nodeLabel = #provided function|\]
-	so if you intend to call these functions you must pass this as an argument via
+	so if you intend to call these functions you must pass \verb|this| as an argument via
 		\[\verb|this.nodeLabel(this, i)|\]
 	The class methods remain unchanged of course, for example \verb|HasseDiagram.nodeLabel|
 	always refers to the default implementation.
@@ -76,7 +77,7 @@ class HasseDiagram:
 	The second way to override a function parameter is via subclassing. This is more
 	convenient if overriding several function parameters at once or if the computations
 	are more involved. It is also useful for adding extra parameters. Any variables initialized
-	in the constructor are saved at the beginning or \verb|latex()| or \verb|tkinter()|, overriden during
+	in the constructor are saved at the beginning of \verb|latex()| or \verb|tkinter()|, overriden during
 	execution of the function by any provided keyword arguments, and restored at the end of
 	execution. The M\"obius example above can be accomplished by subclassing as
 	follows:
@@ -124,14 +125,14 @@ class HasseDiagram:
 		\begin{itemize}
 
 		\item[]{\verb|width| -- Width of the diagram. When calling \verb|latex()| this is the width
-			in tikz units, for \verb|tkinter()| the units are $\frac{1}{10}$th of tkinter's units.
+			in tikz units (by default centimeters), for \verb|tkinter()| the units are $\frac{1}{10}$th of tkinter's units.
 
-			The default value is 18.
+			The default value is 8.
 		}
 
 		\item[]{\verb|height| -- Height of the diagram, uses the same units as width.
 
-			The default value is 30.
+			The default value is 10.
 		}
 
 		\item[]{\verb|labels| -- Whether to display labels for elements or just a filled circle.
@@ -141,14 +142,15 @@ class HasseDiagram:
 
 		\item[]{\verb|ptsize| -- No effect when \verb|labels| is \verb|True|, when \verb|labels| is \verb|False| this is the size
 			of the circles shown for elements. When calling \verb|tkinter()| this can
-			be either a number or a string; if a string the last two characters
+			be either a number or a string. For compatibility if
+			\verb|ptsize| is a string the last two characters
 			are ignored. When calling \verb|latex()| this should be a string and
 			include units.
 
 			The default value is '2pt'.
 		}
 
-		\item[]{\verb|indices_for_nodes| -- If \verb|True| then'
+		\item[]{\verb|indices_for_nodes| -- If \verb|True| then
 			\verb|HasseDiagram.nodeLabel| is not called and the
 			node text is the index of the element in the poset.
 			If \verb|labels| is \verb|False| this argument has no effect.
@@ -156,24 +158,20 @@ class HasseDiagram:
 			The default value is \verb|False|.
 		}
 
-		\item[]{\verb|nodeLabel| -- A function that given this and an index returns a string to label
+		\item[]{\verb|nodeLabel| -- A function that given \verb|this| and an index returns a string to label
 			the corresponding element by.
 
 			The default value is \verb|HasseDiagram.nodeLabel|.
 		}
 
-		\item[]{\verb|loc_x| -- A function that given this and an index returns the $x$-coordinate
-			of the element in the diagram as a string. 0 represents the middle
-			of the screen, positive values rightward and negative leftward.
-			Returned value should lie in the range $[-\verb|width|/2, \verb|width|/2]$.
+		\item[]{\verb|loc_x| -- A function that given \verb|this| and an index returns the $x$-coordinate
+			of the element in the diagram as a string. Positive values extend rightward and negative leftward.
 
 			The default value is \verb|HasseDiagram.loc_x|.
 		}
 
-		\item[]{\verb|loc_y| -- A function that given this and an index returns the $y$-coordinate
-			of the element in the diagram as a string. 0 represents the bottom
-			of the screen, positive values extend upward. Returned value should
-			lie in the range $[0, \verb|height|]$.
+		\item[]{\verb|loc_y| -- A function that given \verb|this| and an index returns the $y$-coordinate
+			of the element in the diagram as a string. Positive values extend upward and negative values downward.
 
 			The default value is \verb|HasseDiagram.loc_y|.
 		}
@@ -203,7 +201,7 @@ class HasseDiagram:
 	Options that affect only \verb|tkinter()|:
 
 		\begin{itemize}
-		\item[]{\verb|scale| -- All coordinates are scaled by $10*\verb|scale|$.
+		\item[]{\verb|scale| -- All coordinates are scaled by $30*\verb|scale|$.
 
 			The default value is 1.
 		}
@@ -217,14 +215,14 @@ class HasseDiagram:
 		\item[]{\verb|offset| -- Cover lines start above the bottom element and end below the top
 			element, this controls the separation.
 
-			The default value is 1.
+			The default value is 0.5.
 		}
 
 		\item[]{\verb|nodeDraw| -- When labels is \verb|False| this function is called instead of placing
 			anything for the node. The function is passed \verb|this| and an index to
 			the element to be drawn. \verb|nodeDraw| should use the \verb|tkinter.Canvas|
 			object \verb|this.canvas| to draw. The center of your diagram should be
-			at the point
+			at the point with coordinates given below.
 				\begin{center}
 	\begin{BVerbatim}
 	x = float(this.loc_x(this,i)) * float(this.scale) + float(this.scale) * \
@@ -256,7 +254,7 @@ class HasseDiagram:
 			The default value is \verb|'1'|.
 		}
 
-		item[]{\verb|tikzscale| -- This is the scale parameter for the tikz environment, i.e. the
+		\item[]{\verb|tikzscale| -- This is the scale parameter for the tikz environment, i.e. the
 			tikz environment containing the figure begins
 			\begin{center}
 				\verb|'\\begin{tikzpicture}[scale='+tikzscale+']'|
@@ -297,24 +295,15 @@ class HasseDiagram:
 
 		\item[]{\verb|lowsuffix| -- When this is nonempty lines will be drawn to \verb|node.lowsuffix| instead of
 			directly to nodes for the higher node in each cover. If \verb|northsouth|
-			is \verb|True| this has no effect, \verb|'.south'| is used for the low suffix.
+			is \verb|True| this has no effect and \verb|'.south'| is used for the low suffix.
 
 			The default is \verb|''|.
 		}
 
 		\item[]{\verb|highsuffix| -- This is the suffix for the bottom node in each cover. If \verb|northsouth|
-			is \verb|True| this has no effect, \verb|'.north'| is used for the high suffix.
+			is \verb|True| this has no effect and \verb|'.north'| is used for the high suffix.
 
 			The default is \verb|''|.
-		}
-
-		\item[]{\verb|decoration| -- A function that takes \verb|this| and indices
-			\verb|i| and \verb|j| representing a cover \verb|this.P[i]<this.P[j]| to be drawn and
-			returns a string of tikz line options to be included (along with any
-			line options from \verb|line_options|) on that draw command.
-
-			The default value is \verb|HasseDiagram.decoration| which
-			returns an empty string.
 		}
 
 		\item[]{\verb|nodeName| -- A function that takes \verb|this| and an index \verb|i| representing an element
@@ -357,9 +346,8 @@ class HasseDiagram:
 			'highsuffix':'',
 			'labels': True,
 			'ptsize': '2pt',
-			'height': 30,
-			'width': 18,
-			'decoration': type(this).decoration,
+			'height': 10,
+			'width': 8,
 			'loc_x': type(this).loc_x,
 			'loc_y': type(this).loc_y,
 			'nodeLabel': type(this).nodeLabel,
@@ -371,9 +359,9 @@ class HasseDiagram:
 			'jiggle_x': 0,
 			'jiggle_y': 0,
 			'standalone': False,
-			'padding': 3,
+			'padding': 1,
 			'nodeDraw': type(this).nodeDraw,
-			'offset': 1,
+			'offset': 0.5,
 			'color':'black',
 			}
 
@@ -382,12 +370,6 @@ class HasseDiagram:
 			else: this.__dict__[k] = v
 
 		this.validate()
-
-	def decoration(this,i,j):
-		r'''
-		This is the default implementation of \verb|decoration|, it returns an empty string.
-		'''
-		return ''
 
 	def line_options(this,i,j):
 		r'''
@@ -404,7 +386,7 @@ class HasseDiagram:
 		This is the default implementation of \verb|loc_x|.
 
 		This spaces elements along each rank evenly. The length of a rank is the
-		ratio of the logarithms of the size of the rank and the size of the largest rank.
+		ratio of the logarithms of the size of the rank to the size of the largest rank.
 
 		The return value is a string.
 		'''
@@ -491,7 +473,7 @@ class HasseDiagram:
 
 		root = tk.Tk()
 		root.title("Hasse diagram of "+(this.P.name if hasattr(this.P,"name") else "a poset"))
-		this.scale = float(this.scale)*10
+		this.scale = float(this.scale)*30
 		this.padding = float(this.padding)*this.scale
 		width = float(this.width)*this.scale
 		height = float(this.height)*this.scale
@@ -521,7 +503,7 @@ class HasseDiagram:
 		r'''
 		Returns a string to depict the Hasse diagram in \LaTeX.
 
-		The keyword arguments are described in |HasseDiagram|.
+		The keyword arguments are described in \verb|HasseDiagram|.
 		'''
 		defaults = this.__dict__.copy()
 		this.__dict__.update(kwargs)
@@ -616,12 +598,58 @@ class HasseDiagram:
 class SubposetsHasseDiagram(HasseDiagram):
 	r'''
 	@is_section@subclass@
-	This is a class to draw posets whose elements are themselves posets, intended
-	for use where all these posets are subposets of a given poset such as the lattice of
-	ideals of a poset or the poset of intervals of a poset.
+	This is a class used to draw posets whose elements are themselves subposets of some global poset, such as interval posets or lattices of ideals.
+
+	The elements of the poset $P$ to be drawn are subposets
+	of a poset $Q$.
+	The nodes in the Hasse diagram of $P$ are represented as
+	posets. The entire poset $Q$ is always drawn, the elements and
+	edges contained in the given subposet are drawn in black and
+	elements and edges not contained in the subposet are drawn
+	in gray.
+
+	Options can be passed to this class in order to control the
+	drawing of the diagram in the same way as for the class
+	\verb|HasseDiagram|. For example, calling \verb|latex(width=5)|
+	on an instance of \verb|SubposetsHasseDiagram| sets the
+	width of the entire diagram (that of $P$) to 5. To control
+	options for the subposets a prefix, by default \verb|'Q'|,
+	is used. For example, \verb|latex(Q_width=5,width=40)| would set
+	the width of each subposet to 5 and the width of the
+	entire diagram to 40.
+
+	The behavior of \verb|tkinter()| is the same as in the class
+	\verb|HasseDiagram|.
 	'''
 	def __init__(this, P, Q, is_in=lambda x,X:x in X, prefix='Q', **kwargs):
 		r'''
+		Constructor arguments:
+		\begin{itemize}
+			\item[]{\verb|prefix| - String to prefix options
+				to be passed to the instances of
+				\verb|HasseDiagram| that draw the subdiagrams.
+
+				The argument \verb|prefix| should be
+				a valid tikz node name and for convenience
+				ought to be a valid python identifier.
+				}
+			\item[]{\verb|is_in| - A function used by the
+			constructor to test whether elements of $Q$ are
+			elements of a subposet. The function
+			\verb|is_in| takes two arguments, an index $i$ into
+			$P$ and the subposet object $X$ to test
+			containment with. The default value returns
+			\verb|i in X|.}
+		\end{itemize}
+
+		All keyword arguments not beginning with the string
+		\verb|this.prefix+'_'|
+		are handled the same as in the
+		class \verb|HasseDiagram|. Keyword arguments that
+		begin with the string \verb|this.prefix+'_'|
+		are saved as attributes and passed to the instances
+		of \verb|HasseDiagram| drawing the subposets
+		when \verb|latex()| is called.
 		'''
 		this.prefix=prefix+'_'
 		this.prefix_len = len(this.prefix)
@@ -632,10 +660,15 @@ class SubposetsHasseDiagram(HasseDiagram):
 		this.Q.hasseDiagram.__dict__.update({k[len(this.prefix):] : v for k,v in kwargs.items() if k[:len(this.prefix)]==this.prefix})
 
 	def latex(this, **kwargs):
+		r'''
+		Returns latex code for the poset attached to this object.
+
+		See \verb|HasseDiagram.latex| and \verb|SubposetsHasseDiagram|.
+		'''
 		Q_args = {k[len(this.prefix):] : v for k,v in kwargs.items() if k[:len(this.prefix)]==this.prefix}
 		Q_defaults = this.Q.hasseDiagram.__dict__.copy()
 		this.Q.hasseDiagram.__dict__.update(Q_args)
-		this.Q.hasseDiagram.nodeName = SubposetsHasseDiagram.latt_nodeName
+		this.Q.hasseDiagram.nodeName = SubposetsHasseDiagram.Q_nodeName
 
 		ret = super().latex(**kwargs)
 
@@ -644,6 +677,11 @@ class SubposetsHasseDiagram(HasseDiagram):
 		return ret
 
 	def nodeLabel(this, i):
+		'''
+		Default implementation of \verb|nodeLabel| for \verb|SubposetsHasseDiagram|.
+
+		This returns tikz code for the poset \verb|this.P[i]|.
+		'''
 		if i in this.P.min(): return '$\\emptyset$'
 		args = {
 			'node_options' : SubposetsHasseDiagram.make_node_options(this.P[i]),
@@ -655,16 +693,29 @@ class SubposetsHasseDiagram(HasseDiagram):
 		Q_Latex = ''.join(Q_Latex.split('\n')[2:-1])
 		return '\\begin{{tikzpicture}}[scale={}]\\begin{{scope}}\n'.format(this.Q.hasseDiagram.scale)+Q_Latex+'\n\\end{scope}\\end{tikzpicture}'
 
-	def latt_nodeName(this, i):
-		return 'latt_'+HasseDiagram.nodeName(this,i)
+	def Q_nodeName(this, i):
+		r'''
+		Returns a node name for an element of $P$.
+
+		To ensure the node names of the larger figure
+		and of the subdiagrams do not clash
+		all node names are prefixed with \verb|this.prefix|.
+		'''
+		return this.prefix+'_'+HasseDiagram.nodeName(this,i)
 
 	def make_node_options(q):
+		r'''
+		Returns a function to be supplied as \verb|node_options| in the \verb|latex()| call to draw a diagram for \verb|q|.
+		'''
 		def node_options(this, i):
 			if this.parent.is_in(this.P.elements[i],q): return 'color=black'
 			return 'color=gray'
 		return node_options
 
 	def make_line_options(q):
+		r'''
+		Returns a function to be supplied as \verb|line_options| in the \verb|latex()| call to draw a diagram for \verb|q|.
+		'''
 		def line_options(this, i, j):
 			if this.parent.is_in(this.P.elements[i],q) and this.parent.is_in(this.P.elements[j],q): return 'color=black'
 			return 'color=gray'

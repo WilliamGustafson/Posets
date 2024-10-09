@@ -35,12 +35,12 @@ class Timer:
 @decorator.decorator
 def cached_method(f, *args, **kwargs):
 	r'''
-	@section@Utilities@section_key@2@
+	@section@Utilities@
 	This is an attribute for class functions that will cache the return result in a cache property on the object.
 
 	When the attribute is placed on a class function e.g.
 	\begin{verbatim}
-		@cached_method
+		\@cached_method
 		def f(this,...):
 	\end{verbatim}
 	calls to the function will first check the dictionary this.cache for the function call
