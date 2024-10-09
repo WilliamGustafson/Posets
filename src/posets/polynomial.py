@@ -1,3 +1,4 @@
+'''@no_doc@no_children@'''
 import math
 import itertools
 
@@ -22,7 +23,11 @@ class Polynomial:
 	'''
 	def __init__(this, data=None):
 		r'''
-		Returns a \verb|Polynomial| given a list of pairs \verb|[c,m]| with \verb|c| a coefficient and \verb|m| a string representing a monomial.
+		Returns a \verb|Polynomial| given either a dictionary or a list of pairs.
+
+		If \verb|data| is a dictionary then the keys are the monomials and the values are the coefficients.
+		If \verb|data| is a list then all elements should be of the form \verb|[c,m]| where \verb|c| is a coefficient and \verb|m| is a string representing a monomial.
+		If \verb|data| is \verb|None| then the zero polynomial is returned.
 		'''
 		this.data = {} if data==None else data if type(data)==dict else {d[1]:d[0] for d in data}
 
@@ -55,27 +60,47 @@ class Polynomial:
 		return Polynomial({m:-c for m,c in this.data.items()})
 
 	def __sub__(this, that):
+		'''Polynomial subtraction'''
 		return this+(-that)
 
 	def __ge__(this, that):
+		r'''
+		Returns \verb|True| if \verb|this| is coefficientwise
+		greater than or equal
+		to \verb|that|.
+		'''
 		if isinstance(that, int):
 			return all(v >= that for v in this.data.values())
 		if isinstance(that, Polynomial):
 			return all((m in this and this[m]>=that[m]) or (that[m]<=0) for m in that)
 
 	def __gt__(this, that):
+		r'''
+		Returns \verb|True| if \verb|this| is greater than or equal
+		to \verb|that| coefficientwise and \verb|this| is not equal
+		to \verb|that|.
+		'''
+		'''Coefficientwise comparison'''
 		if isinstance(that, int):
 			return all(v > that for v in this.data.values())
 		if isinstance(that, Polynomial):
 			return this!=that and all((m in this and this[m]>=that[m]) or (that[m]<=0) for m in that)
 
 	def __le__(this, that):
+		r'''
+		Returns \verb|True| is \verb|this| is coefficientwise less or
+		equal to \verb|that|.
+		'''
 		if isinstance(that, int):
 			return all(v <= that for v in this.data.values())
 		if isinstance(that, Polynomial):
 			return all((m in this and this[m]<=that[m]) or (that[m]>=0) for m in that)
 
 	def __lt__(this, that):
+		r'''
+		Returns \verb|True| if \verb|this| is coefficientwise less or
+		equal to \verb|that| and \verb|this| and \verb|that| or not equal.
+		'''
 		if isinstance(that, int):
 			return all(v < that for v in this.data.values())
 		if isinstance(that, Polynomial):
@@ -84,7 +109,7 @@ class Polynomial:
 
 	def sub(this, poly, monom):
 		r'''
-		Returns the polynomial obtained by substituting the \verb|Polynomial| \verb|poly| for the monomial \verb|m| (given as a string) in \verb|this|.
+		Returns the polynomial obtained by substituting the polynomial \verb|poly| for the monomial \verb|m| (given as a string) in \verb|this|.
 		'''
 		ret = Polynomial({}) #initialize to zero
 		for m,c in this.data.items():
@@ -148,6 +173,7 @@ class Polynomial:
 		return this.sub(Polynomial({'a':1,'b':1}, 'c')).sub(Polynomial({'ab':1,'ba':1}))
 
 	def __len__(this):
+		'''Returns the number of coefficients.'''
 		return len(this.data)
 
 	def __iter__(this):

@@ -1,18 +1,22 @@
+'''@no_doc@no_children@'''
 ##########################################
 #TODO
 ##########################################
-#references with a real bib
 #Update tests
 #
 #standardize choice of camelcase versus underscores
 #
-#add a nodeName function for built ins (default just does index)
-#
 #Rework examples writing in overview
 #
-#Make sure docs are up to date
+#Fix section ordering in doc
 #
-#snip some of the weird cd-index methods
+#check pdflatex errors and warnings
+#
+#Links to functions in doc?
+#
+#correct citations
+#
+#in LatticeOfFlats option to return genlatt?
 ##########################################
 #fewchur
 ##########################################
@@ -80,7 +84,22 @@ class Poset:
 	@sections_order@Operations@Subposet Selection@Internal Computations@Queries@Invariants@Maps@Miscellaneous@PosetIsoClass@@
 	A class representing a finite partially ordered set.
 
-	Constructor arguments:
+	Posets are encoded by a list \verb|elements|, an incidence
+	matrix \verb|incMat| describing the relations and a
+	list \verb|ranks| that specifies the length of each element.
+	This last attribute is not strictly needed to encode a poset
+	but many calculations use the length of elements so it is
+	computed on construction. Instances of \verb|Poset| also
+	have an attribute \verb|hasseDiagram| which is an instance
+	of the \verb|HasseDiagram| class used for plotting the poset.
+
+	To construct a poset you must pass at least either an incident
+	matrix \verb|incMat|, a function \verb|less| or a list/dictionary
+	\verb|relations| to describe
+	the relations. Additionally you may wish to specify the
+	elements as a list called \verb|elements| or by using
+	the \verb|relations| argument. The full list of constructor
+	arguments are listed below.
 
 	\begin{itemize}
 		\item[]{
@@ -94,7 +113,10 @@ class Poset:
 		}
 		\item[]{
 		\verb|ranks| -- A list of lists. The $i$th list is a list of indices of element of
-			length $i$.
+			length $i$. This argument is inessential, if not provided it will be computed by the constructor.
+			If constructing a large poset with an easily computed
+			rank function you may wish to compute and pass the
+			rank function to the constructor.
 		}
 		\item[]{
 		\verb|relations| -- Either a list of pairs $(x,y)$ such that $x<y$ or a dictionary
@@ -111,7 +133,7 @@ class Poset:
 			\verb|relations| and \verb|less|. The default is \verb|False|.
 		}
 		\item[]{
-		\verb|name| -- An optional identifier if not provided no name attribute is set.
+		\verb|name| -- An optional identifier. If not provided no name attribute is set.
 		}
 		\item[]{
 		\verb|hasse_class| -- An instance of \verb|hasse_class| is constructed with arguments being
@@ -139,24 +161,15 @@ class Poset:
 	The keyword arguments are passed to \verb|HasseDiagram| (or \verb|hasse_class|
 	if specified).
 
-	To construct a poset you must pass at least either \verb|incMat| or \verb|less|.
 
-	In the constructor the transitive closure of \verb|incMat| is computed
-	(unless \verb|trans_close=False| is set)
-	so it is only essential that \verb|incMat[i][j] == 1| when $i$ is covered by $j$. The diagonal
-	entries \verb|incMat[i][i]| should always be zero.
-
-	If \verb|elements| is not provided it will be set to \verb|[0,...,len(incMat)-1]|
-
-	\verb|ranks| is inessential, if not provided it will be computed.
-
-	Function calls to several of the more costly computations are cached. Generally
+	Function calls to several of the more costly computations are cached. Generally,
 	functions in this class do not change the poset but instead return a new poset.
 	\verb|Poset| objects may be considered immutable (this is not enforced in any way),
 	or if you alter a poset you should clear the cache via: \verb|this.cache = {}|.
 	'''
 	__slots__ = ('cache','hasseDiagram','incMat','elements','ranks','name')
-	def __init__(this, incMat=None, elements=None, ranks=None, less=None, name='', hasse_class=None, trans_close=True, relations=None, indices=False, **kwargs):
+	def __init__(this, incMat=None, elements=None, ranks=None, less=None, name='',\
+		 hasse_class=None, trans_close=True, relations=None, indices=False, **kwargs):
 		r'''
 		@section@Miscellaneous@
 		See \verb|Poset|.
@@ -376,7 +389,7 @@ class Poset:
 
 		The label default is the same as \verb|Poset.adjoin_zerohat()|
 		'''
-		return this.dual().adjoin_zerohat().dual()
+		return this.dual().adjoin_zerohat(label).dual()
 
 	def identify(this, X, indices=False):
 		r'''
@@ -454,6 +467,9 @@ class Poset:
 		r'''
 		@section@Operations@
 		Computes the disjoint union of two posets.
+
+		The labels in the returned poset are determined
+		by \verb|element_union|.
 		'''
 		elements = Poset.element_union(this.elements, that.elements)
 		incMat = [z+[0]*len(that.elements) for z in this.incMat] + [[0]*len(this.elements)+z for z in that.incMat]
@@ -474,7 +490,9 @@ class Poset:
 	def bddUnion(this, that):
 		r'''
 		@section@Operations@
-		Computes the disjoint union of two posets with maximum and minimums adjoined.
+		Computes the disjoint union of two posets with maximum and minimums adjoined, that is, the poset \[\big( (P\wout\{\max P,\min P\})\sqcup(Q\wout\{\max Q,\min Q\})\big).\]
+
+		The labels in the returned poset are the same as in \verb|element_union|.
 		'''
 		this_proper = this.complSubposet(this.max(True)+this.min(True), True)
 		that_proper = that.complSubposet(that.max(True)+that.min(True), True)
@@ -484,7 +502,7 @@ class Poset:
 	def bddProduct(this, that):
 		r'''
 		@section@Operations@
-		Computes the Cartesian product of two posets with maximum and minimum adjoined.
+		Computes the Cartesian product of two posets with maximum and minimum adjoined, that is, the poset \[\big((P\wout\{\max P,\min P\})\times(Q\wout\{\max Q,\min Q\})\big)\cup\{\zerohat,\onehat\}.\]
 		'''
 		this_proper = this.complSubposet(this.max(True)+this.min(True), True)
 		that_proper = that.complSubposet(that.max(True)+that.min(True), True)
@@ -875,10 +893,11 @@ class Poset:
 	def flagVectors(this):
 		r'''
 		@section@Invariants@
-		Returns the table of flag $f$- and $h$-vectors as a list with elements \verb|[S, f_S, h_S]|.
+		Returns the table of flag $f$- and $h$-vectors as a dictionary with keys $S\subseteq[n]$ encoded as tuples and with elements \verb|(f_S, h_S)|.
 
 		This method should only be used with a poset that has a unique minimum and maximum.
 		'''
+		n = len(this.ranks)-2
 		def fVectorCalc(ranks,S,M, i, count):
 			newCount = count
 			if S == []: return 1
@@ -886,12 +905,12 @@ class Poset:
 				if M[i][j] == 1:
 					newCount += fVectorCalc(ranks, S[1:], M, j, count)
 			return newCount
-		table = [[[],1,1]]
+		table = {tuple():[1,1]}
 
-		if len(this.ranks)<=2: return table
+		if n<=0: return table
 
 		#iterate over all subsets of the ranks
-		for i in range(1,1<<(len(this.ranks)-1)-1):
+		for i in range(1,1<<n):
 			#construct the corresponding set S
 			pad = 1
 			elem = 1
@@ -902,24 +921,27 @@ class Poset:
 
 				pad <<= 1
 				elem += 1
-			table.append([S,fVectorCalc(this.ranks,S,this.incMat,this.ranks[0][0],0),0])
+			table[tuple(S)]=[fVectorCalc(this.ranks,S,this.incMat,this.ranks[0][0],0),0]
+		def bit_to_set(i):
+			return tuple(j+1 for j in range(n) if (1<<j)&i!=0)
 
 
 		#do PIE to get the flag h vectors
-		for i in range(1,len(table)):
-			sign = (2*(len(table[i][0])%2)) - 1 #is -1 if even number of elements, 1 if odd
+		for i in range(1,1<<n):
+			sign = (2*(len(bit_to_set(i))%2)) - 1 #is -1 if even number of elements, 1 if odd
 			for j in range(0,i+1):
-				if set(table[j][0]).issubset(table[i][0]):
-					table[i][2] += sign*(2*(len(table[j][0])%2)-1)*table[j][1]
+				signj = (2*(len(bit_to_set(j))%2)) - 1
+				if i&j==j:
+					table[bit_to_set(i)][1] += sign*(2*(len(bit_to_set(j))%2)-1)*table[bit_to_set(j)][0]
 		return table
 
 	def sparseKVector(this):
 		r'''
 		@section@Invariants@
-		Returns the sparse $k$-vector $k_S = \sum_{T\subseteq S}(-1)^{\abs{S\wout T}h_T$.
+		Returns the sparse $k$-vector $k_S = \sum_{T\subseteq S}(-1)^{\abs{S\wout T}}h_T$.
 
 		The sparse $k$-vector only has entries $k_S$ for sparse sets $S$,
-		that is, sets $S\subseteq[n-1]$ such that if $i\in S$ then $i+1\not\in S$.
+		that is, sets $S\subseteq[\text{rk}(P)-1]$ such that if $i\in S$ then $i+1\not\in S$.
 		The sparse $k$-vector is returned as a dictionary whose keys are tuples.
 		'''
 		n = len(this.ranks)-2
@@ -963,7 +985,7 @@ class Poset:
 		return kVector
 
 
-	def flagVectorsLatex(this):
+	def flagVectorsLatex(this,standalone=False):
 		r'''
 		@section@Invariants@
 		Returns a string of latex code representing the table of flag vectors of the poset.
@@ -971,12 +993,17 @@ class Poset:
 		Requires the package longtable to compile.
 		'''
 		table = this.flagVectors()
-		ret = "\\begin{longtable}{c|c|c}\n\t$S$&$f_S$&$h_S$\\\\\n\t\\hline\n\t\\endhead\n"
+		ret = []
+		if standalone:
+			ret.append('\\documentclass[article]\n\\usepackage{longtable}\n\\begin{document}\n')
+		ret.append("\\begin{longtable}{c|c|c}\n\t$S$&$f_S$&$h_S$\\\\\n\t\\hline\n\t\\endhead\n")
 		for t in table:
-			ret += "\t\\{"
-			ret += ','.join([str(x) for x in t[0]])
-			ret = ret+"\\} & " + str(t[1]) + " & " + str(t[2]) + "\\\\\n\t\\hline\n"
-		return ret + "\\end{longtable}"
+			ret.append("\t\\{")
+			ret.append(str(t)[1:-1])
+			ret+=["\\} & ",str(table[t][0])," & ",str(table[t][1]),"\\\\\n\t\\hline\n"]
+		ret.append("\\end{longtable}")
+		if standalone: ret.append('\n\\end{document}')
+		return ''.join(ret)
 
 
 	@cached_method
@@ -987,15 +1014,16 @@ class Poset:
 
 		If the poset has a unique minimum and maximum but isn't ranked
 		this computes the \text{ab}-index considering the poset to be
-		quasigraded (in the sense of \cite{ehrenborg-goresky-readdy-15}). with $\overline{\zeta}=\zeta$ and $\rho$ the length function.
+		quasigraded (in the sense of \cite{ehrenborg-goresky-readdy-15}) with $\overline{\zeta}=\zeta$ and $\rho$ the length function.
 
 		For more information on the \text{ab}-index see \cite{bayer-21}
 		'''
 		ab = []
-		for x in this.flagVectors():
+		fh = this.flagVectors()
+		for x in fh:
 			u = ['a']*(len(this.ranks)-2)
-			for s in x[0]: u[s-1] = 'b'
-			ab.append([x[2],''.join(u)])
+			for s in x: u[s-1] = 'b'
+			ab.append([fh[x][1],''.join(u)])
 
 		return Polynomial(ab)
 
@@ -1005,15 +1033,18 @@ class Poset:
 		@section@Invariants@
 		Returns the \textbf{cd}-index.
 
-		The \textbf{cd}-index is encoded as a \verb|Polynomial|. If the given poset
-		does not have a \textbf{cd}-index then a \text{cd}-polynomial is still
+		The \textbf{cd}-index is encoded as an instance of the class \verb|Polynomial|. If the given poset
+		does not have a \textbf{cd}-index then a \textbf{cd}-polynomial is still
 		returned, but this is not meaningful. If you wish to check whether a poset has
-		a \textbf{cd}-index the Boolean below:
+		a \textbf{cd}-index then check the Boolean below:
 		\begin{center}
-			\verb|this.cdIndex().sub('c',Polynomial({'a':1,'b':1})).sub('d',Polynomial({'ab':1,'ba':1})) == this.abIndex()|
+			\verb|this.cdIndex().cdToAb() == this.abIndex()|
 		\end{center}
 
-		Here we use the sparse $k$-vector formula see \cite[Proposition 7.1]{billera-ehrenborg-00}. For more info on the \textbf{cd}-index see \cite{bayer-21}.
+		If the given poset is semi-Eulerian then the \textbf{cd}-index
+		as defined in \cite{juhnke-kubitzke-24} is computed.
+
+		For computation we use the sparse $k$-vector formula see \cite[Proposition 7.1]{billera-ehrenborg-00}. For more info on the \textbf{cd}-index see \cite{bayer-21}.
 		'''
 		def cdMonom(W,n):
 			if len(W)==0: return 'c'*n
@@ -1042,76 +1073,10 @@ class Poset:
 			phi[cdMonom(S,n)] = coeff
 		return phi
 
-	@cached_method
-	def cdIndex_IA(this, v=None):
-		r'''
-		@section@Invariants@
-		Returns the \textbf{cd}-index as calculated via Karu's incidence algebra formula.
-
-		See \cite[Proposition 1.2]{karu-06}
-
-		The argument \verb|v| should be a vector indexed by the poset and by default is the all 1's vector.
-		This is the vector the incidence algebra functions are applied to.
-		'''
-		#find zerohat
-		M = this.incMat
-		zh = this.min(True)[0]
-		alpha=np.array([[(-1)**this.rank(y,True) if x==y or M[x][y]==1 else 0 for y in range(len(M))] for x in range(len(M))])
-		deltas=[np.array([[1 if i==j and i in itertools.chain(*this.ranks[:k+1]) else 0 for j in range(len(M))] for i in range(len(M))]) for k in range(len(this.ranks))]
-		def make_cd_ops(n,ops=[]):
-			ret=[]
-			if n>-1:
-				C=deltas[n]
-				c_ops=[(O,'c'+w) for O,w in ops] #you don't actually have to do the C ops they're already accounted for
-				ret+=make_cd_ops(n-1,c_ops)
-				if n>0:
-					D=np.matmul((-1)**n*alpha-deltas[-1],deltas[n])
-					d_ops=[(np.matmul(D,O),'d'+w) for O,w in ops]
-					ret+=make_cd_ops(n-2,d_ops)
-				return ret
-			return ops
-		if type(v) == type(None):
-			v = np.array([1 for x in M])
-		ops=make_cd_ops(len(this.ranks)-3,[(deltas[len(this.ranks)-1],'')])
-		ret=[[int(np.matmul(O,v)[zh]),w] for O,w in ops]
-		ret = sorted([x for x in ret if x[0]!=0],key=lambda x:x[1])
-		return Polynomial(ret)
-
-
-	@cached_method
-	def cd_coeff_mat(this, u):
-		r'''
-		@section@Invariants@
-		Returns the matrix for the incidence algebra element giving the \verb|u| coefficient of the \textbf{cd}-index via Karu's formula.
-		'''
-		#find zerohat
-		M = this.incMat
-		zh = this.min(True)[0]
-		alpha=np.array([[(-1)**this.rank(y,True) if x==y or M[x][y]==1 else 0 for y in range(len(M))] for x in range(len(M))])
-		deltas=[np.array([[1 if i==j and i in itertools.chain(*this.ranks[:k+1]) else 0 for j in range(len(M))] for i in range(len(M))]) for k in range(len(this.ranks))]
-		u = u.replace('d','_d')
-		codeg = len(this.ranks)-2-len(u)
-		X = deltas[codeg]
-		for i in range(len(u)):
-			if u[i] == 'd':
-				X = np.matmul(X, np.matmul((-1)**(codeg+i)*alpha-deltas[-1],deltas[codeg+i]))
-		return X
-
-	def cd_op(this, u, v=None):
-		r'''
-		@section@Invariants@
-		Applies the incidence algebra operation corresponding to the \textbf{cd}-monomial $u$ to the vector $v$ (encoded as a string and a list/tuple respectively).
-		'''
-		X = this.cd_coeff_mat(u)
-		if type(v)==type(None): v = np.array([[1] for p in this])
-		else: v = np.array(v)
-		X = np.matmul(X, v)
-		return {this[i] : X[i][0] for i in range(len(this)) if X[i]!=0}
-
 	def zeta(this):
 		r'''
 		@section@Invariants@
-		Returns the zeta matrix, the matrix whose $i,j$ entry is $1$ if \verb|this.lesseq(i,j,indices=True)| and $0$ otherwise.
+		Returns the zeta matrix, the matrix whose $i,j$ entry is $1$ if the Boolean \begin{verbatim}this.lesseq(i,j,indices=True)\end{verbatim} is true and $0$ otherwise.
 		'''
 		return [[1 if i==j or this.incMat[i][j]==1 else 0 for j in range(len(this.incMat))] for i in range(len(this.incMat))]
 
@@ -1298,6 +1263,7 @@ class Poset:
 		doesn't update the self reference in \verb|Q.hasseDiagram| (in this example
 		\verb|Q.hasseDiagram.P| is \verb|P|). This doesn't matter if you treat posets as immutable,
 		but otherwise could cause issues when displaying or generating hasse diagrams.
+		The returned poset has the self reference updated.
 		'''
 		P = copy.copy(this)
 		P.hasseDiagram.P = P
@@ -1315,11 +1281,11 @@ class Poset:
 
 			\item[]{\verb|height| -- The height in tikz units of the diagram.
 
-				The default value is 30.
+				The default value is 10.
 				}
 			\item[]{\verb|width| -- The width in tikz units of the diagram.
 
-				The default value is 18.
+				The default value is 8.
 				}
 
 			\item[]{\verb|labels| -- If \verb|False| elements are represented by filled circles.
@@ -1361,7 +1327,7 @@ class Poset:
 						return str(H.P[i])
 				\end{verbatim}\end{center}
 
-				note \verb|H.P| is \verb|this|.
+				Note \verb|H.P| is \verb|this|.
 			}
 		\end{itemize}
 		'''
@@ -1372,10 +1338,10 @@ class Poset:
 		@section@Miscellaneous@
 		Produces latex code (via calling \verb|latex()|) compiles it with pdflatex and returns a \verb|wand.image.Image| object constructed from the pdf.
 
-		In a Jupyter notebook calling \verb|display| on the return value with display the Hasse diagram in the output cell.
+		In a Jupyter notebook calling \verb|display| on the return value will show the Hasse diagram in the output cell.
 		By default \verb|tmpdir| is \verb|tempfile.gettempdir()|.
 
-		This function converts the compiled pdf to an image using imagemagick, this may fail to imagemagick's default security policies.
+		This function converts the compiled pdf to an image using imagemagick, this may fail due to imagemagick's default security policies.
 		For more info see \cite{askubuntu-imagemagick}.
 
 		Keyword arguments are passed to \verb|latex()| but \verb|standalone| is alwasy set
@@ -1401,12 +1367,12 @@ class Poset:
 		\begin{itemize}
 			\item[]{\verb|height| -- The height of the diagram.
 
-				The default value is 30.
+				The default value is 10.
 			}
 
 			\item[]{\verb|width| -- The width of the diagram.
 
-				The default width is 18.
+				The default width is 8.
 			}
 
 			\item[]{\verb|labels| -- If \verb|False| elements are represented as filled circles.
@@ -1441,7 +1407,7 @@ class Poset:
 					def nodeLabel(H, i):
 						return str(H.P[i])
 				\end{verbatim}\end{center}
-				note \verb|H.P| is \verb|this|.
+				Note \verb|H.P| is \verb|this|.
 			}
 		\end{itemize}
 		'''
@@ -1690,6 +1656,10 @@ class Genlatt(Poset):
 				consist of indices otherwise \verb|G| should
 				consist of elements.}
 		\end{itemize}
+
+	Note, a lattice $L$ enriched with a generating set $G$ is denoted
+	as the pair $(L,G)$.
+	See \cite{gustafson-23} for more on {generator-enriched lattices}\footnote{perhaps too much more}.
 	'''
 	def __init__(this, *args, G=None, G_indices=False, **kwargs):
 		r'''
@@ -1737,7 +1707,7 @@ class Genlatt(Poset):
 	def isRanked(this):
 		return all(all(this.rank(v)==this.rank(k)+1 for v in V)for (k,V) in super().covers().items())
 
-	def minor(this,H,z):
+	def minor(this, H, z):
 		r'''
 		Given an iterable \verb|H| of generators and an element \verb|z| returns the \verb|Genlatt| with minimum \verb|z| and generating
 		set \verb|H| and with the same order as \verb|this|.
@@ -1752,10 +1722,12 @@ class Genlatt(Poset):
 		r'''
 		Return the deletion set of the minor \verb|K|.
 
+		The argument \verb|K| should be an instance of \verb|Genlatt|.
+
 		The deletion set of a minor $(K,H)$ of $(L,G)$ is the set
 		\[\text{Del}(K,H)=\{g\in G:g\join\zerohat_K\not\in H\cup\{\zerohat_K\}\}\]
 		This is the minimal set of generators that must be deleted
-		to form $(K,H)$ from $(L,G)$
+		to form $(K,H)$ from $(L,G)$.
 		'''
 		z = K.min()[0]
 		return [g for g in this.G if (not this.lesseq(g,z)) and (this.join(g,z) not in K.G)]
@@ -1779,7 +1751,7 @@ class Genlatt(Poset):
 		H = [h for h in this.G if h!=g]
 		return this.minor(H,this.min()[0])
 
-	def _minors(this, minors, rels, i,weak,L):
+	def _minors(this, minors, rels, i, weak, L):
 		r'''
 		Recursion backend to \verb|minors|.
 		'''
@@ -1818,7 +1790,7 @@ class Genlatt(Poset):
 	def __str__(this):
 		return super().__str__() + '\nG = '+str(this.G)
 	def __repr__(this):
-		return super().__repr__()[:-1] + ', G='+repr(this.G)+')'
+		return 'Genlatt'+super().__repr__()[5:-1] + ', G='+repr(this.G)+')'
 	def minorPoset(this, weak=False, **kwargs):
 		r'''
 		Returns the minor poset of the given \verb|Genlatt| instance.

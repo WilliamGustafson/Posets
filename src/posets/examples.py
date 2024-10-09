@@ -1,3 +1,4 @@
+'''@no_doc@no_children@'''
 from .poset import Poset,Genlatt
 from .hasseDiagram import *
 import itertools
@@ -12,15 +13,28 @@ def Empty():
 def Bruhat(n,weak=False):
 	r'''
 	@section@Built in posets@
-	Returns the type $A_{n-1}$ Bruhat order (the symmetric group $S_n$).
+	Returns the type $A_{n-1}$ Bruhat order (the symmetric group $S_n$)
+	or type $A_{n-1}$ weak order.
 
 	\begin{center}
-		\includegraphics{figures/Bruhat_3.pdf}
+		\begin{minipage}{0.4\textwidth}
+			\begin{center}
+			\includegraphics{figures/Bruhat_3.pdf}
 
-		The poset \verb|Bruhat(3)|.
+			The poset \verb|Bruhat(3)|
+			\end{center}
+		\end{minipage}
+		\begin{minipage}{0.4\textwidth}
+			\begin{center}
+			\includegraphics{figures/Weak_3.pdf}
+
+			The poset \verb|Bruhat(3,True)|
+			\end{center}
+		\end{minipage}
 	\end{center}
 	@exec@
 	make_fig(Bruhat(3), 'Bruhat_3',height=4, width=3)
+	make_fig(Bruhat(3,True), 'Weak_3',height=4, width=3)
 	'''
 	def pairing_to_perm(tau):
 		arcs = [[int(x) for x in a.split(',')] for a in tau[1:-1].split(')(')]
@@ -31,9 +45,12 @@ def Bruhat(n,weak=False):
 
 	def nodeLabel(hasseDiagram, i):
 		return ('' if n<=9 else ',').join([str(x) for x in hasseDiagram.P.elements[i]])
+	def nodeName(hasseDiagram, i):
+		return hasseDiagram.nodeLabel(hasseDiagram,i).replace(',','-')
 
-	P = Uncrossing(n, E_only=True,weak=weak,zerohat=False)
+	P = Uncrossing(n, E_only=True,weak=weak,zerohat=False).dual()
 	P.hasseDiagram.nodeLabel = nodeLabel
+	P.hasseDiagram.nodeName = nodeName
 	P.hasseDiagram.offset = 1
 
 	P.elements = [pairing_to_perm(e) for e in P.elements]
@@ -66,7 +83,9 @@ def Root(n=3):
 		elif j==n:
 			return [(i-1,n)]
 		return [(i-1,j),(i,j+1)]
-	return Poset(relations={(i, j) : covers(i,j) for i in range(1, n) for j in range(i+1, (n+1 if i>1 else n))})
+	def nodeName(this,i):
+		return '-'.join(str(x) for x in this.P[i])
+	return Poset(relations={(i, j) : covers(i,j) for i in range(1, n) for j in range(i+1, (n+1 if i>1 else n))},nodeName=nodeName)
 
 def Butterfly(n):
 	r'''
@@ -85,7 +104,7 @@ def Butterfly(n):
 	incMat = [[0]*(i//2+1)*2 + [1]*(len(elements)-((i//2+1)*2)) for i in range(len(elements))]
 	name = "Rank "+str(n+1)+" butterfly poset"
 
-	P = Poset(incMat, elements, ranks, name = name).adjoin_zerohat().adjoin_onehat()
+	P = Poset(incMat, elements, ranks, name = name,nodeName = lambda this,i: str(this.P[i])).adjoin_zerohat().adjoin_onehat()
 	#cache some values for queries
 	P.cache['isRanked()']=True
 	P.cache['isEulerian()']=True
@@ -132,10 +151,14 @@ def Chain(n):
 	P.cache['isGorenstein()']=False
 	return P
 
-def Boolean(n, X=None):
+def Boolean(n):
 	r'''
 	@section@Built in posets@
-	Returns the poset of subsets of $X$, default is $\{1,\dots,n\}$, ordered by inclusion.
+	Returns the poset of subsets of a set, ordered by inclusion.
+
+	The parameter $n$ may be an integer, in which case the poset of
+	subsets of $\{1,\dots,n\}$ is returned, or an iterable in which
+	case the poset of subsets of $n$ is returned.
 
 	\begin{center}
 		\includegraphics{figures/Boolean_3.pdf}
@@ -146,6 +169,11 @@ def Boolean(n, X=None):
 	@exec@
 	make_fig(Boolean(3),'Boolean_3', height=6, width=4)
 	'''
+	if hasattr(n,'__iter__'):
+		X = n
+		n = len(X)
+	else:
+		X = None
 	P = Poset()
 	P.elements = list(range(1<<n))
 	P.incMat = [[1 if i&j==i else 0 for j in P.elements] for i in P.elements]
@@ -162,7 +190,11 @@ def Boolean(n, X=None):
 #		S = hasseDiagram.P.elements[i]
 #		s = str(S).replace(',','') if len(S) <= 1 else str(S)
 #		return s.replace('(','\\{' if hasseDiagram.in_latex else '{').replace(')','\\}' if hasseDiagram.in_latex else '}').replace(',',', ')
+	def nodeName(hasseDiagram, i):
+		if i==0: return 'e'
+		('' if n<10 else '-').join(str(x) for x in hasseDiagram.P[i])
 	P.hasseDiagram.nodeLabel = nodeLabel
+	P.hasseDiagram.nodeName = nodeName
 	#cache some values for queries
 	P.cache['isRanked()']=True
 	P.cache['isEulerian()']=True
@@ -211,7 +243,10 @@ def Polygon(n):
 		if e in hasseDiagram.P.min(): return "$\\widehat{0}$" if hasseDiagram.in_latex else '0'
 		if type(e) == int: return str(e)
 		return str(e).replace(',',', ')
-	P = Poset(elements = elements, less = less, name = str(n)+"-gon face lattice", nodeLabel = nodeLabel, trans_close=False).adjoin_zerohat().adjoin_onehat()
+	def nodeName(hasseDiagram,i):
+		if type(hasseDiagram.P[i])==tuple: return '-'.join(str(x) for x in hasseDiagram.P[i])
+		return str(hasseDiagram.P[i])
+	P = Poset(elements = elements, less = less, name = str(n)+"-gon face lattice", nodeLabel = nodeLabel, nodeName = nodeName, trans_close=False).adjoin_zerohat().adjoin_onehat()
 	#cache some values for queries
 	P.cache['isRanked()']=True
 	P.cache['isEulerian()']=True
@@ -250,6 +285,14 @@ def Cube(n):
 
 	def sort_key(F): #revlex induced by 0<*<1
 		return ''.join(['1' if f == '*' else '2' if f == '1' else '0' for f in F][::-1])
+
+	if n>=1:
+		def nodeName(this,i):
+			return this.P[i]
+	else:
+		def nodeName(this,i):
+			return ['0','*','1','-'][i]
+	P.hasseDiagram.nodeName = nodeName
 
 	P = P.sort(sort_key).adjoin_zerohat()
 	#cache some values for queries
@@ -298,6 +341,8 @@ def Torus(n=2, m=2):
 
 		def rk(e):
 			return len([x for x in e if not x.isdigit()])
+		def nodeName(this,i):
+			return this.P[i]
 	else:
 		symbols = [str(i) for i in range(m)]+['*'+str(i) for i in range(m)]
 		elements = [tuple(x) for x in itertools.product(symbols, repeat=n)]
@@ -307,6 +352,9 @@ def Torus(n=2, m=2):
 
 		def rk(e):
 			return len([x for x in e if '*' in x])
+
+		def nodeName(this,i):
+			return '-'.join(this.P[i])
 
 	ranks = [[] for i in range(n+1)]
 	for e in elements: ranks[rk(e)].append(elements.index(e))
@@ -341,7 +389,7 @@ def Torus(n=2, m=2):
 	def sort_key(F): #revlex induced by 0 < A < B < 1
 		return tuple([order.index(f) for f in F][::-1])
 
-	P = Poset(less=less, ranks=ranks, elements=elements, name = str(m)+" subdivided "+str(n)+"-torus").sort(sort_key).adjoin_zerohat().adjoin_onehat()
+	P = Poset(less=less, ranks=ranks, elements=elements, name = str(m)+" subdivided "+str(n)+"-torus",nodeName=nodeName).sort(sort_key).adjoin_zerohat().adjoin_onehat()
 	#cache some values for queries
 	P.cache['isRanked()']=True
 	P.cache['isEulerian()']= n%2 == 1
@@ -351,9 +399,9 @@ def Torus(n=2, m=2):
 def GluedCube(orientations = None):
 	r'''
 	@section@Built in posets@
-	Returns the face poset of the cubical complex obtained from a $2\times\dots\times2$ grid of $n=\verb|len(orientations)|$-cubes via a series of gluings as indicated by the parameter \verb|orientations|.
+	Returns the face poset of the cubical complex obtained from a $2\times\dots\times2$ grid of cubes of dimension \verb|len(orientations)| via a series of gluings as indicated by the parameter \verb|orientations|.
 
-	If \verb|orientations| is \verb|[1,...,1]| the $n$-torus is constructed and if \verb|orientations| is \verb|[-1,...,-1]| the
+	If \verb|orientations| is \verb|[1,...,1]| a torus is constructed and if \verb|orientations| is \verb|[-1,...,-1]| the
 	projective space of dimension $n$ is constructed.
 
 
@@ -383,7 +431,6 @@ def GluedCube(orientations = None):
 	gluings_inv = {}
 	nonreprs=[]
 	for (F, eps) in P.complSubposet(P.min()):
-#		if (F,eps) in nonreprs: continue #this didn't glue all of the Torus verts
 		for i in range(len(F)):
 			if F[i] == '0' and F[i] == str(eps[i]):
 				if orientations[i] == 1:
@@ -455,7 +502,7 @@ def ProjectiveSpace(n=2):
 def Grid(n=2,d=None):
 	r'''
 	@section@Built in posets@
-	Returns the face poset of the cubical complex that forms a $\verb|d[0]|\times\dots\times\verb|d[-1]|$ grid of $n$-cubes.
+	Returns the face poset of the cubical complex consisting of a $\verb|d[0]|\times\dots\times\verb|d[-1]|$ grid of $n$-cubes.
 
 	\begin{center}
 		\includegraphics{figures/grid.pdf}
@@ -510,8 +557,11 @@ def Uncrossing(t, upper=False, weak=False, E_only=False, zerohat=True):
 
 	The parameter \verb|t| should be either a pairing encoded as a list \verb|[s_1,t_1,...,s_n,t_n]| where
 	\verb|s_i| is paired to \verb|t_i| or \verb|t| can be an integer greater than 1. If t is an integer the entire uncrossing
-	poset is returned.
+	poset of order \verb|t| is returned.
 
+	Covers in the uncrossing poset are of the form $\sigma<\tau$
+	where $\sigma$ is obtained from $\tau$ by swapping points
+	$i$ and $j$ to remove a crossing.
 	If \verb|weak| is \verb|True| then the weak subposet
 	is returned that has cover relations
 	$\sigma<\tau$ when $\sigma$ is
@@ -519,10 +569,9 @@ def Uncrossing(t, upper=False, weak=False, E_only=False, zerohat=True):
 	via swapping two adjacent points. If \verb|E_only| is
 	\verb|True| only swaps $(i,j)$ such that the pairing
 	$\tau$ satisfies $\tau(i)<i$ and $\tau(j)<j$ are used.
-
 	These two flags are provided
-	because this function acts as a backend to \verb|Bruhat|,
-	calling \verb|Uncrossing(n,E_only=True)| constructs
+	because this function acts as a backend to \verb|Bruhat|.
+	Calling \verb|Uncrossing(n,E_only=True)| constructs
 	the Bruhat order on $\mathfrak{S_n}$ and passing
 	\verb|weak=True| constructs the weak order on $\mathfrak{S}_n$.
 
@@ -725,7 +774,8 @@ def Uncrossing(t, upper=False, weak=False, E_only=False, zerohat=True):
 			i = i-1 #zerohat gets added first so shift back
 			p=this.pairings[i]
 			n=len(p)
-			return ''.join([str(j+1) for k in range(0,n) for j in range(0,n<<1) if (1<<j)&p[k]!=0])
+			return '/'.join(['-'.join(str(j+1) for j in range(0,n<<1) if (1<<j)&p[i]!=0) for k in range(0,n)])
+#			return ''.join([str(j+1) for k in range(0,n) for j in range(0,n<<1) if (1<<j)&p[k]!=0])
 
 		def nodeDraw(this, i):
 			size = 10*int(this.nodescale)
@@ -771,7 +821,7 @@ def Bnq(n=2, q=2):
 	@section@Built in posets@
 	Returns the poset of subspaces of the vector space $\F_q^n$ where $\F_q$ is the field with q elements.
 
-	Currently only implemented for q a prime. Raises a not implemented error if q is not prime.
+	Currently only implemented for q a prime. Raises an instance of \verb|NotImplementedError| if q is not prime.
 
 	\begin{center}
 		\includegraphics{figures/Bnq.pdf}
@@ -780,7 +830,7 @@ def Bnq(n=2, q=2):
 	\end{center}
 
 	@exec@
-	make_fig(Bnq(3,2),'Bnq',height=6,width=8)
+	make_fig(Bnq(3,2),'Bnq',height=10,width=16)
 	'''
 	def isprime(x):
 		d = 2
@@ -871,8 +921,14 @@ def Bnq(n=2, q=2):
 	def nodeLabel(hd, i):
 		if i==0: return '$\\left(\\begin{matrix}'+' & '.join('0'*n)+'\\end{matrix}\\right)$'
 		return '$\\left(\\begin{matrix}' + r'\\'.join(' & '.join(str(x) for x in row) for row in hd.P[i])+'\\end{matrix}\\right)$'
-	P = Poset(elements = spaces, less = lambda i,j: i!=j and i&j == i, nodeLabel=nodeLabel,extra_packages='\\usepackage{amsmath}')
 
+	if q<10:
+		def nodeName(hd, i):
+			return '/'.join(''.join(str(x) for x in y) for y in hd.P[i])
+	else:
+		def nodeName(hd, i):
+			return '/'.join('-'.join(str(x) for x in y) for y in hd.P[i])
+	P = Poset(elements = spaces, less = lambda i,j: i!=j and i&j == i, nodeLabel=nodeLabel,extra_packages='\\usepackage{amsmath}',nodeName=nodeName)
 	#sort ranks: revlex on bases induced by ordering vectors by interpreting them as base q representations of numbers
 	P.elements = [basis(S)[::-1] for S in P]
 	P = P.sort()
@@ -925,11 +981,13 @@ def DistributiveLattice(P, indices=False):
 			elements.append(tuple(P[i] for i in range(len(P)) if (1<<i)&I!=0))
 		def less(I,J):
 			return I!=J and all(i in J for i in I)
-
+	def nodeName(this,i):
+		return '/'+'/'.join(str(j) for j in range(len(this.Q)) if (1<<j)&ideals[i]!=0)+'/'
 	JP = Poset(
 		elements = elements,
 		less = less,
 		hasse_class = SubposetsHasseDiagram,
+		nodeName=nodeName,
 		prefix='irr',
 		Q=P,
 		irr_scale='0.1'
@@ -1031,6 +1089,7 @@ def LatticeOfFlats(data):
 
 		def nodeLabel(hd,i):
 			return '/'.join(''.join(str(x) for x in y) for y in hd.P[i])
+		nodeName = nodeLabel
 	######
 	#data is a polymatroid
 	######
@@ -1050,6 +1109,8 @@ def LatticeOfFlats(data):
 
 		def nodeLabel(hd,i):
 			return '\\{'+str(hd.P[i])[1:-1]+'\\}'
+		def nodeName(hd,i):
+			return nodeLabel(hd,i).replace('\\}','/').replace('\\}','/').replace(',','-')
 
 		elem_conv = int_to_tuple
 	##############
@@ -1125,7 +1186,7 @@ def UniformMatroid(n=3,r=3,q=1):
 
 	@exec@
 	make_fig(UniformMatroid(4,3,1),'unif',height=5,width=5)
-	make_fig(UniformMatroid(4,3,2),'qunif',height=8,width=12,labels=False)
+	make_fig(UniformMatroid(4,3,2),'qunif',height=8,width=12,labels=False,ptsize='1.25pt')
 	'''
 	if q==1:
 		return Boolean(n).rankSelection(list(range(r))+[n])
@@ -1140,29 +1201,45 @@ def MinorPoset(L,genL=None, weak=False):
 	The join irreducibles are automatically added to \verb|genL|. If \verb|genL| is not provided the generating set will be only the
 	join irreducibles.
 
+	If \verb|weak| is \verb|True| then the weak minor poset is
+	returned. Briefly, this poset does not have relations
+	$(K,H)\le(M,I)$ when some generator $g$ was deleted to form
+	$(M,I)$ and $g\le\zerohat_K$.
+
 	For more info on minor posets see \cite{gustafson-23}.
 
-	\begin{center}
-		\includegraphics{figures/M_lof_triangle.pdf}
 
-		The poset \verb|MinorPoset(LatticeOfFlats([[1,2],[2,3],[3,1]]))|.
+	\begin{center}
+		\includegraphics[width=0.4\textwidth]{figures/M_lof_triangle.pdf}
+		\hspace{0.5in}
+		\includegraphics[width=0.4\textwidth]{figures/M_lof_triangle_weak.pdf}
+
+		On the left the poset \verb|MinorPoset(LatticeOfFlats([[1,2],[2,3],[3,1]]))| and on the right
+		the poset \verb|MinorPoset(LatticeOfFlats([[1,2],[2,3],[3,1]]),weak=True)|.
 	\end{center}
 
 	\begin{center}
-		\includegraphics{figures/M_lof_poly.pdf}
+		\includegraphics[width=0.4\textwidth]{figures/M_lof_poly.pdf}
+		\hspace{0.5in}
+		\includegraphics[width=0.4\textwidth]{figures/M_lof_poly_weak.pdf}
 
-		The poset \verb|MinorPoset(LatticeOfFlats([0,1,2,2,1,3,3,3]))|.
+		On the left the poset \verb|MinorPoset(LatticeOfFlats([0,1,2,2,1,3,3,3]))| and on the right the poset \verb|MinorPoset(LatticeOfFlats([0,1,2,2,1,3,3,3]), weak=True)|.
 	\end{center}
 
 	\begin{center}
-		\includegraphics{figures/M_B_2.pdf}
+		\includegraphics[width=0.4\textwidth]{figures/M_B_2.pdf}
+		\hspace{0.5in}
+		\includegraphics[width=0.4\textwidth]{figures/M_B_2_weak.pdf}
 
-		The poset \verb|MinorPoset(LatticeOfFlats(Boolean(2),Boolean(2)[1:4]))|.
+		On the right the poset \verb|MinorPoset(LatticeOfFlats(Boolean(2),Boolean(2)[1:4]))| and on the left
+		the poset \verb|MinorPoset(LatticeOfFlats(Boolean(2),Boolean(2)[1:4]),weak=True)|.
 	\end{center}
 
 	@exec@
 	make_fig(MinorPoset(LatticeOfFlats([[1,2],[2,3],[1,3]])),'M_lof_triangle',height=10,width=8,L_height=0.75,L_width=1,L_labels=False)
+	make_fig(MinorPoset(LatticeOfFlats([[1,2],[2,3],[1,3]]),weak=True),'M_lof_triangle_weak',height=10,width=8,L_height=0.75,L_width=1,L_labels=False)
 	make_fig(MinorPoset(LatticeOfFlats([0,1,2,2,1,3,3,3])),'M_lof_poly',height=10,width=12,L_height=1,L_width=1,L_labels=False)
-	make_fig(MinorPoset(Boolean(2),Boolean(2)[1:4]), 'M_B_2',height=10,width=8,L_height=1,L_width=1,L_labels=False)
+	make_fig(MinorPoset(LatticeOfFlats([0,1,2,2,1,3,3,3]),weak=True),'M_lof_poly_weak',height=10,width=12,L_height=1,L_width=1,L_labels=False)
+	make_fig(MinorPoset(Boolean(2),Boolean(2)[1:4],weak=True), 'M_B_2_weak',height=10,width=8,L_height=1,L_width=1,L_labels=False)
 	'''
 	return Genlatt(L, G=genL).minorPoset(weak)
