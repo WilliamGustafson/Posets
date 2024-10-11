@@ -1,6 +1,7 @@
 #set up function make_fig inside of doc string executions
 import sys
 import os
+sys.path.append('../src')
 from posets import *
 
 def make_fig(P,name,**kwargs):
