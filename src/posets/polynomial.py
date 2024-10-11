@@ -31,6 +31,13 @@ class Polynomial:
 		'''
 		this.data = {} if data==None else data if type(data)==dict else {d[1]:d[0] for d in data}
 
+	def _to_poly(*args):
+		for x in args:
+			if isinstance(x,Polynomial): yield x
+			elif type(x) in (int,float): yield Polynomial({'':x})
+			elif hasattr(x,'__iter__'): yield Polynomial(x)
+			else: yield Polynomial({})
+
 	def __mul__(*args):
 		'''
 		Noncommutative polynomial multiplication.
@@ -41,20 +48,26 @@ class Polynomial:
 				{''.join(map(lambda y:y[0],x)) :
 				math.prod(map(lambda y:y[1],x))}
 				)
-			for x in itertools.product(*map(lambda y:y.data.items(),args))
+			for x in itertools.product(*map(lambda y:y.data.items(),Polynomial._to_poly(*args)))
 			)
 			)
+	__rmul__=__mul__
+
+	def __pow__(this,x):
+		if type(x)!=int: raise NotImplementedError
+		return Polynomial.__mul__(*itertools.repeat(this,x))
 
 	def __add__(*args):
 		'''
 		Polynomial addition.
 		'''
 		ret = {}
-		for p in args:
+		for p in Polynomial._to_poly(*args):
 			for m,c in p.data.items():
 				if m in ret: ret[m]+=c
 				else: ret[m]=c
 		return Polynomial(ret)
+	__radd__=__add__
 
 	def __neg__(this):
 		return Polynomial({m:-c for m,c in this.data.items()})

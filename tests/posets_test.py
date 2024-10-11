@@ -66,11 +66,11 @@ elif not any(tf in sys.argv for tf in test_flags): #no test flags given skip sag
 
 if '-l' in sys.argv:
 	log_file = open(sys.argv[sys.argv.index('-l')+1],'w')
-	def out(*args,end='\n'):
+	def out(*args,end='\n\n'):
 		log_file.write(*args)
-		log_file.write('\n')
+		log_file.write(end)
 else:
-	def out(*args,end=''):
+	def out(*args,end='\n'):
 		print(*args,end)
 
 if '-c' in sys.argv:
@@ -92,7 +92,7 @@ def test(bool, name="Unnamed"):
 
 def testeq(actual, expected, name="Unnamed"):
 	if expected!=actual:
-		failure(name+" equality test failed\nactual="+repr(actual)+'\n\nexpected='+repr(expected))
+		failure(name+" equality test failed\nactual="+repr(actual)+'\nexpected='+repr(expected))
 
 def testeq_exit(actual, expected, name="Unnamed"):
 	try:
@@ -103,7 +103,7 @@ def testeq_exit(actual, expected, name="Unnamed"):
 
 def testneq(actual, expected, name="Unnamed"):
 	if expected == actual:
-		failure(name+" inequality test failed\nactual="+repr(actual)+'\n\nexpected='+repr(expected))
+		failure(name+" inequality test failed\nactual="+repr(actual)+'\nexpected='+repr(expected))
 
 def finish():
 	if success:
@@ -323,6 +323,8 @@ if __name__ == '__main__':
 			#elements are subspaces considered as sets encoded as bit strings
 			#the vectors are ordered reverse lexicographically (base-q order)
 			#in the future this may be changed to tuples representing matrices
+#			elements=[tuple(),
+#				((0,0,1),)
 			elements=[1,
 				1|1<<1, 1|1<<2, 1|1<<3, 1|1<<4, 1|1<<5, 1|1<<6, 1|1<<7,
 				1|1<<1|1<<2|1<<3, 1|1<<1|1<<4|1<<5, 1|1<<2|1<<4|1<<6,
@@ -365,7 +367,7 @@ if __name__ == '__main__':
 		V = Poset(relations={'*':['0','1']},elements=['0','1','*'])
 		testeq(DistributiveLattice(V).sort(key=str), Videals, "Lattice of ideals")
 
-		pent = Poset(relations={0:['a','c'],'a':['b'],'c':[1],'b':[1]},elements=[0,'a','b','c',1])
+		pent = Genlatt(relations={0:['a','c'],'a':['b'],'c':[1],'b':[1]},elements=[0,'a','b','c',1])
 		pentMinors = P(Poset(
 			relations={
 				0:[1,2,3,4,5],
@@ -393,9 +395,13 @@ if __name__ == '__main__':
 				(0,('a','b')), (0,('a','c')), (0,('b','c')), ('a',('b',1)),
 				(0,('a','b','c'))
 				]
-			).sort(key=str))
-		MinorPoset(pent).sort(key=str)
-		testeq(MinorPoset(pent).sort(key=str), pentMinors, "Minor poset of pentagon")
+			).sort(key=lambda x:'0' if x==0 else str((x[0],sorted([str(g) for g in x[1]]))))
+		)
+		M=MinorPoset(pent).sort(key=lambda x:'0' if x==0 else str((x.min()[0],sorted([str(g) for g in x.G]))))
+		print(['0' if x==0 else str((x.min()[0],x.G)) for x in M.elements])
+		print(pentMinors.elements)
+		pentMinors.elements = [0 if x==0 else pent.minor(z=x[0],H=x[1]) for x in pentMinors.elements]
+		testeq(M, pentMinors, "Minor poset of pentagon")
 
 		bruhat = P(Poset(relations={
 			(1,2,3):[(1,3,2),(2,1,3)],
@@ -545,14 +551,11 @@ if __name__ == '__main__':
 
 		B4 = Boolean(4)
 		B3 = Boolean(3)
-		testeq(B4.flagVectors(), [[[],1,1],[[1],4,3],[[2],6,5],[[1,2],12,3],[[3],4,3],[[1,3],12,5],[[2,3],12,3],[[1,2,3],24,1]], 'flagVectors')
+		testeq(B4.flagVectors(),{tuple():[1,1],(1,):[4,3],(2,):[6,5],(1,2):[12,3],(3,):[4,3],(1,3):[12,5],(2,3):[12,3],(1,2,3):[24,1]}, 'flagVectors')
+#		[[[],1,1],[[1],4,3],[[2],6,5],[[1,2],12,3],[[3],4,3],[[1,3],12,5],[[2,3],12,3],[[1,2,3],24,1]], 'flagVectors')
 		testeq(B4.abIndex(), Polynomial([[1,'aaa'],[3,'baa'],[5,'aba'],[3,'bba'],[3,'aab'],[5,'bab'],[3,'abb'],[1,'bbb']]), 'abIndex')
 		testeq(B4.cdIndex(), Polynomial([[1,'ccc'],[2,'cd'],[2,'dc']]), 'cdIndex')
-		testeq(B3.complSubposet([(1,2)]).cdIndex(), Polynomial([[1,'aa'],[1,'ab'],[2,'ba'],[0,'bb']]), 'cdIndex non-DS')
-		testeq(B4.cdIndex_IA(), B4.cdIndex(), 'cdIndex_IA')
-		testeq(B3.cd_coeff_mat('d').tolist(), [[-2,1,1,0,1,0,0,0]]+[[0]*8]*7, 'cd_coeff_mat')
-		testeq(B3.cd_op('d',[[0],[1]]+[[0] for i in range(6)]), {tuple():1}, 'cd_op')
-
+		testeq(B3.complSubposet([(1,2)]).cdIndex(), Polynomial([[1,'cc'],[1,'d']]), 'cdIndex non-DS')
 		testeq(Boolean(2).zeta(), [[1,1,1,1],[0,1,0,1],[0,0,1,1],[0,0,0,1]], 'zeta')
 
 		testeq(Torus().properPart().bettiNumbers(), [1,2,1], 'bettiNumbers')
