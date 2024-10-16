@@ -3,6 +3,13 @@
 #TODO
 ##########################################
 #Update tests
+#	Tests to add
+#	============
+#	Polynomial arithmetic methods
+#	Polynomial abToCd and cdToAb
+#
+#Add nodedraw for noncrossing partition lattice
+#rip off the one for Uncrossing
 #
 #standardize choice of camelcase versus underscores
 #
@@ -76,8 +83,18 @@ import numpy as np
 
 import time
 ###########################################
+#Cube_1 and Chain_1 needed for pyr and prism
+#can't import examples.py because of circular
+#dependencies, just reimplement
+###########################################
+def Chain_1():
+	return Poset(relations={0:[1]})
+
+def Cube_1():
+	return Poset(relations={0:['0','1'],'0':['*'],'1':['*']})
+###########################################
 #Poset Class
-##########################################
+###########################################
 class Poset:
 	r'''
 	@is_section@section_key@0@
@@ -555,14 +572,14 @@ class Poset:
 		@section@Operations@
 		Computes the pyramid of a poset, that is, the Cartesian product with a length 1 chain.
 		'''
-		return this.cartesianProduct(Chain(1))
+		return this.cartesianProduct(Chain_1())
 
 	def prism(this):
 		r'''
 		@section@Operations@
 		Computes the prism of a poset, that is, the diamond product with \verb|Cube(1)|.
 		'''
-		return this.diamondProduct(Cube(1))
+		return this.diamondProduct(Cube_1())
 	##############
 	#End Operations
 	##############
@@ -1826,13 +1843,69 @@ class Genlatt(Poset):
 		nodeLabel = lambda this,i : '$\\emptyset$' if i in this.P.min(True) else nodeLabel(this,i)
 		kwargs.update({
 			'prefix' : 'L',
-			'width' : 7.5,
+			'width' : 8,
 			'height' : 10,
-			'L_width' : 0.75,
+			'L_width' : 0.8,
 			'L_height' : 1
 			})
 		M.hasseDiagram = SubposetsHasseDiagram(M, this,**kwargs)
 		return M
+
+	def cartesianProduct(this,that):
+		r'''
+		Computes the Cartesian product.
+
+		The Cartesian product of two generator-enriched lattices $(L,G)$ and $(K,H)$ is
+		\[(L\times K,(G\times\{\zerohat_K\})\cup(\{\zerohat_L\times H)).\]
+		'''
+		zthis = this.min()[0]
+		zthat = that.min()[0]
+		return Genlatt(
+			Poset.cartesianProduct(this,that),
+			G=tuple((g,zthat) for g in this.G)+tuple((zthis,h) for h in that.G)
+			)
+
+	def diamondProduct(this,that):
+		r'''
+		Computes the diamond product.
+
+		The diamond product of two generator-enriched lattices $(L,G)$ and $(K,H)$ is
+		\[(L\diamond K, G\times H)\]
+		where
+		\[L\diamond K = ((L\wout\{\zerohat\})\times(K\wout\{\zerohat\}))\cup\{\zerohat\}.\]
+		'''
+		return Genlatt(Poset.diamondProduct(this,that), G=itertools.product(this.G,that.G))
+
+	def pyr(this):
+		r'''
+		Computes the pyramid over a generator-enriched lattice.
+
+		The pyramid over a generator-enriched lattice $(L,G)$ is the generator-enriched
+		lattice $(L,G)\times(B_1,\irr(B_1))$.
+		'''
+		return this.cartesianProduct(Genlatt(Chain_1()))
+
+	def prism(this):
+		r'''
+		Computes the prism over a generator-enriched lattice.
+
+		The prism over a generated-enriched lattice $(L,G)$ is the generator-enriched lattice
+		$(L,G)\diamond(B_2,\irr(B_2))$.
+		'''
+		return this.diamondProduct(Genlatt(Cube_1()))
+
+	def adjoin_onehat(this):
+		r'''
+		Returns the generator-enriched lattice obtained by adjoining a new maximum.
+		'''
+		ret = Poset.adjoin_onehat(this)
+		return Genlatt(ret,G=this.G+tuple(ret.max()))
+
+	def adjoin_zerohat(this):
+		r'''
+		Returns the generator-enriched lattice obtained by adjoining a new minimum.
+		'''
+		return Genlatt(Poset.adjoin_zerohat(this),G=this.G+tuple(this.min()))
 
 ##############
 #End Genlatt class

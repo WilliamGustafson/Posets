@@ -669,6 +669,7 @@ class SubposetsHasseDiagram(HasseDiagram):
 		Q_defaults = this.Q.hasseDiagram.__dict__.copy()
 		this.Q.hasseDiagram.__dict__.update(Q_args)
 		this.Q.hasseDiagram.nodeName = SubposetsHasseDiagram.Q_nodeName
+		this.Q.hasseDiagram.prefix = this.prefix
 
 		ret = super().latex(**kwargs)
 
