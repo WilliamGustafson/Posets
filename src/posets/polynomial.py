@@ -38,6 +38,14 @@ class Polynomial:
 			elif hasattr(x,'__iter__'): yield Polynomial(x)
 			else: yield Polynomial({})
 
+	def strip(this):
+		'''
+		Removes any zero terms from a polynomial in place.
+		'''
+		for m,c in list(this.data.items()):
+			if c==0: del this.data[m]
+		return this
+
 	def __mul__(*args):
 		'''
 		Noncommutative polynomial multiplication.
@@ -50,12 +58,12 @@ class Polynomial:
 				)
 			for x in itertools.product(*map(lambda y:y.data.items(),Polynomial._to_poly(*args)))
 			)
-			)
+			).strip()
 	__rmul__=__mul__
 
 	def __pow__(this,x):
 		if type(x)!=int: raise NotImplementedError
-		return Polynomial.__mul__(*itertools.repeat(this,x))
+		return Polynomial.__mul__(*itertools.repeat(this,x)).strip()
 
 	def __add__(*args):
 		'''
@@ -66,7 +74,7 @@ class Polynomial:
 			for m,c in p.data.items():
 				if m in ret: ret[m]+=c
 				else: ret[m]=c
-		return Polynomial(ret)
+		return Polynomial(ret).strip()
 	__radd__=__add__
 
 	def __neg__(this):
@@ -74,7 +82,7 @@ class Polynomial:
 
 	def __sub__(this, that):
 		'''Polynomial subtraction'''
-		return this+(-that)
+		return (this+(-that)).strip()
 
 	def __ge__(this, that):
 		r'''
@@ -151,7 +159,7 @@ class Polynomial:
 				for x in r: x[0]+=s
 			Polynomial._poly_add_prepoly(ret,r) #add the poly to ret
 		ret.data = {k:v for k,v in ret.data.items() if v!=0}
-		return ret
+		return ret.strip()
 
 	def _poly_add_prepoly(p, q):
 		for m,c in q:
@@ -199,6 +207,7 @@ class Polynomial:
 		this.data[i] = value
 
 	def __str__(this):
+		this.strip()
 		data = list(this.data.items())
 		data.sort(key=lambda x:x[0])
 		s = ""

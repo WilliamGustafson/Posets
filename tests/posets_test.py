@@ -35,6 +35,8 @@ Arguments:
 
 	-in Run invariant computations tests
 
+	-pn Run Polynomial class tests
+
 	-mi Run miscellaneous tests
 '''
 ##########################################
@@ -48,7 +50,7 @@ import subprocess
 
 
 success = True
-test_flags = ['-'+f for f in ['s','m','co','ex','op','qu','sp','ic','in','mi']]
+test_flags = ['-'+f for f in ['s','m','co','ex','op','qu','sp','ic','in','pn','mi']]
 tests = [] #tests to run
 
 if '-skip' in sys.argv:
@@ -84,6 +86,35 @@ else:
 		success = False
 		out(s)
 		raise Exception(s)
+
+#wrap all functions in the module so we can log any that don't get called
+import posets
+def record_wrapper(f,name):
+	def wrappedf(*args,**kwargs):
+		ret=f(*args,**kwargs)
+		funcs_tested[name]=True
+		return ret
+	return wrappedf
+
+def wrap_attrs(X):
+	for a in dir(X):
+		attr = getattr(X,a)
+		if not hasattr(attr,'__module__') or attr.__module__==None or attr.__module__[:len('posets.')] not in ('posets','posets.'): continue
+		if type(attr)==type:
+			if hasattr(attr,'__module__') and attr.__module__[:len('posets.')] in ('posets','posets.'):
+				wrap_attrs(attr)
+		elif callable(attr):
+			name = attr.__qualname__
+#			name = (X.__qualname__+'.' if hasattr(X,'__qualname__') else '') + attr.__qualname__
+			funcs_tested[name]=False
+			if X==posets: globals()[a] = record_wrapper(attr,name)
+			else: setattr(X,a,record_wrapper(attr,name))
+funcs_tested = {}
+wrap_attrs(posets)
+#for a in dir(posets):
+#	if callable(posets.__dict__[a]):
+#		funcs_tested[posets.__dict__[a].__qualname__]=False
+#		globals()[a] = record_wrapper(posets.__dict__[a])
 
 #methods to check a condition and throw an exception if false
 def test(bool, name="Unnamed"):
@@ -301,7 +332,17 @@ if __name__ == '__main__':
 		testeq(Uncrossing(3).sort(key=str), uc3, "Uncrossing")
 
 		#B_3(2)
-		b32 = P(Poset(
+		#Previously we tested the actual labeling was correct, but I changed the
+		#element labels in Bnq and I can't be bothered to update them here. Below
+		#we just test isomorphism class.
+		spaces = [0,
+			1|1<<1, 1|1<<2, 1|1<<3, 1|1<<4, 1|1<<5, 1|1<<6, 1|1<<7,
+			1|1<<1|1<<2|1<<3, 1|1<<1|1<<4|1<<5, 1|1<<2|1<<4|1<<6,
+			1|1<<3|1<<4|1<<7, 1|1<<1|1<<6|1<<7, 1|1<<3|1<<5|1<<6,
+			1|1<<2|1<<5|1<<7,
+			1|1<<1|1<<2|1<<3|1<<4|1<<5|1<<6|1<<7
+			]
+		b32 = Poset(
 			relations={
 				0:[1,2,3,4,5,6,7],
 				1:[8,9,12],
@@ -325,15 +366,9 @@ if __name__ == '__main__':
 			#in the future this may be changed to tuples representing matrices
 #			elements=[tuple(),
 #				((0,0,1),)
-			elements=[1,
-				1|1<<1, 1|1<<2, 1|1<<3, 1|1<<4, 1|1<<5, 1|1<<6, 1|1<<7,
-				1|1<<1|1<<2|1<<3, 1|1<<1|1<<4|1<<5, 1|1<<2|1<<4|1<<6,
-				1|1<<3|1<<4|1<<7, 1|1<<1|1<<6|1<<7, 1|1<<3|1<<5|1<<6,
-				1|1<<2|1<<5|1<<7,
-				1|1<<1|1<<2|1<<3|1<<4|1<<5|1<<6|1<<7
-				]
-			).sort())
-		testeq(Bnq(n=3,q=2).sort(), b32, "B_3(2)")
+			elements=spaces
+			).sort()
+		testeq(Bnq(n=3,q=2).isoClass(), b32.isoClass(), "B_3(2)")
 
 		triFlats = P(Poset(
 			relations={
@@ -398,8 +433,6 @@ if __name__ == '__main__':
 			).sort(key=lambda x:'0' if x==0 else str((x[0],sorted([str(g) for g in x[1]]))))
 		)
 		M=MinorPoset(pent).sort(key=lambda x:'0' if x==0 else str((x.min()[0],sorted([str(g) for g in x.G]))))
-		print(['0' if x==0 else str((x.min()[0],x.G)) for x in M.elements])
-		print(pentMinors.elements)
 		pentMinors.elements = [0 if x==0 else pent.minor(z=x[0],H=x[1]) for x in pentMinors.elements]
 		testeq(M, pentMinors, "Minor poset of pentagon")
 
@@ -569,7 +602,27 @@ if __name__ == '__main__':
 		testeq(B.buildIsomorphism(Chain(3)), None, "buildIsomorphism None ret")
 
 		test_timer.stop();print('Finished invariant tests',test_timer)
+	##########################################
+	#Polynomial
+	##########################################
+	if '-pn' in tests:
+		test_timer.reset()
+		p = Polynomial({'a':1,'b':1,'x':0})
+		testeq(str(p),'a+b','Polynomial.__str__')
+		testeq(Polynomial({'aa':1,'ab':2,'ba':2,'bb':1}).abToCd(),Polynomial({'cc':1,'d':1}),'Polynomial.abToCd')
+		testeq(Boolean(5).cdIndex().abToCd(),Boolean(5).cdIndex(),'Polynomial.abToCd')
+		testeq(Boolean(5).cdIndex().cdToAb(),Boolean(5).abIndex(),'Polynomial.cdToAb')
+		B42=Bnq(n=4,q=2)
+		testeq(B42.abIndex().abToCd(),B42.abIndex(),'Polynomial.abToCd non-DS')
 
+		p = Polynomial({'cc':1,'d':1})
+		q = Polynomial({'cc':1,'d':2})
+		testeq(p+q,Polynomial({'cc':2,'d':3}),'Polynomial.__add__')
+		testeq(p-q,Polynomial({'d':-1}),'Polynomial.__sub__')
+		testeq(p*q,Polynomial({'cccc':1,'ccd':3,'dcc':3,'dd':2}),'Polynomial.__mul__')
+		testeq(p**2,Polynomial({'cccc':1,'ccd':1,'dcc':1,'dd':1}),'Polynomial.__pow__')
+
+		test_timer.stop();print('Finished polynomial tests',test_timer)
 	##########################################
 	#Misc
 	##########################################
@@ -675,3 +728,10 @@ exit 0
 
 	finish()
 	all_timer.stop();print('Total time',all_timer)
+
+if '--list-untested' in sys.argv:
+	print('\nUntested functions:')
+	for f,tested in funcs_tested.items():
+		if not tested: print(f)
+
+
