@@ -2,12 +2,6 @@
 ##########################################
 #TODO
 ##########################################
-#Update tests
-#	Tests to add
-#	============
-#	Polynomial arithmetic methods
-#	Polynomial abToCd and cdToAb
-#
 #Add nodedraw for noncrossing partition lattice
 #rip off the one for Uncrossing
 #
