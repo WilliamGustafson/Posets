@@ -609,8 +609,7 @@ if __name__ == '__main__':
 		test_timer.reset()
 		p = Polynomial({'a':1,'b':1,'x':0})
 		testeq(str(p),'a+b','Polynomial.__str__')
-		testeq(Polynomial({'aa':1,'ab':2,'ba':2,'bb':1}).abToCd(),Polynomial({'cc':1,'d':1}),'Polynomial.abToCd')
-		testeq(Boolean(5).cdIndex().abToCd(),Boolean(5).cdIndex(),'Polynomial.abToCd')
+		testeq(Boolean(5).abIndex().abToCd(),Boolean(5).cdIndex(),'Polynomial.abToCd')
 		testeq(Boolean(5).cdIndex().cdToAb(),Boolean(5).abIndex(),'Polynomial.cdToAb')
 		B42=Bnq(n=4,q=2)
 		testeq(B42.abIndex().abToCd(),B42.abIndex(),'Polynomial.abToCd non-DS')
@@ -619,7 +618,7 @@ if __name__ == '__main__':
 		q = Polynomial({'cc':1,'d':2})
 		testeq(p+q,Polynomial({'cc':2,'d':3}),'Polynomial.__add__')
 		testeq(p-q,Polynomial({'d':-1}),'Polynomial.__sub__')
-		testeq(p*q,Polynomial({'cccc':1,'ccd':3,'dcc':3,'dd':2}),'Polynomial.__mul__')
+		testeq(p*q,Polynomial({'cccc':1,'ccd':2,'dcc':1,'dd':2}),'Polynomial.__mul__')
 		testeq(p**2,Polynomial({'cccc':1,'ccd':1,'dcc':1,'dd':1}),'Polynomial.__pow__')
 
 		test_timer.stop();print('Finished polynomial tests',test_timer)

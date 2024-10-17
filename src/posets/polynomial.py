@@ -191,7 +191,7 @@ class Polynomial:
 		'''
 		Given a cd-polynomial returns the corresponding ab-polynomial.
 		'''
-		return this.sub(Polynomial({'a':1,'b':1}, 'c')).sub(Polynomial({'ab':1,'ba':1}))
+		return this.sub(Polynomial({'a':1,'b':1}), 'c').sub(Polynomial({'ab':1,'ba':1}),'d')
 
 	def __len__(this):
 		'''Returns the number of coefficients.'''
