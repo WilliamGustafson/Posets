@@ -1164,8 +1164,39 @@ def NoncrossingPartitionLattice(n=3):
 					if any(x>pi[-1] for x in pj):
 						return False
 		return True
-	Pi = PartitionLattice(n)
-	return Pi.subposet([p for p in Pi if noncrossing(p)])
+
+		def nodeLabel(this,i):
+			if this.in_tkinter:
+				return str(this.P[i])
+			i = i-1 #zerohat gets added first so shift back
+			ret=["\\begin{tikzpicture}[scale="+this.nodetikzscale+"]\n\\begin{scope}\n\t\\medial\n"]
+			for block in this.P[i]:
+				ret.append('\t\\fill'+'--'.join('('+str(j)+')' for j in block)+';')
+			return ''.join(ret+["\\end{scope}\\end{tikzpicture}"])
+
+		def nodeDraw(this, i):
+			size = 10*int(this.nodescale)
+			ptsize = this.ptsize if type(this.ptsize)==int else int(this.ptsize[:-2])
+			x = float(this.loc_x(this, i))*float(this.scale)+float(this.scale)*float(this.width)/2+float(this.padding)
+			y = 2*float(this.padding)+float(this.height)*float(this.scale)-(float(this.loc_y(this, i))*float(this.scale)+float(this.padding))
+			this.canvas.create_oval(x-size, y-size, x+size, y+size)
+
+			def pt(i):
+				px = x + int(this.nodescale)*math.cos(i*2*math.pi/(2*n)+math.pi/2)*10
+				py = y + int(this.nodescale)*math.sin(i*2*math.pi/(2*n)+math.pi/2)*10
+				return px, py
+			for j in range(2*n):
+				px,py = pt(j)
+				this.canvas.create_oval(px-ptsize, py-ptsize, px+ptsize, py+ptsize, fill='black')
+
+			for block in this.P[i]:
+				this.canvas.create_polygon([*pt(j) for j in block], outline='black',fill='gray',width=1)
+			return
+
+	P = PartitionLattice(n).subposet([p for p in Pi if noncrossing(p)])
+	P.hasseDiagram.nodeDraw = nodeDraw
+	P.hassDiagram.nodeLabel = nodeLabel
+	return P
 
 def UniformMatroid(n=3,r=3,q=1):
 	r'''
