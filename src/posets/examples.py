@@ -1190,7 +1190,7 @@ def NoncrossingPartitionLattice(n=3):
 				this.canvas.create_oval(px-ptsize, py-ptsize, px+ptsize, py+ptsize, fill='black')
 
 			for block in this.P[i]:
-				this.canvas.create_polygon([*pt(j) for j in block], outline='black',fill='gray',width=1)
+				this.canvas.create_polygon(list(itertools.chain(*[pt(j) for j in block])), outline='black',fill='gray',width=1)
 			return
 
 	P = PartitionLattice(n).subposet([p for p in Pi if noncrossing(p)])
