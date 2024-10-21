@@ -2,6 +2,16 @@
 ##########################################
 #TODO
 ##########################################
+#Why is there no separate f and h vector method?
+#
+#Update docs for HasseDiagram (nodeTikz func
+#and double check Subposets docs)
+#
+#Update docs for Polynomial
+#
+#Updated validate in HasseDiagram cause like
+#there's more function options now
+#
 #Add nodedraw for noncrossing partition lattice
 #rip off the one for Uncrossing
 #

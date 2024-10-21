@@ -361,6 +361,7 @@ class HasseDiagram:
 			'standalone': False,
 			'padding': 1,
 			'nodeDraw': type(this).nodeDraw,
+			'nodeTikz': type(this).nodeTikz,
 			'offset': 0.5,
 			'color':'black',
 			}
@@ -444,6 +445,12 @@ class HasseDiagram:
 
 		this.canvas.create_oval(x-ptsize/2,y-ptsize/2,x+ptsize/2,y+ptsize/2, fill=this.color)
 		return
+
+	def nodeTikz(this,i):
+		r'''
+		This is the default implementation of nodeTikz used to draw nodes when \verb|labels| is \verb|False|.
+		'''
+		return '\\fill['+this.node_options(this,i)+']('+this.nodeName(this,i)+')circle('+this.ptsize+');\n'
 
 	def validate(this):
 		r'''
@@ -563,8 +570,9 @@ class HasseDiagram:
 		###############
 			for rk in this.P.ranks:
 				for r in rk:
-					name=this.nodeName(this, r)
-					ret.append('\\fill['+this.node_options(this,r)+']('+name+')circle('+this.ptsize+');\n')
+					#name=this.nodeName(this, r)
+					ret.append(this.nodeTikz(this,r))
+					#ret.append('\\fill['+this.node_options(this,r)+']('+name+')circle('+this.ptsize+');\n')
 #					ret.append('\\coordinate('+name+')at('+this.loc_x(this, r)+','+this.loc_y(this, r)+');\n')
 #					ret.append('\\fill['+this.node_options(this,r)+']('+name+')circle('+this.ptsize+');\n')
 		else: #this.labels==True
@@ -592,7 +600,7 @@ class HasseDiagram:
 		this.__dict__.update(defaults)
 		return ''.join(ret)
 ##############
-#begin MinorPosetHasseDiagram class
+#begin SubposetsHasseDiagram class
 ##############
 
 class SubposetsHasseDiagram(HasseDiagram):
@@ -653,6 +661,7 @@ class SubposetsHasseDiagram(HasseDiagram):
 		'''
 		this.prefix=prefix+'_'
 		this.prefix_len = len(this.prefix)
+		this.minNodeLabel = type(this).minNodeLabel
 		super().__init__(P, **{k:v for k,v in kwargs.items() if k[:len(this.prefix)]==this.prefix})
 		this.P = P
 		this.Q = Q
@@ -677,21 +686,42 @@ class SubposetsHasseDiagram(HasseDiagram):
 
 		return ret
 
-	def nodeLabel(this, i):
+	def minNodeLabel(this):
+		r'''
+		Returns \verb|r'$\emptyset$'|.
+
+		This function is called by \verb|nodeLabel| to get a node label for minimal elements.
+		To change the label for minimal elements provide your own version of \verb|minNodeLabel|.
 		'''
+		return r'$\emptyset$'
+
+	def nodeLabel(this, i):
+		r'''
 		Default implementation of \verb|nodeLabel| for \verb|SubposetsHasseDiagram|.
 
 		This returns tikz code for the poset \verb|this.P[i]|.
 		'''
-		if i in this.P.min(): return '$\\emptyset$'
+		if i in this.P.min(): return this.minNodeLabel(this)
 		args = {
 			'node_options' : SubposetsHasseDiagram.make_node_options(this.P[i]),
 			'line_options' : SubposetsHasseDiagram.make_line_options(this.P[i]),
 			}
 		args.update({k[len(this.prefix):] : v for (k,v) in this.__dict__.items() if k[:len(this.prefix)]==this.prefix})
 		args['parent']=this
+		args[this.prefix[:-1]] = this.P[i]
 		Q_Latex = this.Q.latex(**args)
-		Q_Latex = ''.join(Q_Latex.split('\n')[2:-1])
+		try:
+			start = Q_Latex.index('\\begin{tikzpicture}')+len('\\begin{tikzpicture}')
+			start += Q_Latex[start:].index(']') + 1
+		except:
+			start = 0
+		Q_Latex = Q_Latex[start:]
+		try:
+			end = Q_Latex.index('\\end{tikzpicture}')
+		except:
+			end = -1
+		Q_Latex = Q_Latex[:end]
+#		Q_Latex = ''.join(Q_Latex.split('\n')[2:-1])
 		return '\\begin{{tikzpicture}}[scale={}]\\begin{{scope}}\n'.format(this.Q.hasseDiagram.scale)+Q_Latex+'\n\\end{scope}\\end{tikzpicture}'
 
 	def Q_nodeName(this, i):
@@ -702,7 +732,7 @@ class SubposetsHasseDiagram(HasseDiagram):
 		and of the subdiagrams do not clash
 		all node names are prefixed with \verb|this.prefix|.
 		'''
-		return this.prefix+'_'+HasseDiagram.nodeName(this,i)
+		return this.prefix+HasseDiagram.nodeName(this,i)
 
 	def make_node_options(q):
 		r'''
@@ -722,54 +752,5 @@ class SubposetsHasseDiagram(HasseDiagram):
 			return 'color=gray'
 		return line_options
 ##############
-#end MinorPosetHasseDiagram class
-##############
-
-##############
-#DistributiveLatticeHasseDiagram class
-##############
-#class DistributiveHasseDiagram(HasseDiagram):
-#	r'''
-#	@subclass@is_section@
-#	TODO \verb|__doc__| string
-#	'''
-#	def __init__(this,JP,P,indices=False,**kwargs):
-#		super().__init__(JP,**kwargs)
-#		this.Irr = P
-#		#everything in HasseDiagram uses indices so we need to store ideals as lists of indices
-#		if not indices:
-#			this.P.elements = [[this.Irr.elements.index(e) for e in J] for J in this.P.elements]
-#		this.Irr.hasseDiagram.__dict__.update({k[4:] : v for k,v in kwargs.items() if k[:4]=='irr_'})
-#	def irr_nodeName(this, i):
-#			return 'irr_'+HasseDiagram.nodeName(this,i)
-#	def make_node_options(S):
-#		def node_options(this, i):
-#			if i in S:
-#				return 'color=black'
-#			return 'color=gray'
-#		return node_options
-#	def make_line_options(S):
-#		def line_options(this,i,j):
-#			if i in S and j in S:
-#				return 'color=black'
-#			return 'color=gray'
-#		return line_options
-#	def latex(this, **kwargs):
-#		irrArgs = {k[4:]:v for k,v in kwargs.items() if k[:4]=='irr_'}
-#		irrDefaults = this.Irr.hasseDiagram.__dict__.copy()
-#		this.Irr.hasseDiagram.__dict__.update(irrArgs)
-#		this.Irr.hasseDiagram.nodeName = irr_nodeName
-#
-#		ret = super().latex(**kwargs)
-#
-#		this.Irr.hasseDiagram.__dict__.update(irrDefaults)
-#		return ret
-#
-#	def nodeLabel(this, i):
-#		idealLatex = this.Irr.latex(node_options = make_node_options(this.P[i]), line_options = make_line_options(this.P[i]))
-#		idealLatex = ''.join(idealLatex.split('\n')[2:-1])
-##			idealLatex = idealLatex[len('\\begin{tikzpicture}') : -1*len('\\end{tikzpicture}')]
-#		return '\\begin{tikzpicture}\\begin{scope}\n'+idealLatex+'\n\\end{scope}\\end{tikzpicture}'
-##############
-#end DistributiveLatticeHasseDiagram class
+#end SubposetsHasseDiagram class
 ##############
