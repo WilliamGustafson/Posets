@@ -212,8 +212,9 @@ class Polynomial:
 		data.sort(key=lambda x:x[0])
 		s = ""
 		for i in range(0,len(data)):
-			if data[i][1] == 0: continue
-			if data[i][1] == -1: s+= '-'
+			if data[i][1] == 0 or data[i][1] == Polynomial({}): continue
+			if data[i][1] == -1 or data[i][1] == Polynomial({'':-1}): s+= '-'
+			if isinstance(data[i][1],Polynomial) and data[i][1]!=Polynomial({'':1}): s+='('+str(data[i][1])+')'
 			elif data[i][1] != 1: s += str(data[i][1])
 			current = ''
 			power = 0
