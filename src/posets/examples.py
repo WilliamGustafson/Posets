@@ -14,7 +14,7 @@ def Bruhat(n,weak=False):
 	r'''
 	@section@Built in posets@
 	Returns the type $A_{n-1}$ Bruhat order (the symmetric group $S_n$)
-	or type $A_{n-1}$ weak order.
+	or the type $A_{n-1}$ left weak order.
 
 	\begin{center}
 		\begin{minipage}{0.4\textwidth}
@@ -192,7 +192,7 @@ def Boolean(n):
 #		return s.replace('(','\\{' if hasseDiagram.in_latex else '{').replace(')','\\}' if hasseDiagram.in_latex else '}').replace(',',', ')
 	def nodeName(hasseDiagram, i):
 		if i==0: return 'e'
-		('' if n<10 else '-').join(str(x) for x in hasseDiagram.P[i])
+		return ('' if n<10 else '-').join(str(x) for x in hasseDiagram.P[i])
 	P.hasseDiagram.nodeLabel = nodeLabel
 	P.hasseDiagram.nodeName = nodeName
 	#cache some values for queries
@@ -614,12 +614,12 @@ def Uncrossing(t, upper=False, weak=False, E_only=False, zerohat=True):
 		return "("+",".join(ret)+")"
 
 	def pairingFormat(x):
-		return "".join([setFormat(y) for y in x])
+		return "".join(sorted([setFormat(y) for y in x]))
 
 
 	#swaps i and j in the pairing p
 	def swap(p,i,j):
-	#	return sorted([(x^((((x&(1<<i))>>i)^((x&(1<<j))>>j))<<i)^((((x&(1<<i))>>i)^((x&(1<<j))>>j))<<j)) for x in p])
+#		return sorted([(x^((((x&(1<<i))>>i)^((x&(1<<j))>>j))<<i)^((((x&(1<<i))>>i)^((x&(1<<j))>>j))<<j)) for x in p])
 		ret = []
 		for arc in p:
 			if (arc&(1<<i))>>i != (arc&(1<<j))>>j: #arc contains one of i and j
@@ -674,7 +674,7 @@ def Uncrossing(t, upper=False, weak=False, E_only=False, zerohat=True):
 					yield i
 			return iterator()
 		def J_set(tau,i):
-			if not E_only: return range(0,(len(t)<<1))
+			if not E_only: return range(i+1,(len(t)<<1))
 			possible=[i+1] if weak else range(0,(len(t)<<1))
 			def iterator():
 				for j in possible:
@@ -770,11 +770,11 @@ def Uncrossing(t, upper=False, weak=False, E_only=False, zerohat=True):
 			return ''.join(ret+["\\end{scope}\\end{tikzpicture}"])
 
 		def nodeName(this,i):
-			if this.P[i] == 0: return 'z'
+			if i == 0: return 'z'
 			i = i-1 #zerohat gets added first so shift back
 			p=this.pairings[i]
 			n=len(p)
-			return '/'.join(['-'.join(str(j+1) for j in range(0,n<<1) if (1<<j)&p[i]!=0) for k in range(0,n)])
+			return '/'.join(['_'.join(str(j+1) for j in range(0,n<<1) if (1<<j)&p[k]!=0) for k in range(0,n)])
 #			return ''.join([str(j+1) for k in range(0,n) for j in range(0,n<<1) if (1<<j)&p[k]!=0])
 
 		def nodeDraw(this, i):
@@ -810,6 +810,9 @@ def Uncrossing(t, upper=False, weak=False, E_only=False, zerohat=True):
 	if not upper:
 		P = P.adjoin_zerohat() if zerohat else P
 		P.hasseDiagram = UncrossingHasseDiagram(P, extra_packages=extra_packages)
+#	lex on (source pts, sink pts) sorts for the 312 decomposition but is a little uglier
+#	P = P.sort(key=lambda x:tuple() if x==0 else (tuple(y[0] for y in eval('('+x.replace(')','),')+')')),tuple(y[1] for y in eval('('+x.replace(')','),')+')'))))
+	pairings.sort(key=lambda p:P.elements.index(pairingFormat(p)))
 	#cache some values for queries
 	P.cache['isRanked()']=True
 	P.cache['isEulerian()']=True
@@ -821,7 +824,7 @@ def Bnq(n=2, q=2):
 	@section@Built in posets@
 	Returns the poset of subspaces of the vector space $\F_q^n$ where $\F_q$ is the field with q elements.
 
-	Currently only implemented for q a prime. Raises an instance of \verb|NotImplementedError| if q is not prime.
+	Currently only implemented for \verb|q| a prime. Raises an instance of \verb|NotImplementedError| if \verb|q| is not prime.
 
 	\begin{center}
 		\includegraphics{figures/Bnq.pdf}
@@ -924,10 +927,10 @@ def Bnq(n=2, q=2):
 
 	if q<10:
 		def nodeName(hd, i):
-			return '/'.join(''.join(str(x) for x in y) for y in hd.P[i])
+			return '0' if i==0 else '/'.join(''.join(str(x) for x in y) for y in hd.P[i])
 	else:
 		def nodeName(hd, i):
-			return '/'.join('-'.join(str(x) for x in y) for y in hd.P[i])
+			return '0' if i==0 else '/'.join('-'.join(str(x) for x in y) for y in hd.P[i])
 	P = Poset(elements = spaces, less = lambda i,j: i!=j and i&j == i, nodeLabel=nodeLabel,extra_packages='\\usepackage{amsmath}',nodeName=nodeName)
 	#sort ranks: revlex on bases induced by ordering vectors by interpreting them as base q representations of numbers
 	P.elements = [basis(S)[::-1] for S in P]
@@ -945,6 +948,9 @@ def DistributiveLattice(P, indices=False):
 
 		The poset \verb|DistributiveLattice(Root(3))|.
 	\end{center}
+
+	When generating a Hasse diagram with \verb|latex()| use
+	the prefix \verb|irr_| to control options for the node diagrams.
 
 	@exec@
 	make_fig(DistributiveLattice(Root(3)),'DL',height=10,width=6,irr_height=0.75,irr_width=1,irr_scale='1',irr_labels=False)
@@ -993,6 +999,43 @@ def DistributiveLattice(P, indices=False):
 		irr_scale='0.1'
 		)
 	return JP
+def Intervals(P):
+	r'''
+	@section@Built in posets@
+	Returns the lattice of intervals of a given poset (including the empty interval).
+
+	\begin{center}
+		\includegraphics{figures/interval.pdf}
+
+		The poset \verb|Intervals(Boolean(2))|.
+	\end{center}
+
+	When generating a Hasse diagram with \verb|latex()| use
+	the prefix \verb|int_| to control options for the node diagrams.
+
+	@exec@
+	make_fig(Intervals(Boolean(2)),'interval',height=10,width=6,int_height=1,int_width=1,int_scale='1',int_labels=False)
+	'''
+	elements = [tuple()]+[(P[i],P[j]) for i in range(len(P)) for j in range(len(P)) if i==j or P.incMat[i][j]==1]
+	ranks = [[0]]+[[] for _ in range(len(P.ranks))]
+	for i in range(len(elements))[1:]:
+		ranks[1+P.rank(elements[i][1])-P.rank(elements[i][0])].append(i)
+	def less(I,J):
+		return len(I)==0 or P.lesseq(J[0],I[0]) and P.lesseq(I[1],J[1])
+
+	def is_in(i,I):
+		return len(I)>0 and P.lesseq(I[0],i) and P.lesseq(i,I[1])
+
+	return Poset(
+		elements=elements,
+		ranks=ranks,
+		less=less,
+		hasse_class=SubposetsHasseDiagram,
+		Q=P,
+		is_in=is_in,
+		prefix='int',
+		int_scale='0.1'
+		)
 #def SignedBirkhoff(P):
 #	D = DistributiveLattice(P, indices=True)
 #	def maximal(I):
@@ -1002,7 +1045,7 @@ def DistributiveLattice(P, indices=False):
 #
 
 
-def LatticeOfFlats(data):
+def LatticeOfFlats(data,as_genlatt=False):
 	r'''
 	@section@Built in posets@
 	Returns the lattice of flats given either a list of edges of a graph or the rank function of a (poly)matroid.
@@ -1016,6 +1059,9 @@ def LatticeOfFlats(data):
 		\[
 		\verb|[f({}),f({1}),f({2}),f({1,2}),f({3}),f({1,3}),f({2,3}),f({1,2,3})]|.
 		\]
+
+	When \verb|as_genlatt| is \verb|True| the return value is an instance
+	of \verb|Genlatt| with generating set the closures of singletons.
 
 	This function may return a poset that isn't a lattice if
 	the input function isn't submodular or a preorder that isn't a poset if the input
@@ -1148,7 +1194,7 @@ def NoncrossingPartitionLattice(n=3):
 	\end{center}
 
 	@exec@
-	make_fig(NoncrossingPartitionLattice(4),'NC',height=8,width=12,nodescale=0.75)
+	make_fig(NoncrossingPartitionLattice(4),'NC',height=12,width=12,nodescale=0.75)
 	'''
 	def noncrossing(p):
 		for i in range(len(p)):
@@ -1165,37 +1211,46 @@ def NoncrossingPartitionLattice(n=3):
 						return False
 		return True
 
-		def nodeLabel(this,i):
-			if this.in_tkinter:
-				return str(this.P[i])
-			i = i-1 #zerohat gets added first so shift back
-			ret=["\\begin{tikzpicture}[scale="+this.nodetikzscale+"]\n\\begin{scope}\n\t\\medial\n"]
-			for block in this.P[i]:
-				ret.append('\t\\fill'+'--'.join('('+str(j)+')' for j in block)+';')
-			return ''.join(ret+["\\end{scope}\\end{tikzpicture}"])
+	def nodeName(this,i):
+		return '/'.join(''.join(str(b) for b in B) for B in this.P[i])
 
-		def nodeDraw(this, i):
-			size = 10*int(this.nodescale)
-			ptsize = this.ptsize if type(this.ptsize)==int else int(this.ptsize[:-2])
-			x = float(this.loc_x(this, i))*float(this.scale)+float(this.scale)*float(this.width)/2+float(this.padding)
-			y = 2*float(this.padding)+float(this.height)*float(this.scale)-(float(this.loc_y(this, i))*float(this.scale)+float(this.padding))
-			this.canvas.create_oval(x-size, y-size, x+size, y+size)
+	def nodeLabel(this,i):
+		if this.in_tkinter:
+			return str(this.P[i])
+		ret=["\\begin{tikzpicture}\n\\begin{scope}\n\t\\medial\n"]
+		for block in this.P[i]:
+			if len(block)==1: continue
+			ret.append('%'+str(this.P[i]))
+			ret.append('%'+str(i)+'\n')
+			ret.append('\n%'+str(len(this.P[i]))+'\n')
+			ret.append('\t\\filldraw'+'--'.join('('+str(j)+')' for j in block)+';')
+		return ''.join(ret+["\\end{scope}\\end{tikzpicture}"])
 
-			def pt(i):
-				px = x + int(this.nodescale)*math.cos(i*2*math.pi/(2*n)+math.pi/2)*10
-				py = y + int(this.nodescale)*math.sin(i*2*math.pi/(2*n)+math.pi/2)*10
-				return px, py
-			for j in range(2*n):
-				px,py = pt(j)
-				this.canvas.create_oval(px-ptsize, py-ptsize, px+ptsize, py+ptsize, fill='black')
+	def nodeDraw(this, i):
+		size = 10*int(this.nodescale)
+		ptsize = this.ptsize if type(this.ptsize)==int else int(this.ptsize[:-2])
+		x = float(this.loc_x(this, i))*float(this.scale)+float(this.scale)*float(this.width)/2+float(this.padding)
+		y = 2*float(this.padding)+float(this.height)*float(this.scale)-(float(this.loc_y(this, i))*float(this.scale)+float(this.padding))
+		this.canvas.create_oval(x-size, y-size, x+size, y+size)
 
-			for block in this.P[i]:
-				this.canvas.create_polygon(list(itertools.chain(*[pt(j) for j in block])), outline='black',fill='gray',width=1)
-			return
+		def pt(i):
+			px = x + int(this.nodescale)*math.cos(i*2*math.pi/(2*n)+math.pi/2)*10
+			py = y + int(this.nodescale)*math.sin(i*2*math.pi/(2*n)+math.pi/2)*10
+			return px, py
+		for j in range(2*n):
+			px,py = pt(j)
+			this.canvas.create_oval(px-ptsize, py-ptsize, px+ptsize, py+ptsize, fill='black')
 
-	P = PartitionLattice(n).subposet([p for p in Pi if noncrossing(p)])
+		for block in this.P[i]:
+			this.canvas.create_polygon(list(itertools.chain(*[pt(j) for j in block])), outline='black',fill='gray',width=1)
+		return
+	Pi = PartitionLattice(n)
+	P = Pi.subposet([p for p in Pi if noncrossing(p)])
 	P.hasseDiagram.nodeDraw = nodeDraw
-	P.hassDiagram.nodeLabel = nodeLabel
+	P.hasseDiagram.nodeLabel = nodeLabel
+	P.hasseDiagram.nodeName = nodeName
+	P.hasseDiagram.extra_packages = "\\def\\r{1}\n\\def\\n{"+str(n)+"}\n\\newcommand{\\medial}{\n\\draw circle (\\r);\n\\foreach\\i in{1,...,\\n}\n\t{\n\t\\pgfmathsetmacro{\\j}{-90-360/\\n*(\\i-1)}\n\t\\fill (\\j:-\\r) circle (2pt) node [anchor=\\j] {$\\i$};\n\t\\coordinate (\\i) at (\\j:-\\r);\n\t}\n}"
+
 	return P
 
 def UniformMatroid(n=3,r=3,q=1):
@@ -1203,16 +1258,18 @@ def UniformMatroid(n=3,r=3,q=1):
 	@section@Built in posets@
 	Returns the lattice of flats of the uniform ($q$-)matroid of rank $r$ on $n$ elements.
 
+	Currently only implemented for \verb|q=1| or a prime. Raises an instance of \verb|NotImplementedError| if \verb|q| is neither 1 nor prime.
+
 	\begin{center}
 		\includegraphics{figures/unif.pdf}
 
-		The uniform matroid of rank $3$ on $4$ elements.
+		The poset \verb|UniformMatroid(4,3)|.
 	\end{center}
 
 	\begin{center}
 		\includegraphics{figures/qunif.pdf}
 
-		The uniform $2$-matroid of rank $3$ of dimension $4$.
+		The poset \verb|UniformMatroid(4,3,2)|.
 	\end{center}
 
 	@exec@
@@ -1272,5 +1329,6 @@ def MinorPoset(L,genL=None, weak=False):
 	make_fig(MinorPoset(LatticeOfFlats([0,1,2,2,1,3,3,3])),'M_lof_poly',height=10,width=12,L_height=1,L_width=1,L_labels=False)
 	make_fig(MinorPoset(LatticeOfFlats([0,1,2,2,1,3,3,3]),weak=True),'M_lof_poly_weak',height=10,width=12,L_height=1,L_width=1,L_labels=False)
 	make_fig(MinorPoset(Boolean(2),Boolean(2)[1:4],weak=True), 'M_B_2_weak',height=10,width=8,L_height=1,L_width=1,L_labels=False)
+	make_fig(MinorPoset(Boolean(2),Boolean(2)[1:4],weak=False), 'M_B_2',height=10,width=8,L_height=1,L_width=1,L_labels=False)
 	'''
 	return Genlatt(L, G=genL).minorPoset(weak)

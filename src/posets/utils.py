@@ -1,5 +1,14 @@
 import decorator
 import time
+import itertools
+
+def subsets(S):
+	r'''
+	@section@Utilities@
+	Iterator for subsets of an iterable.
+	'''
+	for T in itertools.chain(*(itertools.combinations(S,k) for k in range(len(S)+1))):
+		yield T
 class Timer:
 	r'''
 	@is_section@section_key@1@

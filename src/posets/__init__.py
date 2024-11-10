@@ -1,5 +1,6 @@
 r'''
 @is_section@exec@version='0.0.1'@
+@sections_order@Poset@PosetIsoClass@Genlatt@HasseDiagram@SubposetsHasseDiagram@Built in posets@Polynomial@Utilities@@
 @exec@
 def eval_txt(s):
 	ret = [r'\color{input}\begin{verbatim}']
@@ -142,3 +143,8 @@ from .poset import *
 from .hasseDiagram import *
 from .examples import *
 from .polynomial import *
+
+del poset
+del hasseDiagram
+del examples
+del polynomial

@@ -562,14 +562,26 @@ class TestInvariants:
 	def test_bettiNumbers(this):
 		assert([1,2,1]==Torus().properPart().bettiNumbers())
 	def test_buildIsomorphism(this):
-		B2 = Boolean(2)
-		B = Boolean(2)
-		B.reorder(B.elements[::-1])
+		#make sure two elements hash the same so we test
+		#reversing a choice
+		P=Bruhat(3,True).union(Bruhat(3))
+		Q=Bruhat(3,True).union(Bruhat(3))
+		Q=Q.reorder(Q.elements[::-1])
+		print(Q.elements)
+		print(P.elements)
 		for _ in range(2): #do it twice to test cache
-			phi = B.buildIsomorphism(B2,indices=True)
+			phi = Q.buildIsomorphism(P,indices=True)
 			phi_inv = {v:k for k,v in phi.items()}
-			assert(all(set(B.filter([i],indices=True)) == set(phi_inv[j] for j in B2.filter([phi[i]],indices=True)) for i in range(len(B))))
-		assert(None==B.buildIsomorphism(Chain(3)))
+			assert(all(set(Q.filter([i],indices=True)) == set(phi_inv[j] for j in P.filter([phi[i]],indices=True)) for i in range(len(Q))))
+		print(phi)
+		print(phi_inv)
+		assert(None==Q.buildIsomorphism(Bruhat(3).union(Bruhat(3))))
+		#example of non-isomorphic posets with the same hash sets?
+#		B3=Boolean(3)
+#		B=Boolean(3)
+#		B.incMat[2][6]=0
+#		B.incMat[1][6]=1
+#		assert(None==B.buildIsomorphism(B3))
 ##########################################
 #Polynomial
 ##########################################
