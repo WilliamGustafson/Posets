@@ -2,24 +2,14 @@
 import math
 import itertools
 
-def iter_join(i, x):
-	'''
-	Concatenates two iterators.
-	'''
-	try:
-		yield next(i)
-		yield x
-	except StopIteration:
-		pass
-
 class Polynomial:
 	r'''@is_section@
-	A barebones class encoding polynomials in noncommutative variables (used by the \verb|Poset| class to compute the cd-index).
+	A barebones class encoding polynomials in noncommutative variables (used by the \verb|Poset| class to compute the \cv\dv-index).
 
-	This is basically a wrapper around a dictionary representation for polynomials (e.g. $3ab+2bb$ is encoded as \verb|{'ab':3, 'bb':2}|)
-	and provides methods to add, multiple, subtract polynomials, to substitute a polynomial
-	for a variable in another polynomial and to convert ab-polynomials to cd-polynomials (when possible) and vice versa. You can also get and set
-	coefficients as if this were a dictionary.
+	This class is basically a wrapper around a dictionary representation for polynomials (e.g. $3\av\bv+2\bv\bv$ is encoded as \verb|{'ab':3, 'bb':2}|).
+	The class provides methods for basic arithmetic with polynomials, to substitute a polynomial
+	for a variable in another polynomial and to convert \av\bv-polynomials to \cv\dv-polynomials (when possible) and vice versa. You can also get and set
+	coefficients as if a polynomial were a dictionary.
 	'''
 	def __init__(this, data=None):
 		r'''
@@ -32,6 +22,11 @@ class Polynomial:
 		this.data = {} if data==None else data if type(data)==dict else {d[1]:d[0] for d in data}
 
 	def _to_poly(*args):
+		r'''
+		Iterator that converts elements of a list to instances of \verb|Polynomial|.
+
+		Internal method used by \verb|__mul__| and \verb|__add__|.
+		'''
 		for x in args:
 			if isinstance(x,Polynomial): yield x
 			elif type(x) in (int,float): yield Polynomial({'':x})
@@ -40,7 +35,7 @@ class Polynomial:
 
 	def strip(this):
 		'''
-		Removes any zero terms from a polynomial in place.
+		Removes any zero terms from a polynomial in place and returns it.
 		'''
 		for m,c in list(this.data.items()):
 			if c==0: del this.data[m]
@@ -62,7 +57,13 @@ class Polynomial:
 	__rmul__=__mul__
 
 	def __pow__(this,x):
-		if type(x)!=int: raise NotImplementedError
+		r'''
+		Polynomial exponentiation by non-negative integers.
+
+		Raises \verb|NotImplementedError| if either \verb|x| is
+		not an integer or \verb|x<0|.
+		'''
+		if type(x)!=int or x<0: raise NotImplementedError
 		return Polynomial.__mul__(*itertools.repeat(this,x)).strip()
 
 	def __add__(*args):
@@ -162,14 +163,16 @@ class Polynomial:
 		return ret.strip()
 
 	def _poly_add_prepoly(p, q):
+		r'''Internal backend for \verb|__add__|.'''
 		for m,c in q:
 			p[m] = c + (p[m] if m in p else 0)
 	def _prepoly_mul_poly(q, p):
+		r'''Internal backedn for \verb|__mul__|.'''
 		return [[x[0][0]+x[1][0], x[0][1]*x[1][1]] for x in itertools.product(q,p.data.items())]
 
 	def abToCd(this):
-		'''
-		Given an ab-polynomial returns the corresponding cd-polynomial if possible and the given polynomial if not.
+		r'''
+		Given an \av\bv-polynomial returns the corresponding \cv\dv-polynomial if possible and the given polynomial if not.
 		'''
 		if len(this.data)==0: return this
 		#substitue a->c+e and b->c-e
@@ -188,8 +191,8 @@ class Polynomial:
 		return Polynomial({k:v>>power for k,v in cd.data.items()})
 
 	def cdToAb(this):
-		'''
-		Given a cd-polynomial returns the corresponding ab-polynomial.
+		r'''
+		Given a \cv\dv-polynomial returns the corresponding \av\bv-polynomial.
 		'''
 		return this.sub(Polynomial({'a':1,'b':1}), 'c').sub(Polynomial({'ab':1,'ba':1}),'d')
 

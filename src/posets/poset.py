@@ -2,55 +2,25 @@
 ##########################################
 #TODO
 ##########################################
-#Why is there no separate f and h vector method?
-#
-#Update docs for HasseDiagram (nodeTikz func
-#and double check Subposets docs)
-#
-#Update docs for Polynomial
-#
-#Updated validate in HasseDiagram cause like
-#there's more function options now
-#
-#Add nodedraw for noncrossing partition lattice
-#rip off the one for Uncrossing
-#
-#standardize choice of camelcase versus underscores
+#think about ordering for NC_n
+#	some sort of thing about arc length?
+#	want the the two two-block coatoms on either end
+#Also think about ordering for Pi_n
+#	it's gross. This poset isn't gross right?
+#	Look up sources for how they draw?
 #
 #Rework examples writing in overview
 #
-#Fix section ordering in doc
-#
-#check pdflatex errors and warnings
-#
-#Links to functions in doc?
+#Read through docs to check for:
+#	1. Any sort of doubling of entries
+#		I think I've got that but it happens so much
+#	2. Links are working well
+#	3. Section ordering
+#	4. I dunno other style stuff?
 #
 #correct citations
 #
-#in LatticeOfFlats option to return genlatt?
-##########################################
-#fewchur
-##########################################
-#What if HasseDiagram could calc some stats
-#on how ``good'' your drawing is?
-#	length of lines drawn
-#	length of lines drawn per element per up/down
-#	identify elements with longest lines
-#	mean and variance of element line lengths
-#	mean and variance of line length
-#Then what if HasseDiagram could shuffle the poset a bunch
-#and pick the ``best'' reordering?
-#	add option to shuffle a bunch of times with the first time identity
-#	and select the best one. So you can try to make it good and
-#	ask HasseDiagram to make it better
-#
-#Suggested algorithm on HasseDiagram could order a poset itself:
-#	Goal is to minimize length of lines drawn then variance of lengths
-#	Pick the elements on each rank one by one like this:
-#	at each step pick the element that minimizes the length of the
-#	lines drawn to that new element plus the length of lines to
-#	all the future elements but replace by the barycenter
-#	Maybe break ties by calculating variance across the point already placed
+#check pdflatex errors and warnings
 ##########################################
 r'''
 @no_list@sections_order@Poset@PosetIsoClass@HasseDiagram@Built in posets@Utilities@Timer@@
@@ -92,9 +62,11 @@ import time
 #dependencies, just reimplement
 ###########################################
 def Chain_1():
+	'''@no_doc@'''
 	return Poset(relations={0:[1]})
 
 def Cube_1():
+	'''@no_doc@'''
 	return Poset(relations={0:['0','1'],'0':['*'],'1':['*']})
 ###########################################
 #Poset Class
@@ -190,14 +162,20 @@ class Poset:
 	'''
 	__slots__ = ('cache','hasseDiagram','incMat','elements','ranks','name')
 	def __init__(this, incMat=None, elements=None, ranks=None, less=None, name='',\
-		 hasse_class=None, trans_close=True, relations=None, indices=False, **kwargs):
+		 hasse_class=None, trans_close=True, relations=None, indices=False, that=None,**kwargs):
 		r'''
 		@section@Miscellaneous@
 		See \verb|Poset|.
 		'''
+		if that!=None:
+			incMat = that
 		if isinstance(incMat, Poset):
 			for s in Poset.__slots__:
 				setattr(this, s, getattr(incMat, s))
+			this.cache = {k:v for k,v in incMat.cache.items()}
+			this.hasseDiagram = copy.copy(incMat.hasseDiagram)
+			this.hasseDiagram.P = this
+			#this.hasseDiagram = type(incMat.hasseDiagram)(that=incMat.hasseDiagram,P=this,**kwargs) if hasse_class==None else hasse_class(that=incMat.hasseDiagram,P=this,**kwargs)
 			return
 
 		if elements !=None: elements = list(elements) #can take any iterable but need indexing
@@ -463,7 +441,7 @@ class Poset:
 		if 'isRanked()' in this.cache:
 			P.cache['isRanked()'] = this.cache['isRanked()']
 		if not this.isRanked():
-			this.ranks = Poset.make_ranks(this.incMat)
+			P.ranks = Poset.make_ranks(P.incMat)
 		if 'isEulerian()' in this.cache:
 			P.cache['isEulerian()'] = this.cache['isEulerian()']
 		if 'isGorenstein()' in this.cache:
@@ -911,50 +889,50 @@ class Poset:
 	#Invariants
 	##############
 	@cached_method
-	def flagVectors(this):
+	def fVector(this):
 		r'''
 		@section@Invariants@
-		Returns the table of flag $f$- and $h$-vectors as a dictionary with keys $S\subseteq[n]$ encoded as tuples and with elements \verb|(f_S, h_S)|.
+		Returns flag $f$-vector as a dictionary with keys $S\subseteq[n]$.
 
-		This method should only be used with a poset that has a unique minimum and maximum.
+		This method is intended for use with a poset that has a unique minimum and maximum. On a general poset this counts chains that contain the first
+		minimal element, \verb|this[this.ranks[0][0]]| and ignores the
+		final rank.
 		'''
 		n = len(this.ranks)-2
 		def fVectorCalc(ranks,S,M, i, count):
 			newCount = count
-			if S == []: return 1
+			if S == tuple(): return 1
 			for j in ranks[S[0]]:
 				if M[i][j] == 1:
 					newCount += fVectorCalc(ranks, S[1:], M, j, count)
 			return newCount
-		table = {tuple():[1,1]}
+		f = {tuple():1}
 
-		if n<=0: return table
+		if n<=0: return f
 
-		#iterate over all subsets of the ranks
-		for i in range(1,1<<n):
-			#construct the corresponding set S
-			pad = 1
-			elem = 1
-			S = []
-			while pad <= i:
-				if pad&i:
-					S.append(elem)
-
-				pad <<= 1
-				elem += 1
-			table[tuple(S)]=[fVectorCalc(this.ranks,S,this.incMat,this.ranks[0][0],0),0]
-		def bit_to_set(i):
-			return tuple(j+1 for j in range(n) if (1<<j)&i!=0)
-
-
-		#do PIE to get the flag h vectors
-		for i in range(1,1<<n):
-			sign = (2*(len(bit_to_set(i))%2)) - 1 #is -1 if even number of elements, 1 if odd
-			for j in range(0,i+1):
-				signj = (2*(len(bit_to_set(j))%2)) - 1
-				if i&j==j:
-					table[bit_to_set(i)][1] += sign*(2*(len(bit_to_set(j))%2)-1)*table[bit_to_set(j)][0]
-		return table
+		for S in subsets(range(1,n+1)):
+			f[tuple(S)]=fVectorCalc(this.ranks,S,this.incMat,this.ranks[0][0],0)
+		return f
+	@cached_method
+	def hVector(this):
+		r'''
+		@section@Invariants@
+		Returns the flag $h$-vector of the poset.
+		'''
+		f = this.fVector()
+		h = {}
+		for S in subsets(range(1,len(this.ranks)-1)):
+				h[S] = (-1)**len(S) * sum((-1)**len(T)*f[T] for T in subsets(S))
+		return h
+	@cached_method
+	def flagVectors(this):
+		r'''
+		@section@Invariants@
+		Returns the table of flag $f$- and $h$-vectors as a dictionary with keys $S\subseteq[n]$ encoded as tuples and with elements \verb|(f_S, h_S)|.
+		'''
+		f = this.fVector()
+		h = this.hVector()
+		return {S:[f[S],h[S]] for S in f}
 
 	def sparseKVector(this):
 		r'''
@@ -1158,8 +1136,8 @@ class Poset:
 		that_ranks = [0 for i in that]
 		for r in range(len(that.ranks)):
 			for i in that.ranks[r]: that_ranks[i] = r
-		def get_lengths(l):
-			return tuple([len(x) for x in l])
+#		def get_lengths(l):
+#			return tuple([len(x) for x in l])
 		def set_comp_rks(P,d,ranks):
 			for i in range(len(P)):
 				row = P.incMat[i]
@@ -1185,24 +1163,25 @@ class Poset:
 				else:
 					ret[d[k]] = [k]
 			return ret
+		if set(d1.values())!=set(d2.values()): return None
 		d1Inv = invert(d1)
 		d2Inv = invert(d2)
 
-		def iso(P, Q, map, dP, dQ, dPinv, dQinv, i):
-			#all values set return
-			if i==len(P): return map
-			#candidates are elements that compare to the same number of elements per rank
-			cands = dQinv[dP[i]]
-			for j in cands:
-				#skip if j is already hit
-				if j in map.values(): continue
-				#i-> is order-preserving
-				if all(P.incMat[m[0]][i] == Q.incMat[m[1]][j] for m in map.items()):
-					new_map = {i:j}
-					new_map.update(map)
-					new_map = iso(P,Q,new_map,dP,dQ,dPinv,dQinv,i+1)
-					if new_map!=None: return new_map
-			return None
+#		def iso(P, Q, map, dP, dQ, dPinv, dQinv, i):
+#			#all values set return
+#			if i==len(P): return map
+#			#candidates are elements that compare to the same number of elements per rank
+#			cands = dQinv[dP[i]]
+#			for j in cands:
+#				#skip if j is already hit
+#				if j in map.values(): continue
+#				#i-> is order-preserving
+#				if all(P.incMat[m[0]][i] == Q.incMat[m[1]][j] for m in map.items()):
+#					new_map = {i:j}
+#					new_map.update(map)
+#					new_map = iso(P,Q,new_map,dP,dQ,dPinv,dQinv,i+1)
+#					if new_map!=None: return new_map
+#			return None
 
 		def nextchoice(map, i, jstart):
 			if i==len(this): return map, -1, True
@@ -1273,7 +1252,7 @@ class Poset:
 		for r in range(len(this.ranks)-1):
 			for p in this.ranks[r]:
 				X.add((r,len([q for q in this.ranks[r+1] if this.incMat[p][q]==1])))
-		return hash((tuple(this.elements),frozenset(X)))
+		return hash((frozenset(this.elements),frozenset(X)))
 
 	def copy(this):
 		r'''
@@ -1538,7 +1517,7 @@ class Poset:
 		Returns a new \verb|Poset| object (representing the same poset) with the elements sorted.
 		'''
 		if indices:
-			perm = sorted(this.elements, key = lambda p: key(this.index(p)) )
+			perm = sorted(this.elements, key = lambda p: key(this.elements.index(p)) )
 		else:
 			perm = sorted(this.elements,key=key)
 		return this.reorder(perm)
@@ -1615,8 +1594,13 @@ class PosetIsoClass(Poset):
 	Construct an instance of \verb|PosetIsoClass| the same way as you would an
 	instance of \verb|Poset| or given a poset \verb|P| use \verb|P.isoClass()|.
 	'''
+	def __init__(this, *args, **kwargs):
+		super().__init__()
+		if '__hash__()' in this.cache: del this.cache['__hash__()']
 	def __eq__(this, that):
-		return this.is_isomorphic(that)
+		return isinstance(that,Poset) and this.is_isomorphic(that)
+	def __neq__(this, that):
+		return not isinstance(that,Poset) or not this.is_isomorphic(that)
 	@cached_method
 	def __hash__(this):
 		X=set()
@@ -1803,11 +1787,11 @@ class Genlatt(Poset):
 		return minors, rels
 
 	def __eq__(this,that):
-		return isinstance(that,Genlatt) and super().__eq__(that) and set(this.G) == set(that.G)
+		return isinstance(that,Genlatt) and Poset.__eq__(this,that) and set(this.G) == set(that.G)
 
 	@cached_method
 	def __hash__(this):
-		return hash((super().__hash__(), this.G))
+		return hash((super().__hash__(), frozenset(this.G)))
 	def __str__(this):
 		return super().__str__() + '\nG = '+str(this.G)
 	def __repr__(this):
@@ -1815,6 +1799,9 @@ class Genlatt(Poset):
 	def minorPoset(this, weak=False, **kwargs):
 		r'''
 		Returns the minor poset of the given \verb|Genlatt| instance.
+
+		When generating a Hasse diagram with \verb|latex()| use
+	the prefix \verb|L_| to control options for the node diagrams.
 		'''
 		minors, rels = this.minors(weak)
 		if this.name=='': name = 'Minor poset of a generator-enriched lattice'
@@ -1824,10 +1811,6 @@ class Genlatt(Poset):
 			relations=rels,
 			indices=True,
 			name=name,
-			latt_height=2,
-			latt_width=1,
-			latt_nodescale=0.5,
-			L=this,
 			)
 		if not weak:
 			M.cache['isRanked()']=True
@@ -1846,13 +1829,17 @@ class Genlatt(Poset):
 
 		nodeLabel = lambda this,i : '$\\emptyset$' if i in this.P.min(True) else nodeLabel(this,i)
 		kwargs.update({
+			'draw_min' : False,
 			'prefix' : 'L',
 			'width' : 8,
 			'height' : 10,
 			'L_width' : 0.8,
-			'L_height' : 1
+			'L_height' : 1,
+			'L_height' : 2,
+			'L_width' : 1,
+			'L_nodescale' : 0.5,
 			})
-		M.hasseDiagram = SubposetsHasseDiagram(M, this,**kwargs)
+		M.hasseDiagram = SubposetsHasseDiagram(M,this,**kwargs)
 		return M
 
 	def cartesianProduct(this,that):
