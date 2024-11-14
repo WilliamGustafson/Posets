@@ -2,6 +2,21 @@
 ##########################################
 #TODO
 ##########################################
+#SHould we make these tweaks to HasseDiagram?
+#	>option to use arrows intead of lines
+#	>northsouth should only set suffixes if they aren't provided
+#	>landscape option which swaps loc_x and loc_y and
+#	defaults to east west suffixes over north south
+#
+#Figure out if we should do the del commmands in init or not
+#
+#Consider moving the hasse class for graph minor posets
+#	either way document it
+#Consider relabeling the elements of a minor poset when the
+#input was a graph.
+#
+#Make graph minor poset example to make plot for paper
+#
 #think about ordering for NC_n
 #	some sort of thing about arc length?
 #	want the the two two-block coatoms on either end
