@@ -457,9 +457,11 @@ class HasseDiagram:
 		if type(this.node_options)==str:
 			node_options = this.node_options
 			this.node_options = lambda hd,i: node_options
+			this.node_options.__name__ = "'"+node_options+"'"
 		if type(this.line_options)==str:
 			line_options = this.line_options
-			this.line_options = lambda hd,i: line_options
+			this.line_options = lambda hd,i,j: line_options
+			this.line_options.__name__ = "'"+line_options+"'"
 
 	def tkinter(this, **kwargs):
 		r'''

@@ -1284,10 +1284,24 @@ def UniformMatroid(n=3,r=3,q=1):
 def MinorPoset(L,genL=None, weak=False):
 	r'''
 	@section@Built in posets@
-	Returns the minor poset given a lattice \verb|L| and a list of generators \verb|genL|.
+	Returns the minor poset given a lattice \verb|L| and a list of generators \verb|genL|, or a list of edges specifying a graph.
 
 	The join irreducibles are automatically added to \verb|genL|. If \verb|genL| is not provided the generating set will be only the
 	join irreducibles.
+
+	If \verb|L| is an instance of the \verb|Poset| class then it
+	is assumed to be a lattice, an instance of \verb|Genlatt| is
+	created from \verb|L| and \verb|genL| and the minor poset of
+	the encoded {\genlatt} is returned. In this case the returned
+	poset when plotted with \verb|Poset.latex()| has elements
+	represented as {\genlatts}.
+
+	If \verb|L| is not an instance of the \verb|Poset| class
+	it should be an iterable of length 2 iterables that
+	specify edges of graph. For example, \verb|L=[[1,2],[2,3],[3,1]]|
+	specifies the 3-cycle graph. The minor poset of the graph
+	is returned. In this case when plotting the returned poset
+	with \verb|latex()| the elements are represented as graphs.
 
 	If \verb|weak| is \verb|True| then the weak minor poset is
 	returned. Briefly, this poset does not have relations
@@ -1298,6 +1312,13 @@ def MinorPoset(L,genL=None, weak=False):
 
 
 	\begin{center}
+		\includegraphics[width=0.4\textwidth]{figures/M_triangle.pdf}
+
+		The poset \verb|MinorPoset([[1,2],[2,3],[3,1]])|.
+	\end{center}
+
+	\begin{center}
+
 		\includegraphics[width=0.4\textwidth]{figures/M_lof_triangle.pdf}
 		\hspace{0.5in}
 		\includegraphics[width=0.4\textwidth]{figures/M_lof_triangle_weak.pdf}
@@ -1324,6 +1345,7 @@ def MinorPoset(L,genL=None, weak=False):
 	\end{center}
 
 	@exec@
+	make_fig(MinorPoset([[1,2],[2,3],[1,3]])),'M_triangle',height=10,width=10,G_line_options='line width=1pt', G_scale=3/8, G_label_scale=7/8, G_label_dist=.25,G_pt_size=7/4)
 	make_fig(MinorPoset(LatticeOfFlats([[1,2],[2,3],[1,3]])),'M_lof_triangle',height=10,width=8,L_height=0.75,L_width=1,L_labels=False)
 	make_fig(MinorPoset(LatticeOfFlats([[1,2],[2,3],[1,3]]),weak=True),'M_lof_triangle_weak',height=10,width=8,L_height=0.75,L_width=1,L_labels=False)
 	make_fig(MinorPoset(LatticeOfFlats([0,1,2,2,1,3,3,3])),'M_lof_poly',height=10,width=12,L_height=1,L_width=1,L_labels=False)
@@ -1331,4 +1353,55 @@ def MinorPoset(L,genL=None, weak=False):
 	make_fig(MinorPoset(Boolean(2),Boolean(2)[1:4],weak=True), 'M_B_2_weak',height=10,width=8,L_height=1,L_width=1,L_labels=False)
 	make_fig(MinorPoset(Boolean(2),Boolean(2)[1:4],weak=False), 'M_B_2',height=10,width=8,L_height=1,L_width=1,L_labels=False)
 	'''
-	return Genlatt(L, G=genL).minorPoset(weak)
+	if isinstance(L,Poset): return Genlatt(L, G=genL).minorPoset(weak)
+
+	#L is presumed to be a list of edges of a graph
+	LG = Genlatt(LatticeOfFlats(L))
+	M = LG.minorPoset()
+
+	class GraphMinorPosetDiagram(HasseDiagram):
+
+		def __init__(this,P,**kwargs):
+			super().__init__(P,**kwargs)
+			for arg,default in [('G_scale',1),('G_pt_size',2),('G_line_options',''),('G_node_options',''),('G_node_sep','/'),('G_label_dist',1/4),('G_label_scale','1')]:
+				setattr(this,arg,(kwargs[arg] if arg in kwargs else default))
+				this.defaults[arg]=getattr(this,arg)
+			this.validate()
+		def validate(this):
+			super().validate()
+			if hasattr(this,'G_line_options') and type(this.G_line_options)==str:
+				G_line_options=this.G_line_options
+				this.G_line_options=lambda hd,i,j:G_line_options
+				this.G_line_options.__name__="'"+G_line_options+"'"
+			if hasattr(this,'G_node_options') and type(this.G_node_options)==str:
+				G_node_options=this.G_node_options
+				this.G_node_options=lambda hd,i:G_node_options
+				this.G_node_options.__name__="'"+G_node_options+"'"
+
+		def nodeLabel(this,i):
+			if i==0: return '$\\widehat{0}$'
+			ret=['\\begin{tikzpicture}\n\\begin{scope}']
+
+			KH = this.P[i]
+			degrees = lambda i: 90-i*360/len(KH.min()[0])
+			#make coordinates
+			for index,block in enumerate(KH.min()[0]):
+				ret.append('\\coordinate(G_{})at({}:{});'.format(block[0], degrees(index), this.G_scale))
+			#draw edges
+			for g in KH.G:
+				verts = [block for block in KH.min()[0] if block not in g]
+				assert(len(verts)==2)
+				ret.append('\\draw[{}](G_{})--(G_{});'.format(this.G_line_options(this,verts[0][0],verts[1][0]),verts[0][0],verts[1][0]))
+			#draw points
+			for block in KH.min()[0]:
+				ret.append('\\fill[{}](G_{})circle({}pt);'.format(this.G_node_options(this,block[0]),block[0],this.G_pt_size*this.G_scale))
+
+			#make labels
+			for index,block in enumerate(KH.min()[0]):
+				ret.append('\\node[{}][shift={{+({}:{})}}]at(G_{}){{\\scalebox{{{}}}{{{}}}}};'.format(this.G_node_options(this,i),degrees(index), this.G_label_dist, block[0], this.G_label_scale,this.G_node_sep.join(str(x) for x in block)))
+
+			ret.append('\\end{scope}\n\\end{tikzpicture}')
+			return '\n'.join(ret)
+
+	M.hasseDiagram = GraphMinorPosetDiagram(M,G_node_sep='')
+	return M
