@@ -1,5 +1,7 @@
 *
 **
+!makefile
+
 !src
 !src/posets
 !tests
