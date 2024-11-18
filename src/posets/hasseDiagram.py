@@ -362,6 +362,7 @@ class HasseDiagram:
 				'nodeTikz': type(this).nodeTikz,
 				'offset': 0.5,
 				'color':'black',
+				'landscape': False,
 				}
 
 		for (k,v) in this.defaults.items():
@@ -525,9 +526,13 @@ class HasseDiagram:
 		else:
 			this.maxrksize = max([len(r) for r in this.P.ranks])
 
-		if this.northsouth:
-			this.lowsuffix = '.north'
-			this.highsuffix = '.south'
+		if this.northsouth and 'lowsuffix' not in kwargs and 'highsuffix' not in kwargs:
+			this.lowsuffix = '.east' if this.landscape else '.north'
+			this.highsuffix = '.west' if this.landscape else '.south'
+		if this.landscape:
+			temp = this.loc_x
+			this.loc_x = this.loc_y
+			temp = this.loc_x
 		##############
 		#write preamble
 		##############
