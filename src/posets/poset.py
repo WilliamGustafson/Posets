@@ -2,10 +2,17 @@
 ##########################################
 #TODO
 ##########################################
-#SHould we make these tweaks to HasseDiagram?
+#Add test for isLattice and cache result
+#	for examples
+#Show for Genlatts is bugged why so small?
+#	latex does it too
+#Should we make these tweaks to HasseDiagram?
 #	>option to use arrows intead of lines
+#		>should there be any sort of arrow tip options exposed?
 #	>northsouth should only set suffixes if they aren't provided
+#		>added, doc and test this
 #	>landscape option which swaps loc_x and loc_y and
+#		>added, doc and test this
 #	defaults to east west suffixes over north south
 #
 #Figure out if we should do the del commmands in init or not
@@ -14,8 +21,7 @@
 #	either way document it
 #Consider relabeling the elements of a minor poset when the
 #input was a graph.
-#
-#Make graph minor poset example to make plot for paper
+#	>to graphs that is
 #
 #think about ordering for NC_n
 #	some sort of thing about arc length?
@@ -645,6 +651,21 @@ class Poset:
 			b = P.properPart().bettiNumbers()
 			return b==[2] or (b[0] == 1 and b[-1] == 1 and all([x == 0 for x in b[1:-1]]))
 		return all([check_homol(this.interval(x,y)) for x in this.elements for y in this.elements if this.less(x,y)])
+
+	@cached_method
+	def isLattice(this):
+		r'''
+		@section@Queries@
+		Checks if the poset is a lattice.
+
+		Returns \verb|True| if \verb|this| is an empty poset.
+		'''
+		if len(this.min()) > 1: return False
+		if len(this.max()) > 1: return False
+		for i in range(len(this)):
+			for j in range(len(this)):
+				if this.join(i,j,True)==None: return False
+		return True
 
 	@cached_method
 	def covers(this, indices=False):
@@ -1695,7 +1716,7 @@ class Genlatt(Poset):
 			this.G = irrs
 		else:
 			this.G = tuple(set([this.elements[i] for i in G]+irrs)) if G_indices else tuple(set(list(G)+irrs))
-		this.G = tuple(sorted(this.G, key=lambda x:this.elements.index(x)))
+		this.G = tuple(sorted([g for g in this.G if g not in this.min()], key=lambda x:this.elements.index(x)))
 	#overwrite L's covers function so hasse diagram does all edges
 	@cached_method
 	def covers(this, indices=False):
@@ -1733,7 +1754,7 @@ class Genlatt(Poset):
 		set \verb|H| and with the same order as \verb|this|.
 		'''
 		elements = set()
-		for I in itertools.chain.from_iterable(itertools.combinations(H,k) for k in range(len(H)+1)):
+		for I in subsets(H):
 			for l in itertools.accumulate(I, this.join, initial=z): pass
 			elements.add(l)
 		return Genlatt(this.subposet(elements),G=H)

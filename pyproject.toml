@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "posets"
-version = "24.11.10"
+version = "0.24.11.18"
 authors = [{name="William Gustafson", email="williamlgustafson@gmail.com"}]
 description="A package for working with finite partial orders"
 readme="README.md"
