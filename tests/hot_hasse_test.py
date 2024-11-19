@@ -192,3 +192,75 @@ class TestSplayTree:
 		t.search(80).splay()
 		t.traverse()
 		assert(t.root() == t_splay)
+
+	def test_get(this):
+		t_splay = SplayTree(
+			data=80,
+			r=SplayTree(
+				data=90,
+				r=SplayTree(data=100)
+				),
+			l=SplayTree(data=60,
+				r=SplayTree(data=70),
+				l=SplayTree(
+					data=50,
+					l=SplayTree(
+						data=30,
+						r=SplayTree(data=40),
+						l=SplayTree(
+							data=10,
+							r=SplayTree(
+								data=20,
+								l=SplayTree(data=15)
+								)
+							)
+						)
+					)
+				)
+			)
+		t=T()
+		assert(80 == t.get(80).data)
+		assert(t.root() == t_splay)
+
+	def test_add(this):
+		t = SplayTree(
+			data=3,
+			l=SplayTree(
+				data=1,
+				r=SplayTree(data=2)
+				),
+			r=SplayTree(data=5)
+			)
+		s = SplayTree(
+			data=3,
+			l=SplayTree(
+				data=1,
+				r=SplayTree(data=2)
+				),
+			r=SplayTree(
+				data=5,
+				l=SplayTree(4)
+				)
+			)
+		assert(t.add(4).root() == s.search(4).splay().root())
+
+	def test_join(this):
+		s = SplayTree(
+			data=3,
+			l=SplayTree(
+				data=1,
+				r=SplayTree(data=2)
+				),
+			r=SplayTree(data=4)
+			)
+		t2 = SplayTree(
+			data=8,
+			l=SplayTree(
+				data=6,
+				r=SplayTree(data=7)
+				),
+			r=SplayTree(
+				data=10,
+				l=SplayTree(data=9)
+				)
+			)
