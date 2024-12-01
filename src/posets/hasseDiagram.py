@@ -122,7 +122,7 @@ class HasseDiagram:
 		Options that affect only \verb|latex()|:
 
 	\begin{itemize}
-		\item[]{\verb|extra_packages| -- A string that when calling \verb|latex()| is placed in the preamble.
+		\item[]{\verb|preamble| -- A string that when calling \verb|latex()| is placed in the preamble.
 			It should be used to include any extra packages or define commands
 			needed to produce node labels. This has no effect when standalone is \verb|False|.
 
@@ -335,7 +335,7 @@ class HasseDiagram:
 			this.in_tkinter = False
 
 			this.defaults = {
-				'extra_packages':'',
+				'preamble':'',
 				'nodescale':'1',
 				'scale':'1',
 				'line_options':'',
@@ -521,6 +521,10 @@ class HasseDiagram:
 		this.validate()
 		this.in_latex = True
 
+		#right now landscape option is bugged disable it
+		#until we can be bothered to fix it
+		this.landscape = False
+
 		if len(this.P.ranks)==0:
 			this.maxrksize = 0
 		else:
@@ -552,7 +556,7 @@ class HasseDiagram:
 		ret.append('\n')
 		if this.standalone:
 			ret.append('\\documentclass{article}\n\\usepackage{tikz}\n')
-			ret.append(this.extra_packages)
+			ret.append(this.preamble)
 			ret.append('\n\\usepackage[psfixbb,graphics,tightpage,active]{preview}\n')
 			ret.append('\\PreviewEnvironment{tikzpicture}\n\\usepackage[margin=0in]{geometry}\n')
 			ret.append('\\begin{document}\n\\pagestyle{empty}\n')
@@ -712,8 +716,12 @@ class SubposetsHasseDiagram(HasseDiagram):
 		r'''
 		Default implementation of \verb|nodeLabel| for \verb|SubposetsHasseDiagram|.
 
-		This returns tikz code for the poset \verb|this.P[i]|.
+		This returns a list of elements if \verb|this.in_tkinter|
+		is \verb|True| and otherwise returns
+		tikz code for the poset \verb|this.P[i]|.
 		'''
+		if not this.in_latex:
+			return ','.join(str(x) for x in this.P[i])
 		if not this.draw_min and i in this.P.min(): return this.minNodeLabel(this)
 		args = {
 			'node_options' : SubposetsHasseDiagram.make_node_options(this.P[i]),

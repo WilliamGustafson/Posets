@@ -9,6 +9,10 @@ class SplayTree:
 		this.r = r
 		if this.r is not None: this.r.p = this
 		this.p = p
+		this._set_size()
+
+	def _set_size(this):
+		this.size = 1 + (0 if this.l is None else this.l.size) + (0 if this.r is None else this.r.size)
 
 	def rotate(this):
 		'''
@@ -16,21 +20,6 @@ class SplayTree:
 		'''
 		if this.p is None: return this
 		return this._rotate()
-#	def _rotate(this):
-#		'''
-#		Unsafe rotate
-#		'''
-#		#swap data between this and parent
-#		tmp = this.data
-#		this.data = this.p.data
-#		this.p.data = tmp
-#
-#		#swap left and right subtrees on parent
-#		tmp = this.p.l
-#		this.p.l = this.p.r
-#		this.p.r = tmp
-#
-#		return this.p
 
 	def _rotate(this):
 		'''
@@ -71,6 +60,7 @@ class SplayTree:
 
 			p.l = r
 			if r is not None: r.p = p
+
 		if p.r is this:
 			l = this.l
 
@@ -79,10 +69,14 @@ class SplayTree:
 
 			p.r = l
 			if l is not None: l.p = p
+
 		this.p = pp
 		if pp is not None:
 			if pp.l is p: pp.l = this
 			else: pp.r = this
+		p._set_size()
+		this._set_size()
+		if pp is not None: pp._set_size()
 		return this
 
 	def splay_step(this):
@@ -155,12 +149,14 @@ class SplayTree:
 			s = SplayTree(data=data,p=t)
 			if data<t.data: t.l = s
 			if data>t.data: t.r = s
+			t.size+=1
 		return s.splay()
 
 	def join(this, that):
 		t = this.root()
 		s = this.get(t.data)
 		this.r = s.r
+		this.size += s.size
 		return this
 
 	def split(this, data):
@@ -176,6 +172,7 @@ class SplayTree:
 				t.p.l = s
 			else:
 				t.p.r = s
+			t.p.size -= 1
 			return t.p.splay()
 		return s
 
@@ -191,13 +188,13 @@ class SplayTree:
 
 	def __next__(this):
 		if this.l is not None: yield from next(this.l)
-		yield this.data
+		yield this
 		if this.r is not None: yield from next(this.r)
 
 	def __eq__(this,that):
 		print('SplayTree.__eq__({},{})'.format(None if this is None else this.data,None if that is None else that.data))
 		if not isinstance(that,SplayTree): return False
-		if this.data != that.data: return False
+		if this.data != that.data or this.size != that.size: return False
 		return this.l == that.l and this.r == that.r
 
 	def __neq__(this,that):
@@ -211,3 +208,28 @@ class SplayTree:
 		print('traversing node:',this.data,'left:','' if this.l is None else this.l.data,'right:','' if this.r is None else this.r.data)
 		if this.l is not None: this.l.traverse()
 		if this.r is not None: this.r.traverse()
+
+
+##########################################
+#Notes on crossing reduction algorithm
+##########################################
+#Input: two successive alternating layers L,K
+#$L=S_{i_0},v_{i_0},S_{i_1},\dots,v_{i_k},S_{i_{k+1}}$
+#
+#1. append the segment s(v) for p-vertex v in L to the
+#container preceding v. Then join this container
+#with the succeeding container.
+#
+#2. Compute measure values for elements in K. First assign
+#a position value $p(v)$ to all vertices $v$ in $L$.
+#$p(v_{i_0})=\abs{S_{i_0}}$ and $p(v_{i_j})=p(v_{i_{j-1}})$+\abs{S_{i_j}}+1$
+#
+#3. Calculate an initial ordering on $K$ according to measure in list
+#$L^V$. Same for the containers toget $L^S$. Merge the two by
+#doing the following:
+#\begin{itemize}
+#	\item{If $m(L^V_0)\le p(L^S_0)$ then $push(K,pop(L^V))$.}
+#	\item{If $m(L^V_0)\ge p(L^S_0) + \abs{L^S_0) - 1$
+#		then $push(K,pop(L^S))$.}
+#	item{otherwise $k=ceil(m(pop(L^V))-pos(S)$ $T,R =split(S,k)$
+#		$push(K,T)$ 
