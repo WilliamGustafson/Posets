@@ -1,150 +1,163 @@
 r'''
-@is_section@exec@version='0.0.1'@
-@sections_order@Poset@PosetIsoClass@Genlatt@HasseDiagram@SubposetsHasseDiagram@Built in posets@Polynomial@Utilities@@
-@exec@
-def eval_txt(s):
-	ret = [r'\color{input}\begin{verbatim}']
-	ret.append(s)
-	ret.append(r'\end{verbatim}\color{output}\begin{verbatim}')
-	ret.append(str(eval(s)))
-	ret.append(r'\end{verbatim}\color{black}')
-	return ''.join(ret)
+@is_section@
+@sections_order@Poset@PosetIsoClass@Genlatt@HasseDiagram@SubposetsHasseDiagram@Built in posets@Polynomial@@
+\section{Introduction}
 
-def exec_txt(s):
-	lines = s.split('\n')
-	ret = [r'\color{input}\begin{verbatim}']
-	ret.append(s)
-	ret.append(r'\end{verbatim}\color{output}\begin{verbatim}')
-	exec('\n'.join(lines[:-1]))
-	ret.append(str(eval(lines[-1])))
-	ret.append(r'\end{verbatim}\color{black}')
-	return ''.join(ret)
-@
 This module provides a class \verb|Poset| that encodes a finite
-partially ordered set (poset). The class provides methods to construct
-new posets via operations such as Cartesian products and disjoint unions,
-select subposets and compute invariants such as flag vectors, the \av\bv-index
-and the \cv\dv-index. There is also a class \verb|PosetIsoClass| that
-encodes an isomorphism class of a poset. The highlight of this module over
-alternatives is the flexible plotting function that produces latex code
-for Hasse diagrams that can be compiled into a pdf.
+partially ordered set (poset). Most notably, this module can efficiently
+compute flag vectors, the \av\bv-index and the \cv\dv-index. Latex code
+for Hasse diagrams can be produced with a very flexible interface.
+There are
+methods for common operations and constructions such as Cartesian products,
+disjoint unions, interval lattices, lattice of ideals, etc. Various examples
+of posets are provided such as Boolean algebras, the face lattice of the
+$n$-dimensional cube, (noncrossing) partition lattices, the type $A_n$ Bruhat
+and weak orders, uncrossing orders etc. General subposets can be
+selected as well as particular ones of interest such as intervals and
+rank selections. Posets from this
+module can also be converted to and from posets from \href{https://www.sagemath.org}{sagemath} and \href{https://www.macaulay2.com/}{Macaulay2}.
 
 \subsection{Installation}
 
-After cloning the repository from the root directory
+Download the wheel file \href{https://www.github.com/WilliamGustafson/posets/releases}{here} and install it with pip via \verb|python -m pip posets-*-py3-none-any.whl|.
+
+\subsection{Building}
+
+Building requires \href{https://hatch.pypa.io}{hatch} to be installed.
+After cloning the repository from the base directory of the repository
 run \verb|hatch build| to build distribution files and then
-\verb|python -m pip install dist/posets-@eval@version@-py3-none-any.whl|
-to install the built wheel file.
+run \begin{verbatim}python -m pip install dist/posets-*-py3-none-any.whl\end{verbatim}
+to install the wheel file.
 
-The documentation can be built as a pdf by running
-\verb|pydox ../src/posets -i \*doc_funcs.py -c| from the docs directory.
-\verb|pydox| can be obtained from \url{github.com/WilliamGustafson/pydox.git}.
+The documentation can be built in pdf form by running
+\verb|make docs| from the base directory.
 Compilation requires \LaTeX to be installed with the packages pgf/tikz,
-graphicx, fancyvrb, amsmath, amsssymb, scrextend mdframed and hyperref.
+graphicx, fancyvrb, amsmath, amsssymb, scrextend, mdframed and hyperref
+as well as the python module \verb|pydox|.
+\verb|pydox| can be obtained from \url{github.com/WilliamGustafson/pydox.git}.
+If \verb|pydox| is not on
+your path either make a symlink to it or call make as
+\verb|make PYDOX=[path to pydox] docs|.
 
-\subsection{Overview}
-Here we give a quick introduction to using the posets module by way of examples.
+You can run the tests via \verb|make test|, this requires \verb|pytest|
+to be installed. You can output an html coverage report, located
+at \verb|tests/htmlcov/index.html|, with \verb|make coverage|.
+Making the coverage report requires \href{https://pytest.org}{pytest}, \href{https://coverage.readthedocs.io}{coverage} and the \href{https://pytest-cov.readthedocs.io}{pytest-cov} plugin. Note, coverage on \verb|hasseDiagram.py| is very low because testing
+drawing functions cannot be easily automated.
 
-First import the module.
+\subsection{Quick start}
+Here we give a quick introduction to using the posets module.
+In this subsection python commands and outputs are denoted
+in typewriter font.
+
+In the code snippets below we assume the module is imported via
 
 \verb|from posets import *|
 
-You can construct a poset in several ways, by specifying the relations
-either as a list or dictionary, by providing a function \verb|less|
-that returns a Boolean value or by providing an incidence matrix.
-You can also copy a poset by passing a \verb|Poset| object to the constructor.
-The \verb|Poset| documentation contains a full explanation, below is
-an example of constructing the same poset (depicted in Figure~\ref{v-poset-fig})
-in four ways.
+Constructing a poset:
+\begin{verbatim}P = Poset(relations={'':['a','b'],'a':['ab'],'b':['ab']})
+Q = Poset(relations=[['','a','b'],['a','ab'],['b','ab']])
+R = Poset(elements=['ab','a','b',''], less=lambda x,y: return x in y)
+S = Poset(incMat = [[0,1,1,1],[0,0,0,1],[0,0,0,1],[0,0,0,0]], elements=['','a','b','ab'])
+\end{verbatim}
 
-\begin{center}\begin{verbatim}P = Poset(relations={'a':['ab'],'b':['ab']})
-P = Poset(relations=[['a','ab'],['b','ab']])
-P = Poset(elements=['a','b','ab'], less=lambda x,y: return x in y and x!=y)
-P = Poset(incMat = [[0,0,1],[0,0,1],[0,0,0]], elements=['a','b','ab'])
-\end{verbatim}\end{center}
+Built in examples (see page~\pageref{Built in posets}):
+\begin{verbatim}
+Boolean(3) #Boolean algebra of rank 3
+Cube(3) #Face lattice of the 3-dimensional cube
+Bruhat(3) #Bruhat order on symmetric group of order 3!
+Bnq(n=3,q=2) #Lattice of subspaces of F_2^3
+DistributiveLattice(P) #lattice of ideals of P
+Intervals(P) #lattice of intervals of P (including the empty interval)
+\end{verbatim}
+These examples come with default drawing methods, for example,
+when making latex code by calling \verb|DistributiveLattice(P).latex()|
+the resulting figure depicts elements of the lattice as
+Hasse diagrams of $P$ with elements of the ideal highlighted
+(again, see page~\pageref{Built in posets}). Note, you will have
+to set the \verb|height|, \verb|width| and possibly \verb|nodescale|
+parameters in order to get sensible output\footnote{A future update
+to further automate this is planned.}.
 
-\begin{figure}
-\centering
-\includegraphics{figures/v.pdf}
-\caption{The Hasse diagram of an example poset where $a\le ab$ and $b\le ab$.}
-\label{v-poset-fig}
-\end{figure}
-@exec@
-import os
-from posets import Poset
-P = Poset(relations={'a':['ab'],'b':['ab']})
-with open('figures/v.tex','w') as file:
-	file.write(P.latex(height=3,width=2,standalone=True))
-os.system('pdflatex --output-directory=figures figures/v.tex')
-@
 
-Printing a poset via \verb|print(P)| will list the elements, the zeta function \footnote{The zeta function is the matrix $\zeta$ with entries $\zeta_{i,j}=1$ if $i\le j$ and 0 otherwise} as well as a list \verb|ranks|; \verb|ranks[i]| is a list of all indices \verb|j| such that \verb|elements[j]| is length\footnote{the length of $p\in P$ is the length of the longest chain\footnotemark in $P$ with maximum $p$}\footnotetext{A chain of a poset is a subset $\{p_1,\dots,p_k\}$ that is totally ordered,
-meaning $p_1<\dots<p_k$.} \verb|i|.
-@eval@eval_txt('P')@
+Two posets compare equal when they have the same
+set of elements and the same order relation on them:
+\begin{verbatim}P == Q and Q == R and R == S #True
+P == Poset(relations={'':['a','b']}) #False
+P == Poset(relations={'':['ab'],'a':['ab'],'b':['ab']}) #False
+\end{verbatim}
 
-You can display the Hasse diagram of a poset in a new window with \verb|P.show()|
-or generate tikz code with \verb|P.latex()|. Both methods take keyword arguments to control the output, e.g. \verb|height|, \verb|width|, \verb|nodescale|.
-The \verb|latex| method allows for finer grain control of the output compared to \verb|show| but must be compiled before viewing. In the Hasse diagram elements are
-ordered left to right along ranks by their order in \verb|P.elements|. As an
-example
-figure~\ref{v-poset-fig} was generated from the command below.
-\begin{verbatim}P.latex(height=3,width=2,standalone=True)\end{verbatim}
+Use \verb|is_isomorphic| or \verb|PosetIsoClass| to check whether
+posets are isomorphic:
+\begin{verbatim}P.is_isomorphic(Boolean(2)) #True
+P.isoClass()==Boolean(2).isoClass() #True
+P.is_isomorphic(Poset(relations={'':['a','b']})) #False
+\end{verbatim}
 
-This module contains various examples of posets, e.g. the functions
-\verb|Boolean|, \verb|Cube|, and \verb|Bruhat|. For example,
-you can construct
-the poset of all subsets of $\{1,2,3,4,5\}$ via \verb|B5 = Boolean(5)|.
+Viewing and creating Hasse diagrams:
+\begin{verbatim}
+P.show() #displays a Hasse diagram in a new window
+P.latex() #returns latex code: \begin{tikzpicture}...
+P.latex(standalone=True) #latex code for a standalone document: \documentclass{preview}...
+display(P.img()) #Display a poset when in a Jupyter notebook
+#this uses the output of latex()
+\end{verbatim}
 
-Various operations are given as methods you call on a \verb|Poset| object
-For example, to construct the face poset of a triangle crossed with a
-square use the \verb|diamondProduct| method:
-\begin{verbatim}Q = Boolean(3).diamondProduct(Cube(2))\end{verbatim}
-See the operations subsection for a complete list.
+Computing invariants:
+\begin{verbatim}
+Cube(2).fVector() #{(): 1, (1,): 4, (2,): 4, (1, 2): 8}
+Cube(2).hVector() #{(): 1, (1,): 3, (2,): 3, (1, 2): 1}
+Boolean(5).sparseKVector() #{(3,): 8, (2,): 8, (1, 3): 4, (1,): 3, (): 1}
+Boolean(5).cdIndex() #Polynomial({'ccd': 3, 'cdc': 5, 'dd': 4, 'dcc': 3, 'cccc': 1})
+print(Boolean(5).cdIndex()) #c^{4}+3c^{2}d+5cdc+3dc^{2}+4d^{2}
+\end{verbatim}
 
-Two posets can be compared for equality with the same meaning as in
-mathematics (the same underlying set with the same order). For
-example
-\begin{center}\begin{verbatim}P == B5 #False
-P == Poset(elements=['ab','b','a'],incMat=[[0,0,0],[1,0,0],[1,0,0]]) #True
-P == Poset(relations={'A':'AB','B':'AB'}) #False
-\end{verbatim}\end{center}
+Polynomial operations:
+\begin{verbatim}
+#Create polynomials from dictionaries, keys are monomials, values are coefficients
+p=Polynomial({'ab':1})
+q=Polynomial({'a':1,'b':1})
+#get and set coefficients like a dictionary
+q['a'] #1
+q['x'] #0
+p['ba'] = 1
+str(p) #ab+ba string method returns latex
+p+q #ab+ba+a+b
+#multiplication is non-commutative
+p*q #aba+ab^{2}+ba^{2}+bab
+q*p #a^{2}b+aba+bab+b^{2}a
+2*p #2ab+2ba
+p**2 #abab+ab^{2}a+ba^{2}b+baba non-negative integer exponentation only
+p**(-1) #raises NotImplementedError
+p**q #raises NotImplementedError
+p.sub(q,'a') #ab+ba+2b^{2} substitute q for a in p
+p.abToCd() #d rewrite a's and b's in terms of c=a+b and d=ab+ba when possible
+Polynomial({'c':1,'d':1}).cdToAb() #a+b+ab+ba rewrite c's and d's in terms of a's and b's
+\end{verbatim}
 
-To test whether two posets are isomorphic you can use the method
-\verb|is_isomorphic| e.g.
-\begin{verbatim}B5.is_isomorphic(Boolean(3).CartesianProduct(Boolean(2)))\end{verbatim}
-returns \verb|True|. You can also construct an instance of \verb|PosetIsoClass|,
-which encodes the poset's isomorphism class, via either \verb|B5.isoClass()|
-or \verb|PosetIsoClass(B5)|. The equality operator for \verb|PosetIsoClass|
-returns \verb|True| when the two represented posets are isomorphic.
+Converting posets to and from SageMath:
+\begin{verbatim}
+P.toSage() #Returns a SageMath class, must be run under sage
+fromSage(Q) #Take a poset Q made with SageMath and return an instance of Poset
+\end{verbatim}
 
-The class \verb|PosetIsoClass| inherits from the \verb|Poset| class and
-thus has all the same methods, but they are wrapped so that any method
-of \verb|Poset| that returns a \verb|Poset| object instead returns
-a \verb|PosetIsoClass| object. For example, the call
-\begin{verbatim}Boolean(3).isoClass().CartesianProduct(Boolean(2))\end{verbatim}
-returns the isomorphism class of $B_3\times B_2\cong B_5$ and will compare
-equal to \verb|B5.isoClass()|.
-
-The posets module can compute some invariants, most notably the
-\cv\dv-index and \av\bv-index of a poset. For example,
-\verb|B5.flagVectors()| returns a table containing the flag $f$-vector
-and flag $h$-vector (as a list of lists \verb|[S,f_S,h_S]|).
-\verb|B5.abIndex()| and \verb|B5.cdIndex()| return the \av\bv-index
-and the \cv\dv-index respectively, encoded as an instance of the
-\verb|Polynomial| class provided by this module. Calling \verb|cdIndex|
-on a poset that does not have a \cv\dv-index will still return a \cv\dv-polynomial,
-but the result may not really be meaningful. This method computes the \cv\dv-index
-of a semi-Eulerian poset (as in \cite{juhnke-kubitzke-24}) correctly though.
-Other invariants include
-M\"obius function values, Betti numbers
-and (the face poset of) the order complex.
+Converting to and from Macaulay2:
+\begin{verbatim}
+-- In M2
+load "convertPosets.m2" --Also loads Python and Posets packages
+import "posets" --This module must be installed to system version of python
+P = posets@@Boolean(3) --Calling python functions
+pythonPosetToMac(P) --Returns an instance of the M2 class Posets
+macPosetToPython(Q) --Take a poset made with M2 and return an
+--instance of the python class Poset
+\end{verbatim}
 '''
 from .poset import *
 from .hasseDiagram import *
 from .examples import *
 from .polynomial import *
 
-#del poset
-#del hasseDiagram
-#del examples
-#del polynomial
+del poset
+del hasseDiagram
+del examples
+del polynomial

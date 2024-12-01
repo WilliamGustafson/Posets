@@ -1,70 +1,4 @@
 '''@no_doc@no_children@'''
-##########################################
-#TODO
-##########################################
-#Add test for isLattice and cache result
-#	for examples
-#Show for Genlatts is bugged why so small?
-#	latex does it too
-#Should we make these tweaks to HasseDiagram?
-#	>option to use arrows intead of lines
-#		>should there be any sort of arrow tip options exposed?
-#	>northsouth should only set suffixes if they aren't provided
-#		>added, doc and test this
-#	>landscape option which swaps loc_x and loc_y and
-#		>added, doc and test this
-#	defaults to east west suffixes over north south
-#
-#Figure out if we should do the del commmands in init or not
-#
-#Consider moving the hasse class for graph minor posets
-#	either way document it
-#Consider relabeling the elements of a minor poset when the
-#input was a graph.
-#	>to graphs that is
-#
-#think about ordering for NC_n
-#	some sort of thing about arc length?
-#	want the the two two-block coatoms on either end
-#Also think about ordering for Pi_n
-#	it's gross. This poset isn't gross right?
-#	Look up sources for how they draw?
-#
-#Rework examples writing in overview
-#
-#Read through docs to check for:
-#	1. Any sort of doubling of entries
-#		I think I've got that but it happens so much
-#	2. Links are working well
-#	3. Section ordering
-#	4. I dunno other style stuff?
-#
-#correct citations
-#
-#check pdflatex errors and warnings
-##########################################
-r'''
-@no_list@sections_order@Poset@PosetIsoClass@HasseDiagram@Built in posets@Utilities@Timer@@
-A module for creating and manipulating partially ordered sets.
-
-This module provides a class \verb|Poset| that encodes a finite poset.
-The \verb|Poset| class provides:
-
-\begin{enumerate}
-	\item{
-	Operations between posets such as disjoint  unions, Cartesian products
-	star products and diamond products.
-	}
-	\item{
-	Methods to calculate data about a given poset such as flag $f$- and $h$-vectors,
-	the \textbf{cd}-index and M\"obius function values.
-	}
-	\item{
-	Examples of posets such as Chains, Boolean algebras, face lattices of cubes,
-	type A Bruhat orders, uncrossing posets and more.
-	}
-\end{enumerate}
-'''
 import itertools
 import copy
 import decorator
@@ -75,8 +9,6 @@ from .polynomial import *
 from .hasseDiagram import *
 from .utils import *
 import numpy as np
-
-import time
 ###########################################
 #Cube_1 and Chain_1 needed for pyr and prism
 #can't import examples.py because of circular
@@ -471,15 +403,16 @@ class Poset:
 
 	def element_union(E, F):
 		r'''
+		@no_doc@
 		@section@Operations@
 		Computes the disjoint union of lists \verb|E| and \verb|F|.
 
 		If \verb|E| and \verb|F| have empty intersection return value is \verb|E+F|
-		otherwise return value is ($E\times\{0\})\cup(\{0\}\times F$). This is used by operation methods
+		otherwise return value is ($E\times\{0\})\cup(F\times\{1\}$). This is used by operation methods
 		such as \verb|Poset.union| and \verb|Poset.starProduct|.
 		'''
-		if any([e in F for e in E]+[f in E for f in F]):
-			return [(e,0) for e in E] + [(0,f) for f in F]
+		if any([e in F for e in E]) or any([f in E for f in F]):
+			return [(e,0) for e in E] + [(f,1) for f in F]
 		else:
 			return E+F
 
@@ -804,8 +737,8 @@ class Poset:
 		Does not automatically include the minimum or maximum.
 		'''
 		ret = this.subposet([x for x in itertools.chain(*[this.ranks[s] for s in S])], indices=True)
-		if 'isRanked()' in this.cache:
-			ret.cache['isRanked()'] = this.cache['isRanked()']
+		if 'isRanked()' in this.cache and this.isRanked():
+			ret.cache['isRanked()'] = True
 		return ret
 	##############
 	#End Subposet selection
@@ -1369,19 +1302,21 @@ class Poset:
 		'''
 		return this.hasseDiagram.latex(**kwargs)
 
-	def pdf(this, tmpfile='a.tex', tmpdir=None, **kwargs):
+	def img(this, tmpfile='a.tex', tmpdir=None, **kwargs):
 		r'''
 		@section@Miscellaneous@
-		Produces latex code (via calling \verb|latex()|) compiles it with pdflatex and returns a \verb|wand.image.Image| object constructed from the pdf.
+		Produces latex code (via calling \verb|latex|) compiles it with pdflatex and returns a \verb|wand.image.Image| object constructed from the pdf.
 
 		In a Jupyter notebook calling \verb|display| on the return value will show the Hasse diagram in the output cell.
 		By default \verb|tmpdir| is \verb|tempfile.gettempdir()|.
 
 		This function converts the compiled pdf to an image using imagemagick, this may fail due to imagemagick's default security policies.
-		For more info see \cite{askubuntu-imagemagick}.
+		For more info and how to fix the issue see \cite{askubuntu-imagemagick}.
 
 		Keyword arguments are passed to \verb|latex()| but \verb|standalone| is alwasy set
 		to \verb|True| (otherwise the pdf would not compile).
+		Note this function will hang if \verb|pdflatex| fails
+		to compile.
 		'''
 		from wand.image import Image as WImage
 		import os
@@ -1635,8 +1570,6 @@ class PosetIsoClass(Poset):
 		if '__hash__()' in this.cache: del this.cache['__hash__()']
 	def __eq__(this, that):
 		return isinstance(that,Poset) and this.is_isomorphic(that)
-	def __neq__(this, that):
-		return not isinstance(that,Poset) or not this.is_isomorphic(that)
 	@cached_method
 	def __hash__(this):
 		X=set()

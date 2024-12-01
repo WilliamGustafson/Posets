@@ -189,7 +189,7 @@ class TestExamples:
 
 
 	def test_uncrossing(this):
-		uc3 = P(Poset(
+		uc3 = Poset(
 			relations={
 				0:[1,2,3,4,5],
 				1:[6,7],
@@ -209,13 +209,24 @@ class TestExamples:
 				},
 			indices=True,
 			elements=[0,
-				'(3,4)(2,5)(1,6)','(2,3)(4,5)(1,6)','(2,3)(1,4)(5,6)','(1,2)(4,5)(3,6)','(1,2)(3,4)(5,6)',
-				'(2,4)(3,5)(1,6)','(3,4)(1,5)(2,6)','(2,3)(1,5)(4,6)','(1,3)(4,5)(2,6)','(1,3)(2,4)(5,6)','(1,2)(3,5)(4,6)',
-				'(2,4)(1,5)(3,6)','(1,4)(3,5)(2,6)','(1,3)(2,5)(4,6)',
-				'(1,4)(2,5)(3,6)'
-				]
-			).sort(key=str))
-		assert(uc3==Uncrossing(3).sort(key=str))
+				((1, 6), (2, 5), (3, 4)),
+				((1, 6), (2, 3), (4, 5)),
+				((1, 4), (2, 3), (5, 6)),
+				((1, 2), (3, 6), (4, 5)),
+				((1, 2), (3, 4), (5, 6)),
+				((1, 6), (2, 4), (3, 5)),
+				((1, 5), (2, 6), (3, 4)),
+				((1, 5), (2, 3), (4, 6)),
+				((1, 3), (2, 6), (4, 5)),
+				((1, 3), (2, 4), (5, 6)),
+				((1, 2), (3, 5), (4, 6)),
+				((1, 5), (2, 4), (3, 6)),
+				((1, 4), (2, 6), (3, 5)),
+				((1, 3), (2, 5), (4, 6)),
+				((1, 4), (2, 5), (3, 6))]
+			)
+		assert(uc3.is_isomorphic(Uncrossing(3))) #passes
+		assert(uc3==Uncrossing(3)) #fails
 
 	def test_bnq(this):
 		#B_3(2)
@@ -470,6 +481,15 @@ class TestQueries:
 		assert(not this.pent.isRanked())
 		assert(this.B3.isRanked())
 
+	def test_isLattice(this):
+		this.pent.cache={}
+		B = Bruhat(3)
+		B.cache={}
+		assert(this.pent.isLattice())
+		assert(not B.isLattice())
+		assert(not this.pent.complSubposet(this.pent.max()).isLattice())
+		assert(not this.pent.complSubposet(this.pent.min()).isLattice())
+
 	def test_Eulerian(this):
 		this.pent.cache={}
 		assert(not this.pent.isEulerian())
@@ -677,17 +697,17 @@ testeq_exit(Poset.fromSage(SB).sort(), P(B.sort()), "fromSage")
 	os.remove(tmpfile+'.py')
 ##########################################
 #Test pythonPosetToMac and macPosetToPython
-#from convertPosets.m2
+#from ../convertPosets.m2
 ##########################################
 #macaulay2 needs the module to be installed with pip (and not just in the current path)
 #check if it's installed and that macaulay2 is on path
 from pip._internal.operations.freeze import freeze
-module_installed = 'posets' in [pkg[:pkg.index('==')] for pkg in freeze(local_only=True)]
+module_installed = 'posets' in [pkg[:pkg.index('==' if '==' in pkg else ' @ ' if ' @ ' in pkg else '')] for pkg in freeze(local_only=True)]
 @pytest.mark.skipif(shutil.which('M2')==None, reason='Macaulay2 is not in the PATH')
 @pytest.mark.skipif(not module_installed, reason='Module is not installed, build and install it to test Macaulay2')
 def test_M2():
-	mac_str = '''
-	load "convertPosets.m2"
+	mac_str = f'''
+	load "{os.path.realpath('../convertPosets.m2')}"
 
 	posets = import "posets"
 
@@ -708,6 +728,7 @@ def test_M2():
 	result = subprocess.Popen(['M2','--script',tmpfile],stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	if result!=None:
 		txt, err = result.communicate()
+		print('txt',txt,'err',err)
 		assert(result.returncode != 1) #posetToPython test
 		assert(result.returncode != 2) #pythonToPoset test
 	os.remove(tmpfile)

@@ -37,7 +37,7 @@ def Bruhat(n,weak=False):
 	make_fig(Bruhat(3,True), 'Weak_3',height=4, width=3)
 	'''
 	def pairing_to_perm(tau):
-		arcs = [[int(x) for x in a.split(',')] for a in tau[1:-1].split(')(')]
+		arcs = [[int(x) for x in a] for a in tau]
 
 		arcs.sort(key = lambda x: x[0])
 
@@ -60,6 +60,7 @@ def Bruhat(n,weak=False):
 	P.cache['isRanked()']=True
 	P.cache['isEulerian()']=not weak
 	P.cache['isGorenstein()']=not weak
+	P.cache['isLattice()'] = (n<3) or weak
 	return P
 def Root(n=3):
 	r'''
@@ -109,6 +110,7 @@ def Butterfly(n):
 	P.cache['isRanked()']=True
 	P.cache['isEulerian()']=True
 	P.cache['isGorenstein()']=True
+	P.cache['isLattice()'] = n<2
 	return P
 
 def Antichain(n):
@@ -149,6 +151,7 @@ def Chain(n):
 	P.cache['isRanked()']=True
 	P.cache['isEulerian()']=False
 	P.cache['isGorenstein()']=False
+	P.cache['isLattice()'] = True
 	return P
 
 def Boolean(n):
@@ -199,6 +202,7 @@ def Boolean(n):
 	P.cache['isRanked()']=True
 	P.cache['isEulerian()']=True
 	P.cache['isGorenstein()']=True
+	P.cache['isLattice()'] = True
 
 	if X!=None:
 		X = list(X)
@@ -251,6 +255,7 @@ def Polygon(n):
 	P.cache['isRanked()']=True
 	P.cache['isEulerian()']=True
 	P.cache['isGorenstein()']=True
+	P.cache['isLattice()']=True
 	return P
 
 def Cube(n):
@@ -299,6 +304,7 @@ def Cube(n):
 	P.cache['isRanked()']=True
 	P.cache['isEulerian()']=True
 	P.cache['isGorenstein()']=True
+	P.cache['isLattice()']=True
 	return P
 
 def Torus(n=2, m=2):
@@ -394,6 +400,7 @@ def Torus(n=2, m=2):
 	P.cache['isRanked()']=True
 	P.cache['isEulerian()']= n%2 == 1
 	P.cache['isGorenstein()']= n == 1
+	P.cache['isLattice()'] = n == 0
 	return P
 
 def GluedCube(orientations = None):
@@ -495,6 +502,7 @@ def ProjectiveSpace(n=2):
 	P.cache['isRanked()']=True
 	P.cache['isEulerian()']= n%2 == 1
 	P.cache['isGorenstein()']= n%2 == 1
+	P.cache['isLattice()'] = n==0
 	return P
 
 	return P
@@ -548,6 +556,7 @@ def Grid(n=2,d=None):
 	P.cache['isRanked()']=True
 	P.cache['isEulerian()']= all([x==1 for x in d])
 	P.cache['isGorenstein()']= all([x == 1 for x in d])
+	P.cache['isLattice()'] = all([x==1 for x in d])
 	return P
 
 def Uncrossing(t, upper=False, weak=False, E_only=False, zerohat=True):
@@ -577,6 +586,8 @@ def Uncrossing(t, upper=False, weak=False, E_only=False, zerohat=True):
 
 	If \verb|zerohat| is \verb|False| then no minimum is adjoined.
 
+	Raises a \verb|ValueError| when \verb|t| is an integer less than 2.
+
 	For more info on the uncrossing poset see \cite{lam-15}.
 
 	\begin{center}
@@ -592,6 +603,7 @@ def Uncrossing(t, upper=False, weak=False, E_only=False, zerohat=True):
 	#a pair as two bits set. For example the pairing {{1,3},{2,4}} is encoded
 	#as [2**0+2**2,2**1+2**3]=[5,10]
 	if type(t) == int:
+		if t<2: raise ValueError(f't must be at least 2, got t={t}')
 		n = t
 		t = []
 		for i in range(1,n+1):
@@ -608,18 +620,18 @@ def Uncrossing(t, upper=False, weak=False, E_only=False, zerohat=True):
 		ret = []
 		i = 1
 		while x!= 0:
-			if x&1: ret.append(str(i))
+			if x&1: ret.append(i)
 			x >>= 1
 			i += 1
-		return "("+",".join(ret)+")"
+		return tuple(ret)
 
 	def pairingFormat(x):
-		return "".join(sorted([setFormat(y) for y in x]))
+		return tuple(sorted(tuple(setFormat(y) for y in x)))
+#		return "".join(sorted([setFormat(y) for y in x]))
 
 
 	#swaps i and j in the pairing p
 	def swap(p,i,j):
-#		return sorted([(x^((((x&(1<<i))>>i)^((x&(1<<j))>>j))<<i)^((((x&(1<<i))>>i)^((x&(1<<j))>>j))<<j)) for x in p])
 		ret = []
 		for arc in p:
 			if (arc&(1<<i))>>i != (arc&(1<<j))>>j: #arc contains one of i and j
@@ -747,7 +759,7 @@ def Uncrossing(t, upper=False, weak=False, E_only=False, zerohat=True):
 			if 'nodetikzscale' in kwargs: this.nodetikzscale = kwargs['nodetikzscale']
 			else: this.nodetikzscale = '1'
 			if 'offset' in kwargs: this.offset = kwargs['offset']
-			else: this.offset = 13
+			else: this.offset = 0.5
 			this.pairings = pairings
 			this.n = len(pairings[0])
 
@@ -795,23 +807,24 @@ def Uncrossing(t, upper=False, weak=False, E_only=False, zerohat=True):
 				px,py = pt(j)
 				this.canvas.create_oval(px-ptsize, py-ptsize, px+ptsize, py+ptsize, fill='black')
 
-			tau = [x.split(',') for x in this.P[i].replace('(','').split(')')[:-1]]
+			tau = this.P[i]
 
 			for j in range(n):
-				s = int(tau[j][0])
-				t = int(tau[j][1])
+				s = tau[j][0]
+				t = tau[j][1]
 				this.canvas.create_line(*pt(s),*pt(t))
 			return
 
 
 
-	extra_packages = "\\def\\r{1}\n\\def\\n{"+str(n<<1)+"}\n\\newcommand{\\medial}{\n\\draw circle (\\r);\n\\foreach\\i in{1,...,\\n}\n\t{\n\t\\pgfmathsetmacro{\\j}{-90-360/\\n*(\\i-1)}\n\t\\fill (\\j:-\\r) circle (2pt) node [anchor=\\j] {$\\i$};\n\t\\coordinate (\\i) at (\\j:-\\r);\n\t}\n}"
-	P = Poset(M, P, ranks, name = name, hasse_class = UncrossingHasseDiagram, extra_packages = extra_packages)
+	preamble = "\\def\\r{1}\n\\def\\n{"+str(n<<1)+"}\n\\newcommand{\\medial}{\n\\draw circle (\\r);\n\\foreach\\i in{1,...,\\n}\n\t{\n\t\\pgfmathsetmacro{\\j}{-90-360/\\n*(\\i-1)}\n\t\\fill (\\j:-\\r) circle (2pt) node [anchor=\\j] {$\\i$};\n\t\\coordinate (\\i) at (\\j:-\\r);\n\t}\n}"
+	P = Poset(M, P, ranks, name = name, hasse_class = UncrossingHasseDiagram, preamble = preamble)
 	if not upper:
 		P = P.adjoin_zerohat() if zerohat else P
-		P.hasseDiagram = UncrossingHasseDiagram(P, extra_packages=extra_packages)
+		P.hasseDiagram = UncrossingHasseDiagram(P, preamble=preamble)
 #	lex on (source pts, sink pts) sorts for the 312 decomposition but is a little uglier
 #	P = P.sort(key=lambda x:tuple() if x==0 else (tuple(y[0] for y in eval('('+x.replace(')','),')+')')),tuple(y[1] for y in eval('('+x.replace(')','),')+')'))))
+	P = P.sort(key=lambda x:tuple() if x==0 else x)
 	pairings.sort(key=lambda p:P.elements.index(pairingFormat(p)))
 	#cache some values for queries
 	P.cache['isRanked()']=True
@@ -931,11 +944,15 @@ def Bnq(n=2, q=2):
 	else:
 		def nodeName(hd, i):
 			return '0' if i==0 else '/'.join('-'.join(str(x) for x in y) for y in hd.P[i])
-	P = Poset(elements = spaces, less = lambda i,j: i!=j and i&j == i, nodeLabel=nodeLabel,extra_packages='\\usepackage{amsmath}',nodeName=nodeName)
+	P = Poset(elements = spaces, less = lambda i,j: i!=j and i&j == i, nodeLabel=nodeLabel,preamble='\\usepackage{amsmath}',nodeName=nodeName)
 	#sort ranks: revlex on bases induced by ordering vectors by interpreting them as base q representations of numbers
 	P.elements = [basis(S)[::-1] for S in P]
 	P = P.sort()
 	P.elements = [list_to_mat(B)[::-1] for B in P]
+	P.cache['isRanked()'] = True
+	P.cache['isEulerian()'] = False
+	P.cache['isGorenstein()'] = False
+	P.cache['isLattice()'] = True
 	return P
 
 def DistributiveLattice(P, indices=False):
@@ -983,7 +1000,7 @@ def DistributiveLattice(P, indices=False):
 	else:
 		elements = []
 		for I in ideals:
-			ranks[len([c for c in bin(I) if c=='1'])].append(I)
+			ranks[len([c for c in bin(I) if c=='1'])].append(len(elements))
 			elements.append(tuple(P[i] for i in range(len(P)) if (1<<i)&I!=0))
 		def less(I,J):
 			return I!=J and all(i in J for i in I)
@@ -998,6 +1015,10 @@ def DistributiveLattice(P, indices=False):
 		Q=P,
 		irr_scale='0.1'
 		)
+	JP.cache['isRanked()'] = True
+	JP.cache['isEulerian()'] = len(JP) == 1<<len(P)
+	JP.cache['isGorenstein()'] = JP.cache['isEulerian()']
+	JP.cache['isLattice()'] = True
 	return JP
 def Intervals(P):
 	r'''
@@ -1026,7 +1047,7 @@ def Intervals(P):
 	def is_in(i,I):
 		return len(I)>0 and P.lesseq(I[0],i) and P.lesseq(i,I[1])
 
-	return Poset(
+	ret = Poset(
 		elements=elements,
 		ranks=ranks,
 		less=less,
@@ -1036,6 +1057,8 @@ def Intervals(P):
 		prefix='int',
 		int_scale='0.1'
 		)
+	ret.cache['isLattice()'] = True
+	return ret
 #def SignedBirkhoff(P):
 #	D = DistributiveLattice(P, indices=True)
 #	def maximal(I):
@@ -1164,6 +1187,7 @@ def LatticeOfFlats(data,as_genlatt=False):
 	##############
 	ret = Poset(elements=flats, less=less, nodeLabel=nodeLabel)
 	ret.elements = [elem_conv(e) for e in ret.elements]
+	ret.cache['isLattice()'] = True
 	return ret
 
 def PartitionLattice(n=3):
@@ -1180,7 +1204,10 @@ def PartitionLattice(n=3):
 	@exec@
 	make_fig(PartitionLattice(4),'Pi',width=12,height=8,nodescale=0.75)
 	'''
-	return LatticeOfFlats(itertools.combinations(range(1,n+1),2))
+	P = LatticeOfFlats(itertools.combinations(range(1,n+1),2))
+	P.cache['isRanked()'] = True
+	P.cache['isEulerian()'] = n<2
+	return P
 
 def NoncrossingPartitionLattice(n=3):
 	r'''
@@ -1249,7 +1276,10 @@ def NoncrossingPartitionLattice(n=3):
 	P.hasseDiagram.nodeDraw = nodeDraw
 	P.hasseDiagram.nodeLabel = nodeLabel
 	P.hasseDiagram.nodeName = nodeName
-	P.hasseDiagram.extra_packages = "\\def\\r{1}\n\\def\\n{"+str(n)+"}\n\\newcommand{\\medial}{\n\\draw circle (\\r);\n\\foreach\\i in{1,...,\\n}\n\t{\n\t\\pgfmathsetmacro{\\j}{-90-360/\\n*(\\i-1)}\n\t\\fill (\\j:-\\r) circle (2pt) node [anchor=\\j] {$\\i$};\n\t\\coordinate (\\i) at (\\j:-\\r);\n\t}\n}"
+	P.hasseDiagram.preamble = "\\def\\r{1}\n\\def\\n{"+str(n)+"}\n\\newcommand{\\medial}{\n\\draw circle (\\r);\n\\foreach\\i in{1,...,\\n}\n\t{\n\t\\pgfmathsetmacro{\\j}{-90-360/\\n*(\\i-1)}\n\t\\fill (\\j:-\\r) circle (2pt) node [anchor=\\j] {$\\i$};\n\t\\coordinate (\\i) at (\\j:-\\r);\n\t}\n}"
+	P.cache['isLattice()'] = True
+	P.cache['isRanked()'] = True
+	P.cache['isEulerian()'] = n==1
 
 	return P
 
@@ -1277,9 +1307,13 @@ def UniformMatroid(n=3,r=3,q=1):
 	make_fig(UniformMatroid(4,3,2),'qunif',height=8,width=12,labels=False,ptsize='1.25pt')
 	'''
 	if q==1:
-		return Boolean(n).rankSelection(list(range(r))+[n])
+		P = Boolean(n).rankSelection(list(range(0,r))+[n])
 	else:
-		return Bnq(n,q).rankSelection(list(range(r))+[n])
+		P = Bnq(n,q).rankSelection(list(range(0,r))+[n])
+	P.cache['isEulerian()'] = q==1 and r==n
+	P.cache['isGorentein()'] = (q==1 and r==n) or r<=1
+	P.cache['isLattice()'] = True
+	return P
 
 def MinorPoset(L,genL=None, weak=False):
 	r'''
@@ -1293,15 +1327,29 @@ def MinorPoset(L,genL=None, weak=False):
 	is assumed to be a lattice, an instance of \verb|Genlatt| is
 	created from \verb|L| and \verb|genL| and the minor poset of
 	the encoded {\genlatt} is returned. In this case the returned
-	poset when plotted with \verb|Poset.latex()| has elements
+	poset when plotted with \verb|Poset.latex| has elements
 	represented as {\genlatts}.
 
 	If \verb|L| is not an instance of the \verb|Poset| class
 	it should be an iterable of length 2 iterables that
-	specify edges of graph. For example, \verb|L=[[1,2],[2,3],[3,1]]|
+	specify edges of a graph. For example, \verb|L=[[1,2],[2,3],[3,1]]|
 	specifies the 3-cycle graph. The minor poset of the graph
 	is returned. In this case when plotting the returned poset
-	with \verb|latex()| the elements are represented as graphs.
+	with \verb|Poset.latex| the elements are represented as graphs.
+	Furthermore, there are a few additional options you can use
+	to control the presentation of the graphs in the Hasse
+	diagram:
+	\begin{itemize}
+		\item[]{\verb|G_scale| -- Scale of the graph, default is 1.}
+		\item[]{\verb|G_pt_size| -- size in points to use for the
+		vertices, default is 2.}
+		\item[]{\verb|G_node_options| -- Options to place on nodes in the graph, default is \verb|''|.}
+		\item[]{\verb|G_node_sep| -- String used to separate names of vertices in the vertex names for minors, default is \verb|'/'|.}
+		\item[]{\verb|G_label_dist| -- Distance of vertex to
+			its label, default is \verb|1/4|.}
+		\item[]{\verb|G_label_scale| -- Scale factor for the
+			vertex labels, default is 1.}
+	\end{itemize}
 
 	If \verb|weak| is \verb|True| then the weak minor poset is
 	returned. Briefly, this poset does not have relations
@@ -1345,7 +1393,7 @@ def MinorPoset(L,genL=None, weak=False):
 	\end{center}
 
 	@exec@
-	make_fig(MinorPoset([[1,2],[2,3],[1,3]])),'M_triangle',height=10,width=10,G_line_options='line width=1pt', G_scale=3/8, G_label_scale=7/8, G_label_dist=.25,G_pt_size=7/4)
+	make_fig(MinorPoset([[1,2],[2,3],[1,3]]),'M_triangle',height=10,width=10,G_line_options='line width=1pt', G_scale=3/8, G_label_scale=7/8, G_label_dist=.25,G_pt_size=7/4)
 	make_fig(MinorPoset(LatticeOfFlats([[1,2],[2,3],[1,3]])),'M_lof_triangle',height=10,width=8,L_height=0.75,L_width=1,L_labels=False)
 	make_fig(MinorPoset(LatticeOfFlats([[1,2],[2,3],[1,3]]),weak=True),'M_lof_triangle_weak',height=10,width=8,L_height=0.75,L_width=1,L_labels=False)
 	make_fig(MinorPoset(LatticeOfFlats([0,1,2,2,1,3,3,3])),'M_lof_poly',height=10,width=12,L_height=1,L_width=1,L_labels=False)
@@ -1404,4 +1452,12 @@ def MinorPoset(L,genL=None, weak=False):
 			return '\n'.join(ret)
 
 	M.hasseDiagram = GraphMinorPosetDiagram(M,G_node_sep='')
+	if not weak:
+		M.cache['isRanked()'] = True
+		M.cache['isGorenstein()'] = True
+		M.cache['isEulerian()'] = True
+	if weak:
+		M.cache['isLattice()'] = True
+		M.cache['isEulerian()'] = len(L) == 1<<len(L.ranks[1])
+		M.cache['isGorenstein()'] = len(L) == 1<<len(L.ranks[1])
 	return M
