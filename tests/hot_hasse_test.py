@@ -59,7 +59,7 @@ class TestSplayTree:
 
 	def test_iter(this):
 		t=T()
-		assert(list(t)==[10,15,20,30,40,50,60,70,80,90,100])
+		assert([x.data for x in t]==[10,15,20,30,40,50,60,70,80,90,100])
 
 	def test_rotate(this):
 		t=T()
@@ -91,6 +91,8 @@ class TestSplayTree:
 			)
 		)
 		t.search(10).rotate()
+		print(list(x.size for x in t_rot))
+		print(list(x.size for x in t))
 		assert(t_rot == t)
 
 	def test_rotate60(this):
