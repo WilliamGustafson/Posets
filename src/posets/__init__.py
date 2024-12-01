@@ -36,7 +36,7 @@ graphicx, fancyvrb, amsmath, amsssymb, scrextend, mdframed and hyperref
 as well as the python module \verb|pydox|.
 \verb|pydox| can be obtained from \url{github.com/WilliamGustafson/pydox.git}.
 If \verb|pydox| is not on
-your path either make a symlink to it or call make as
+your path either make a symlink to it or call make with
 \verb|make PYDOX=[path to pydox] docs|.
 
 You can run the tests via \verb|make test|, this requires \verb|pytest|
