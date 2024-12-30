@@ -203,13 +203,113 @@ class SplayTree:
 	def __repr__(this):
 		return 'SplayTree(data={}, l={}, r={})'.format(this.data,this.l,this.r)
 
+	def __len__(this):
+		return this.size
+
+	def __getitem__(this,k):
+		if not isinstance(k,int): raise TypeError("Key must be an integer")
+
+		offset = 0
+		while True:
+			if (0 if this.l
+	def __setitem__(this):
+	def _delitem__(this):
+	def __reversed__(this):
+	def __contains__(this):
+	def __missing__(this):
+
+
 	#Debugging methods
 	def traverse(this):
 		print('traversing node:',this.data,'left:','' if this.l is None else this.l.data,'right:','' if this.r is None else this.r.data)
 		if this.l is not None: this.l.traverse()
 		if this.r is not None: this.r.traverse()
 
+class LinkedList:
+	'''
+	Doubly linked list class.
+	'''
+	def __init__(this, data=None, next=None, last=None):
+		this.data = data
+		this.next = next
+		this.last = last
 
+	def __iter__(this):
+		return this
+
+	def __next__(this):
+		if this.next is None: raise stopIteration
+		return this.next
+
+	def __getitem__(this,i):
+		if isinstance(i,int):
+			if i>0:
+				while i>1 and this.next!=None:
+					this = this.next
+					i -= 1
+				return this
+			if i<0:
+				while this.next!=None: this = this.next
+				i = 1-i
+				while i>1 and this.last!=None:
+					this = this.last
+					i -= 1
+				return this
+		if isinstance(i,slice):
+			return LinkedListIterator(this,i.start,i.stop,i.step)
+		raise ValueError("The index must be an integer or a slice.")
+
+class LinkedListIterator:
+
+	def __init__(this, node, start=0,stop=-1,step=1):
+		this.start = start
+		this.stop = stop
+		this.step = step
+		this.current = this.start-this.step
+		this.node = node
+
+		if this.step == 0: raise ValueError("step must be nonzero")
+
+	def __next__(this):
+		this.current += this.step
+		if this.step > 0:
+			if this.current > this.stop: raise StopIteration
+			for _ in range(this.step): this.node = this.node.next
+		if this.step < 0:
+			if this.current < this.stop: raise StopIteration
+			for _ in range(this.step): this.node = this.node.last
+		return this.node
+
+
+def cross_reduction(L,K):
+	'''
+	Given two alternating layers \verb|L| and \verb|K|
+	computes a new ordering on \verb|K| to reduce crossings.
+
+	The lists \verb|L| and \verb|K| should be instances
+	of \verb|LinkedList|.
+
+	Elements of \verb|L| and \verb|K| are either sparse trees
+	containing segments or tuples
+	consisting of an index into the poset and either None
+	or a segment (when the element is a $p$-vertex). Segments
+	are stored as a tuple of two indices into the poset,
+	which are the $p$ and $q$-vertices for the segment.
+
+	The first elements of \verb|L| and \verb|K| are
+	segment trees (possibly empty).
+	'''
+	#for each p-vertex merge into the trees to the left and right
+	for node in L:
+		if type(node.data) is SplayTree: continue
+		#type(node.data) is tuple
+		if node.data[1] is None: continue
+		node.last.data = node.last.data.add(node.data[0]).root.join(node.next.data)
+	#assign positions to verts
+	pos = [0] if len(L[0])>0 else []
+	for i,x in enumerate(L[1:]):
+		if type(x)==SplayTree: pos.append(1+pos[i-1])
+			
 ##########################################
 #Notes on crossing reduction algorithm
 ##########################################
