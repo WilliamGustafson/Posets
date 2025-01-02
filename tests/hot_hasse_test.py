@@ -266,3 +266,50 @@ class TestSplayTree:
 				l=SplayTree(data=9)
 				)
 			)
+class TestCrossReduction:
+	def make_P():
+	    #3     7     11
+	    #|\    |    /|
+	    #2 \   6   / 10
+	    #|  \  |  /  |
+	    #1   \ 5 /   9
+	    #|    \|/    |
+	    #0     4     8
+		C = Chain(3)
+		D = Chain(3)
+		E = Chain(3)
+		D.elements = list(range(max(C)+1,max(C)+1+len(D)))
+		E.elements = list(range(max(D)+1,max(D)+1+len(E)))
+		P = C.union(D).union(E)
+		P.incMat[len(C)][len(C)-1] = 1
+		P.incMat[len(C)-1][len(C)-1] = -1
+		P.incMat[len(C)][-1] = 1
+		P.incMat[-1][len(C)] = -1
+		return P
+	def make_layers(P):
+		covers = P.covers(True)
+		long_edges = [[(x,y) for x in covers if P.rank(x,True)<i for y in covers[x] if P.rank(y,True)>i] for i in range(len(P.ranks))]
+	def test_rk_to_layer(this):
+		P = TestCrossReduction.make_P()
+		covers = P.covers(True)
+		long_edges = [[(x,y) for x in covers if P.rank(x,True)<i for y in covers[x] if P.rank(y,True)>i] for i in range(len(P.ranks))]
+		covers = P.covers(True)
+		long_edges = [[(x,y) for x in covers if P.rank(x,True)<i for y in covers[x] if P.rank(y,True)>i] for i in range(len(P.ranks))]
+		T = SplayTree(Segment(4,3))
+		T.add(Segment(4,11))
+		print(rk_to_layer(P.ranks[1]+long_edges[1],long_edges[1]))
+		print([Vertex(1),Vertex(5),Vertex(9),T])
+#		assert(rk_to_layer(P.ranks[1]+long_edges[1],long_edges[1]) == [Vertex(1),Vertex(5),Vertex(9),T])
+	def test_cross_count_layer(this):
+		P = TestCrossReduction.make_P()
+		covers = P.covers(True)
+		long_edges = [[(x,y) for x in covers if P.rank(x,True)<i for y in covers[x] if P.rank(y,True)>i+1] for i in range(len(P.ranks))]
+		print('long_edges',long_edges)
+		print('covers',P.covers(True))
+		print(cross_count_layer(rk_to_layer(P.ranks[1]+long_edges[1],long_edges[1]),rk_to_layer(P.ranks[2]+long_edges[2],long_edges[2]),[Segment(x,y) for x,y in P.covers(True).items() if P.rank(x,True)==1 and P.rank(y,True)==2]+[Segment(x,y) for x,y in long_edges[1]]))
+#		assert(cross_count_layer(P,rk_to_layer(P.ranks[1]+long_edges[1],long_edges[1])) == 0)
+
+		
+TestCrossReduction().test_rk_to_layer()
+TestCrossReduction().test_cross_count_layer()
+

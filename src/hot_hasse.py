@@ -1,4 +1,39 @@
 from posets import *
+import copy
+
+##########################################
+#Notes and TODOS and Whatnot
+##########################################
+#Having layers be alternating is annoying,
+#it appears the only necessary property (more
+#like desirable it makes things smaller) is
+#that each run of segments is maximal (left and
+#right of a container of segments is a vertex or
+#the end of the layer list). With this change you
+#have to make a tweak to the step where you
+#merge p-vertices into segment containers; the only
+#change is that if p has a vertex to the left or to
+#the right but not both you merge p into the container
+#to its right or left resp. and if both adjacent elements
+#to p are vertices you put p into a SplayTree by itself.
+#I don't think any other changes are needed so that is what
+#I will do. I'm not going back and fixing all the notes about
+#alternating layers right now but that is TODO.
+#
+#SplayTree takes linearly ordered obejcts for data, TODO
+#make it takes hashable objects instead and makes Segments
+#hashable also vertices
+#Ensure that hash method is compatible with equals which sometimes
+#ignores Segment.
+#
+#Add references to each function's doc string
+#
+#fix all liar comments pay particular attention
+#to anything about (alternating) layers
+#
+#write tests for the cross reduction inside out (Start with cross counting use example from paper)
+#when doing cross step testing use the example from the paper too
+##########################################
 
 class SplayTree:
 
@@ -84,16 +119,13 @@ class SplayTree:
 		Single splay step
 		'''
 		if this.p is None: return
-		print('splay_step')
 		#zig
 		if this.p.p is None:
-			print('zig')
 			this._rotate()
 
 		#zig-zig
 		elif (this.p is this.p.p.l and this is this.p.l) or\
 		(this.p is this.p.p.r and this is this.p.r):
-			print('zig-zig')
 			this.p._rotate()
 			this._rotate()
 
@@ -101,7 +133,6 @@ class SplayTree:
 		#if (this.p is this.p.p.l and this is this.p.r) or\
 		#(this.p is this.p.p.r and this is this.p.l):
 		else:
-			print('zig-zag')
 			this._rotate()
 			this._rotate()
 		return this
@@ -110,8 +141,6 @@ class SplayTree:
 		Whole splay operation
 		'''
 		while this.p is not None:
-			print('this.data',this.data)
-			print('this.p.data',this.p.data)
 			this.splay_step()
 		return this
 
@@ -192,7 +221,6 @@ class SplayTree:
 		if this.r is not None: yield from next(this.r)
 
 	def __eq__(this,that):
-		print('SplayTree.__eq__({},{})'.format(None if this is None else this.data,None if that is None else that.data))
 		if not isinstance(that,SplayTree): return False
 		if this.data != that.data or this.size != that.size: return False
 		return this.l == that.l and this.r == that.r
@@ -201,22 +229,12 @@ class SplayTree:
 		return not this==that
 
 	def __repr__(this):
-		return 'SplayTree(data={}, l={}, r={})'.format(this.data,this.l,this.r)
+		return 'SplayTree(data={}, l={}, r={})'.format(repr(this.data),this.l,this.r)
 
 	def __len__(this):
 		return this.size
-
-	def __getitem__(this,k):
-		if not isinstance(k,int): raise TypeError("Key must be an integer")
-
-		offset = 0
-		while True:
-			if (0 if this.l
-	def __setitem__(this):
-	def _delitem__(this):
-	def __reversed__(this):
-	def __contains__(this):
-	def __missing__(this):
+	def __contains__(this,key):
+		return key == this.get(key).data
 
 
 	#Debugging methods
@@ -225,111 +243,326 @@ class SplayTree:
 		if this.l is not None: this.l.traverse()
 		if this.r is not None: this.r.traverse()
 
-class LinkedList:
+class Vertex:
+	def __init__(this,id,p=False,q=False,S=None):
+		this.id = id
+		this.p = p
+		this.q = q
+		this.S = S
+		assert(not (this.p and this.q))
+		assert((this.S is None) == (not this.p and not this.q))
+	def __str__(this):
+		return ('p-vertex' if this.p else 'q-vertex' if this.q else 'vertex') + ' ' + str(this.id)
+	def __eq__(this,that):
+		return isinstance(that,Vertex) and this.p==that.p and this.q==that.q and this.id==that.id
+	def __repr__(this):
+		return f'Vertex({this.id},p={this.p},q={this.q})'
+	def __lt__(this,that):
+		return this.id < that.id if type(that) is Vertex else this.id <= that.p.id if type(that) is Segment else NotImplemented
+	def __gt__(this,that):
+		return this.id > that.id if type(that) is Vertex else this.id > that.p.id if type(that) is Segment else NotImplemented
+
+class Segment:
+	def __init__(this,p=None,q=None):
+		this.p = Vertex(id=p,p=True,q=False,S=this)
+		this.q = Vertex(id=q,p=False,q=True,S=this)
+	def __str__(this):
+		return f'segment from {this.p.id} to {this.q.id}'
+	def __eq__(this,that):
+		return isinstance(that,Segment) and this.p==that.p and this.q==that.q
+	def __repr__(this):
+		return f'Segment(p={repr(this.p)},q={repr(this.q)})'
+	def __lt__(this,that):
+		return (this.p.id <= that.p.id and this.q.id < that.q.id) if type(that) is Segment else this.p.id < that.id if type(that) is Vertex else NotImplemented
+	def __gt__(this,that):
+		return (this.p.id >= that.p.id and this.q.id > that.q.id) if type(that) is Segment else this.p.id >= that.id if type(that) is Vertex else NotImplemented
+
+def cross_sort(P,ranks=None,agg=np.mean):
 	'''
-	Doubly linked list class.
+	Given a poset reorder ranks to reduce crossings in the Hasse diagram.
+
+	If provided \verb|ranks| is used as an initial ordering, otherwise the
+	linear extension of \verb|P| is used (the linear ordering \verb|P.elements|).
+
+	If provided \verb|agg| is passed to \verb|cross_reduction|.
 	'''
-	def __init__(this, data=None, next=None, last=None):
-		this.data = data
-		this.next = next
-		this.last = last
+	#TODO: rk_to_layer currently expects a rank list containing integers and tuples
+	#and converts these to Vertex and Segment objects, but cross_reduction return a list
+	#containing Vertex and Segment objects. Decide where to do the conversion and how
+	#to handle the inconsistencies (converting at top level sounds most appropriate?)
+	Q = P.dual()
+	ranks = copy.deepcopy(P.ranks) if ranks is None else copy.deepcopy(ranks)
+	long_edges = [[(x,y) for x in covers if P.rank(x,True)<i for y in covers[x] if P.rank(y,True)>i] for i in range(len(P.ranks))]
+	ranks = [rank_to_layer(rk,long_edges) for rk in ranks]
+	crosses = cross_count(P,ranks)
 
-	def __iter__(this):
-		return this
+	old_crosses = 0
+	while old_crosses != crosses:
+		old_crosses = crosses
+		#upwards pass
+		for L,K,i in zip(ranks[:-1],ranks[1:],range(1,len(L))):
+			ranks[i] = cross_reduction(P,L,K,agg)
+		#downwards pass
+		for L,K,i in zip(ranks[-2::-1],ranks[-1:0:-1],range(len(L)-2,-1,-1)):
+			ranks[i] = cross_reduction(Q,K,L,agg)
+			#TODO I'm pretty sure on the downward pass notions of p and q swap
+			#maybe add a dual method to vertices and Segments or a dual flag in cross_reduction
+		crosses = cross_count(P,ranks)
+	perm = itertools.chain(([v.id for v in L if isinstance(v,Vertex)] for L in ranks))
+	P.reorder(perm=perm,indices=True)
+	return P
 
-	def __next__(this):
-		if this.next is None: raise stopIteration
-		return this.next
-
-	def __getitem__(this,i):
-		if isinstance(i,int):
-			if i>0:
-				while i>1 and this.next!=None:
-					this = this.next
-					i -= 1
-				return this
-			if i<0:
-				while this.next!=None: this = this.next
-				i = 1-i
-				while i>1 and this.last!=None:
-					this = this.last
-					i -= 1
-				return this
-		if isinstance(i,slice):
-			return LinkedListIterator(this,i.start,i.stop,i.step)
-		raise ValueError("The index must be an integer or a slice.")
-
-class LinkedListIterator:
-
-	def __init__(this, node, start=0,stop=-1,step=1):
-		this.start = start
-		this.stop = stop
-		this.step = step
-		this.current = this.start-this.step
-		this.node = node
-
-		if this.step == 0: raise ValueError("step must be nonzero")
-
-	def __next__(this):
-		this.current += this.step
-		if this.step > 0:
-			if this.current > this.stop: raise StopIteration
-			for _ in range(this.step): this.node = this.node.next
-		if this.step < 0:
-			if this.current < this.stop: raise StopIteration
-			for _ in range(this.step): this.node = this.node.last
-		return this.node
-
-
-def cross_reduction(L,K):
+def rk_to_layer(L, long_edges):
 	'''
-	Given two alternating layers \verb|L| and \verb|K|
-	computes a new ordering on \verb|K| to reduce crossings.
-
-	The lists \verb|L| and \verb|K| should be instances
-	of \verb|LinkedList|.
-
-	Elements of \verb|L| and \verb|K| are either sparse trees
-	containing segments or tuples
-	consisting of an index into the poset and either None
-	or a segment (when the element is a $p$-vertex). Segments
-	are stored as a tuple of two indices into the poset,
-	which are the $p$ and $q$-vertices for the segment.
-
-	The first elements of \verb|L| and \verb|K| are
-	segment trees (possibly empty).
+	Given a rank, meaning a list of indices to elements and pairs of indices indicating segments, return a layer (list of indices and \verb|SplayTree| instances replacing the runs of pairs/$p$-vertices.
 	'''
-	#for each p-vertex merge into the trees to the left and right
-	for node in L:
-		if type(node.data) is SplayTree: continue
-		#type(node.data) is tuple
-		if node.data[1] is None: continue
-		node.last.data = node.last.data.add(node.data[0]).root.join(node.next.data)
-	#assign positions to verts
-	pos = [0] if len(L[0])>0 else []
-	for i,x in enumerate(L[1:]):
-		if type(x)==SplayTree: pos.append(1+pos[i-1])
-			
-##########################################
-#Notes on crossing reduction algorithm
-##########################################
-#Input: two successive alternating layers L,K
-#$L=S_{i_0},v_{i_0},S_{i_1},\dots,v_{i_k},S_{i_{k+1}}$
-#
-#1. append the segment s(v) for p-vertex v in L to the
-#container preceding v. Then join this container
-#with the succeeding container.
-#
-#2. Compute measure values for elements in K. First assign
-#a position value $p(v)$ to all vertices $v$ in $L$.
-#$p(v_{i_0})=\abs{S_{i_0}}$ and $p(v_{i_j})=p(v_{i_{j-1}})$+\abs{S_{i_j}}+1$
-#
-#3. Calculate an initial ordering on $K$ according to measure in list
-#$L^V$. Same for the containers toget $L^S$. Merge the two by
-#doing the following:
-#\begin{itemize}
-#	\item{If $m(L^V_0)\le p(L^S_0)$ then $push(K,pop(L^V))$.}
-#	\item{If $m(L^V_0)\ge p(L^S_0) + \abs{L^S_0) - 1$
-#		then $push(K,pop(L^S))$.}
-#	item{otherwise $k=ceil(m(pop(L^V))-pos(S)$ $T,R =split(S,k)$
-#		$push(K,T)$ 
+	ret = []
+	T = None
+	print('rk_to_layer()')
+	print('L',L)
+	for x in L:
+		if type(x) is int:
+				if T is not None:
+					ret.append(T.root())
+					T = None
+				p = x in [e[0] for e in long_edges]
+				q = x in [e[1] for e in long_edges]
+				S = Segment(*next(e for e in long_edges if e[0]==x)) if p else Segment(*next(e for e in long_edges if e[1] == x)) if q else None
+				ret.append(Vertex(x,p=p,q=q,S=S))
+		
+		if type(x) is tuple:
+			if T is None:
+				print('Constructing new tree for',x)
+				T = SplayTree(data=Segment(p=x[0],q=x[1]))
+			else:
+				print('Adding segment to T',x)
+				T.add(Segment(p=x[0],q=x[1]))
+	if T is not None: ret.append(T.root())
+	print('T at end of rk_to_layer',T)
+	return ret
+
+def rk_to_next_layer(L, long_edges):
+	'''
+	Given a rank, meaning a list of indices to elements and pairs of indices indicating segments, return a layer (list of indices and \verb|SplayTree| instances replacing the runs of pairs/$p$-vertices.
+	'''
+	ret = []
+	T = None
+	for x in L:
+		if type(x) is int:
+			p = x in [e[0] for e in long_edges]
+			if p:
+				S = Segment(*next(e for e in long_edges if e[0]==x))
+				if T is None:
+					T = SplayTree(data=S)
+				else:
+					T.add(S)
+			else: #not p
+				if T is not None:
+					ret.append(T)
+					T = None
+				q = x in [e[1] for e in long_edges]
+				S = Segment(*next(e for e in long_edges if e[1] == x)) if q else None
+				ret.append(Vertex(x,p=p,q=q,S=S))
+
+		if type(x) is tuple:
+			if T is None:
+				T = SplayTree(data=x)
+			else:
+				T.add(x)
+	if T is not None: ret.append(T)
+	return ret
+
+def cross_count(P,layers):
+	'''
+	Given a poset and a list of layers returns the number of crossings in the Hasse diagram of the poset.
+
+	A layer encodes the vertices and segments along a rank and consists of \verb|Vertex| and \verb|Segment| objects.
+	'''
+	raise NotImplementedError
+def cross_count_layer(L,K,edges):
+	'''
+	Given two adjacent ranks of a poset count the number of crossings in the Hasse diagram between those two ranks.
+
+	\verb|covers| is a list of tuples \verb|(l,k)| where either these elements are vertices with a cover between them or are the two eneds of a long edge. This list should be in lexicographic order as induced by the desired order on the ranks in the poset.
+
+	\verb|long_edges| is a list of the covers that cross gap between \verb|L| and \verb|K| but have a vertex in neither.
+	'''
+	#Accumulator tree algorithm works like this:
+		#Assume $\abs{L}\ge\abs{K}$.
+		#$\pi$ should be the graph as a sequence, $\pi_i$ is the element in $K$ adjacent to the $i$th edge
+		#when the edges are sorted lexicographically (considered as elements of $L\times K$).
+		#Let n be the length of the smaller of the two layers
+		#Let $q=2^m$ be the smallest power of two greater than or equal to 2n
+		#We have a fully balanced binary tree T with q-1 entries which we view
+		#as a poset (we can label the poset by binary sequences of length between 0 and $m-1$
+		#and say $x<y$ when $y$ is a prefix of $x$).
+		#
+		#Now for the actual accumulation we proceed as follows. For each element $\pi_i$ we add one to
+		#the corresponding leaf $x$ and to each element $y>x$. Do this in order of the tree and as you
+		#go up increment a cross count by the value on the sibling for each left node encountered.
+
+	#turn ranks into layers
+	#L = rk_to_layer(L,long_edges)
+	#K = rk_to_layer(K,long_edges)
+	swapped = len(L)>len(K)	
+	if swapped: L,K = K,L
+#	long_edges = [e for e in edges if type(e) is tuple]
+	pi = [e[0] for e in edges] if swapped else [e[1] for e in edges]
+	del swapped
+	n = len(L)
+	q = 1
+	m = 1
+	while q<(n<<1):
+		q<<=1
+		m+=1
+	T = [0 for _ in range(q-1)]
+	#T is a fully balanced binary tree, indices into tree can be viewed as binary sequences of length at most
+	#log_2(q)-1. A sequence x is encoded as number with bits 1...10x hence q-2 is the empty sequence and leaves
+	#are in the range 0 to q/2-1 (no top bit set).
+	count = 0 #cross count to be accumulated
+	for x in pi:
+		#corresponding leaf is in same index, increment it
+		T[x] += 1 if type(L[x]) is Vertex else len(L[x])
+		#go up tree and increment, also, for each left node add sibling's value to cross count
+		#here left node means highest bit is
+		pad = 1<<m #used to make the 1's before sequence
+		bit = 1<<(m-1) #used to make the zero bit
+		i = x #index to current node
+		while pad < q-2:
+			#get next index
+			i = (i^bit) | pad
+			#check for leftness
+			pad = pad | bit
+			bit>>=1
+			if not i&bit:
+				count += T[i^bit]
+	return count
+
+def cross_reduction(P,L,K,agg=np.mean):
+	'''
+	Given two rank lists \verb|L| and \verb|K| computes a new
+	ordering for \verb|K| to reduce crossings.
+
+	Elements of \verb|L| and \verb|K| should be either indices to poset
+	elements indicating vertices or tuples of two indices indicating a segment
+	(the first is the $p$-vertex the second the $q$-vertex).
+	'''
+	#append segment S(p) for each p-vertex in L to container preceding p,
+	#then join the container with the next one and remove p.
+	#L = rk_to_next_layer(L) #L is now basically a hybrid of K as a layer and L as a layer (verts from L containers from K)
+	#K = rk_to_layer(K)
+
+	#for each p vertex in L replace with a segment and merge any adjacent containers
+	new_L = []
+	T = None
+	for x in L:
+		if type(x) is Vertex and x.p:
+			if T is None: T = SplayTree(x.S)
+			else: T.add(x)
+		elif type(x) is Vertex:
+			if T is not None: new_L.append(T)
+			new_L.append(x)
+		else:
+			if T is not None: T.add(x)
+			else: T = SplayTree(x)
+	if T is not None: new_L.append(T)
+	L = new_L
+
+
+#set position values for L:
+#		pos(v_{i_0}) = len(S_{i_0})
+#		pos(v_{i_j}) = pos(v_{i_{j-1}}) + len(S_{i_j}) + 1
+#		pos(S_{i_j}) = pos(v_{i_j-1})+1 (if len(S_{i_j})>0)
+#		pos(S_{i_0}) = 0 if nonempty
+	pos = {}
+	last = -1
+	for i in range(1,len(L)):
+		if type(L[i]) is SplayTree:
+			pos[L[i]] = last+1
+		if type(L[i]) is Vertex:
+			pos[L[i]] = (len(L[i-1]) if type(L[i-1]) is SplayTree else 0) + last + 1
+			last = pos[L[i]]
+
+	#aggregate position values over covered elements to get a measure on K
+	#below we use SplayTree's as dictionary keys so we need a hash TODO can we get around that?
+	SplayTree.__hash__ = lambda this: hash(frozenset(this))
+	
+	meas = {}
+	for k in K:
+		if type(k) is SplayTree:
+			meas[k] = pos[k]
+		else: #type(k) is Vertex:
+			if k.q: continue
+			covers = P.covers(True)[k.id]
+			meas[k] = agg([Vertex(x) for x in covers])
+	#THE BELOW COMMENTS ARE A LIE: TODO PUT SOMETHING TRUTHFUL HERE
+	#sort all non-q vertices and all segment containers in K
+	#then merge the two in the following way:
+	# - If $m(K^V_0)\le p(K^S_0)$ then $push(K,pop(K^V))$.}
+	# - If $m(K^V_0)\ge p(K^S_0) + \abs{K^S_0} - 1$
+	#	then $push(K,pop(K^S))$.
+	# - otherwise $k=ceil(m(pop(K^V))-pos(S)$ $T,R =split(S,k)$
+	#	$push(K,T)$
+	KV = sorted(((k,v) for k,v in meas.items() if type(k) is Vertex and not k.q),key = lambda x:x[1])
+	KS = sorted(((k,v) for k,v in meas.items() if type(k) is SplayTree),key = lambda x:x[1])
+	ret = []
+	while len(KV)>0 and len(KS)>0:
+		if meas[KV[0]] <= pos[KS[0]]:
+			ret.append(KV.pop())
+		elif measK[v[0]] >= pos[KS[0]] + len(KS[0]) - 1:
+			ret.append(KS.pop())
+		else:
+			S = KS.pop()
+			v = KV.pop()
+			k = math.ceil(meas[v] - pos[S])
+			T,R = S.split(k)
+			ret.append(T)
+			ret.append(v)
+			pos[R] = pos[S] + k
+			KS.append(R)
+			k = math.ceil(meas(KV.pop()))-pos[S]
+
+	#place q-vertices ``according to the position of their segment''
+	#``Note that the representation of the layer $L_i$ is lost, since the containers
+	#are reused for the layer $L_{i+1}$.'' I don't see this pointed out clearly in any
+	#way whatsoever, but these two quotes together suggest to me that what is meant
+	#is that when the new order on K is constructed we append the containers from L
+	#and don't use the containers from K. This works out because the containers in the two
+	#are very similar, the only difference is some segments in L turn in to q-vertices
+	#in K and this step is where we fix that and also get the q-vertices in the right position
+	#by simply turning segments into q-vertices where needed by calling S.split(q) for
+	#each q-vertex in K where S is the container containing it at the time.
+	new_ret = []
+	for T in ret:
+		if type(T) is not SplayTree:
+			new_ret.append(T)
+			continue
+		for x in T:
+			qverts = sorted([v for v in T if type(v) is Vertex and v.q],key = lambda v:hash(v))
+			new_Ts = []
+			for q in qverts:
+				S,T = T.split(q)
+				if len(S)>0: new_Ts.append(S)
+				new_Ts.append(q)
+			if len(T)>0: new_Ts.append(T)
+		new_ret+=new_Ts
+	return new_ret
+	
+	#ensure K is an alternating layer by merging consecutive containers and inserting empty
+	#containers in between vertices
+	#TODO names
+	new_new_ret = []
+	T = None
+	for x in new_ret:
+		if type(x) is SplayTree:
+			if T is None:
+				T = x
+			else:
+				T = T.join(x)
+		else:
+			if T is not None:
+				new_new_ret.append(T)
+				T = None
+			new_new_ret.append(x)
+	if T is not None: new_new_ret.append(T)
+	return list(itertools.chain(*((v.id,) if type(v) is Vertex else (x.id for x in v) for v in new_new_ret)))
