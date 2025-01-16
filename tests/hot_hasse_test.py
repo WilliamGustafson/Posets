@@ -293,23 +293,29 @@ class TestCrossReduction:
 		P = TestCrossReduction.make_P()
 		covers = P.covers(True)
 		long_edges = [[(x,y) for x in covers if P.rank(x,True)<i for y in covers[x] if P.rank(y,True)>i] for i in range(len(P.ranks))]
-		covers = P.covers(True)
-		long_edges = [[(x,y) for x in covers if P.rank(x,True)<i for y in covers[x] if P.rank(y,True)>i] for i in range(len(P.ranks))]
 		T = SplayTree(Segment(4,3))
 		T.add(Segment(4,11))
-		print(rk_to_layer(P.ranks[1]+long_edges[1],long_edges[1]))
+		print(rk_to_layer(P.ranks[1]+long_edges[1]))
 		print([Vertex(1),Vertex(5),Vertex(9),T])
 #		assert(rk_to_layer(P.ranks[1]+long_edges[1],long_edges[1]) == [Vertex(1),Vertex(5),Vertex(9),T])
 	def test_cross_count_layer(this):
 		P = TestCrossReduction.make_P()
 		covers = P.covers(True)
-		long_edges = [[(x,y) for x in covers if P.rank(x,True)<i for y in covers[x] if P.rank(y,True)>i+1] for i in range(len(P.ranks))]
-		print('long_edges',long_edges)
-		print('covers',P.covers(True))
-		print(cross_count_layer(rk_to_layer(P.ranks[1]+long_edges[1],long_edges[1]),rk_to_layer(P.ranks[2]+long_edges[2],long_edges[2]),[Segment(x,y) for x,y in P.covers(True).items() if P.rank(x,True)==1 and P.rank(y,True)==2]+[Segment(x,y) for x,y in long_edges[1]]))
-#		assert(cross_count_layer(P,rk_to_layer(P.ranks[1]+long_edges[1],long_edges[1])) == 0)
+		long_edges = [[(x,y) for x in covers if P.rank(x,True)<i for y in covers[x] if P.rank(y,True)>i] for i in range(len(P.ranks))]
+		L = rk_to_layer(P.ranks[1]+long_edges[1])
+		K = rk_to_layer(P.ranks[2]+long_edges[2])
+		edges = [(x,y) for x in P.ranks[1] for y in P.ranks[2] if y in P.covers(True)[x]] + long_edges[1]
+		edges = []
+		for l in L:
+			if type(l) is Vertex:
+				l_covers = P.covers(True)[l.id]
+				edges+=[(l,k) for k in K if type(k) is Vertex and k.id in l_covers]
+			else:
+				edges.append((l,l))
+		assert(cross_count_layer(rk_to_layer(P.ranks[1]+long_edges[1]),rk_to_layer(P.ranks[2]+long_edges[2]),edges) == 0)
+		B=Butterfly(2)
+		assert(cross_count_layer(rk_to_layer(B.ranks[1]),rk_to_layer(B.ranks[2]),((x,y) for x in B.ranks[1] for y in B.ranks[2]))==1)
 
 		
-TestCrossReduction().test_rk_to_layer()
 TestCrossReduction().test_cross_count_layer()
 

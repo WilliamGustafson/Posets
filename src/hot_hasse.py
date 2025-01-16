@@ -217,13 +217,13 @@ class SplayTree:
 
 	def __next__(this):
 		if this.l is not None: yield from next(this.l)
-		yield this
+		yield this.data
 		if this.r is not None: yield from next(this.r)
 
 	def __eq__(this,that):
 		if not isinstance(that,SplayTree): return False
-		if this.data != that.data or this.size != that.size: return False
-		return this.l == that.l and this.r == that.r
+		if len(this)!=len(that): return False
+		return all(x in that for x in this)		
 
 	def __neq__(this,that):
 		return not this==that
@@ -261,7 +261,8 @@ class Vertex:
 		return this.id < that.id if type(that) is Vertex else this.id <= that.p.id if type(that) is Segment else NotImplemented
 	def __gt__(this,that):
 		return this.id > that.id if type(that) is Vertex else this.id > that.p.id if type(that) is Segment else NotImplemented
-
+	def __hash__(this):
+		return this.id
 class Segment:
 	def __init__(this,p=None,q=None):
 		this.p = Vertex(id=p,p=True,q=False,S=this)
@@ -276,6 +277,8 @@ class Segment:
 		return (this.p.id <= that.p.id and this.q.id < that.q.id) if type(that) is Segment else this.p.id < that.id if type(that) is Vertex else NotImplemented
 	def __gt__(this,that):
 		return (this.p.id >= that.p.id and this.q.id > that.q.id) if type(that) is Segment else this.p.id >= that.id if type(that) is Vertex else NotImplemented
+	def __hash__(this):
+		return hash((this.p.id,this.q.id))
 
 def cross_sort(P,ranks=None,agg=np.mean):
 	'''
@@ -312,10 +315,11 @@ def cross_sort(P,ranks=None,agg=np.mean):
 	P.reorder(perm=perm,indices=True)
 	return P
 
-def rk_to_layer(L, long_edges):
+def rk_to_layer(L):
 	'''
 	Given a rank, meaning a list of indices to elements and pairs of indices indicating segments, return a layer (list of indices and \verb|SplayTree| instances replacing the runs of pairs/$p$-vertices.
 	'''
+	long_edges=[x for x in L if type(x) is tuple]
 	ret = []
 	T = None
 	print('rk_to_layer()')
@@ -404,10 +408,17 @@ def cross_count_layer(L,K,edges):
 	#turn ranks into layers
 	#L = rk_to_layer(L,long_edges)
 	#K = rk_to_layer(K,long_edges)
+	print('L',L)
+	print('K',K)
+	print('edges',list(edges))
+	print()
 	swapped = len(L)>len(K)	
-	if swapped: L,K = K,L
+	if swapped: 
+		L,K = K,L
+		edges = [e[::-1] for e in edges]
 #	long_edges = [e for e in edges if type(e) is tuple]
-	pi = [e[0] for e in edges] if swapped else [e[1] for e in edges]
+#This line is wrong. Need to go over all covers and long edges and grab indices in the smaller of the two ranks (which is L regardless of \verb|swapped| because we swapped to make that happen)
+	pi = [i for i,j in sorted([(L.index(x),K.index(y)) for x,y in edges])]
 	del swapped
 	n = len(L)
 	q = 1
@@ -436,6 +447,7 @@ def cross_count_layer(L,K,edges):
 			bit>>=1
 			if not i&bit:
 				count += T[i^bit]
+	print('cross_count_layer returning',count)
 	return count
 
 def cross_reduction(P,L,K,agg=np.mean):
