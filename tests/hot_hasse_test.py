@@ -267,6 +267,9 @@ class TestSplayTree:
 				)
 			)
 class TestCrossReduction:
+	def make_Q():
+		#Example from ``Simple and Efficient Bilary Cross Counting''
+		return Poset(relations={'s0':['n0','n2','n3'],'s1':['n1'],'s2':['n1','n3','n5'],'s3':['n2','n4'],'s4':['n2','n5']}).reorder(perm=[f's{i}' for i in range(5)]+[f'n{i}' for i in range(6)])
 	def make_P():
 	    #3     7     11
 	    #|\    |    /|
@@ -312,10 +315,11 @@ class TestCrossReduction:
 				edges+=[(l,k) for k in K if type(k) is Vertex and k.id in l_covers]
 			else:
 				edges.append((l,l))
-		assert(cross_count_layer(rk_to_layer(P.ranks[1]+long_edges[1]),rk_to_layer(P.ranks[2]+long_edges[2]),edges) == 0)
+		Q=TestCrossReduction.make_Q()
+		assert(cross_count_layer(rk_to_layer(Q.ranks[0]),rk_to_layer(Q.ranks[1]),((Vertex(x),Vertex(y)) for x in Q.ranks[0] for y in Q.covers(True)[x]))==12)
 		B=Butterfly(2)
-		assert(cross_count_layer(rk_to_layer(B.ranks[1]),rk_to_layer(B.ranks[2]),((x,y) for x in B.ranks[1] for y in B.ranks[2]))==1)
-
+		assert(cross_count_layer(rk_to_layer(B.ranks[1]),rk_to_layer(B.ranks[2]),((Vertex(x),Vertex(y)) for x in B.ranks[1] for y in B.ranks[2]))==1)
+#
 		
 TestCrossReduction().test_cross_count_layer()
 

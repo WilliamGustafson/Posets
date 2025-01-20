@@ -322,8 +322,6 @@ def rk_to_layer(L):
 	long_edges=[x for x in L if type(x) is tuple]
 	ret = []
 	T = None
-	print('rk_to_layer()')
-	print('L',L)
 	for x in L:
 		if type(x) is int:
 				if T is not None:
@@ -336,13 +334,10 @@ def rk_to_layer(L):
 		
 		if type(x) is tuple:
 			if T is None:
-				print('Constructing new tree for',x)
 				T = SplayTree(data=Segment(p=x[0],q=x[1]))
 			else:
-				print('Adding segment to T',x)
 				T.add(Segment(p=x[0],q=x[1]))
 	if T is not None: ret.append(T.root())
-	print('T at end of rk_to_layer',T)
 	return ret
 
 def rk_to_next_layer(L, long_edges):
@@ -404,50 +399,47 @@ def cross_count_layer(L,K,edges):
 		#Now for the actual accumulation we proceed as follows. For each element $\pi_i$ we add one to
 		#the corresponding leaf $x$ and to each element $y>x$. Do this in order of the tree and as you
 		#go up increment a cross count by the value on the sibling for each left node encountered.
-
+		#
+		#Binary tree is stored as a list, in terms of the tree the entries go left to
+		#right across ranks:
+		#						0
+		#				1				2
+		#			3		4		5		6
+		#a child is left iff odd and the parent of i is (i//2)+(i%2)-1
+		#the children of i are 2*i+1 and 2*i+2
+		#the sibling of i is i+2*(i%2)-1
+		#leaves are the last q/2 (q-1 is the size of the tree) elements of the list
 	#turn ranks into layers
 	#L = rk_to_layer(L,long_edges)
 	#K = rk_to_layer(K,long_edges)
-	print('L',L)
-	print('K',K)
-	print('edges',list(edges))
-	print()
+	edges = list(edges)
 	swapped = len(L)>len(K)	
 	if swapped: 
 		L,K = K,L
 		edges = [e[::-1] for e in edges]
 #	long_edges = [e for e in edges if type(e) is tuple]
 #This line is wrong. Need to go over all covers and long edges and grab indices in the smaller of the two ranks (which is L regardless of \verb|swapped| because we swapped to make that happen)
-	pi = [i for i,j in sorted([(L.index(x),K.index(y)) for x,y in edges])]
+	pi = [j for i,j in sorted([(K.index(y),L.index(x)) for x,y in edges])]
 	del swapped
 	n = len(L)
+#	q is a power of 2, q-1 is the size of the binary tree, q/2 must be at least $\abs{L}$
+#	so that $L$ can inject into the leaves
+#	$2^{m-1}<\abs{L}\le 2^m = q$
 	q = 1
-	m = 1
-	while q<(n<<1):
+	while q<=(n<<1):
 		q<<=1
-		m+=1
 	T = [0 for _ in range(q-1)]
-	#T is a fully balanced binary tree, indices into tree can be viewed as binary sequences of length at most
-	#log_2(q)-1. A sequence x is encoded as number with bits 1...10x hence q-2 is the empty sequence and leaves
-	#are in the range 0 to q/2-1 (no top bit set).
 	count = 0 #cross count to be accumulated
 	for x in pi:
+		i=q//2+x-1 #index to node
 		#corresponding leaf is in same index, increment it
-		T[x] += 1 if type(L[x]) is Vertex else len(L[x])
+		increment = 1 if type(L[x]) is Vertex else len(L[x])
 		#go up tree and increment, also, for each left node add sibling's value to cross count
-		#here left node means highest bit is
-		pad = 1<<m #used to make the 1's before sequence
-		bit = 1<<(m-1) #used to make the zero bit
-		i = x #index to current node
-		while pad < q-2:
-			#get next index
-			i = (i^bit) | pad
-			#check for leftness
-			pad = pad | bit
-			bit>>=1
-			if not i&bit:
-				count += T[i^bit]
-	print('cross_count_layer returning',count)
+		while i>=0:
+			T[i]+=increment
+			if i%2==1: #if left add to count
+				count+=T[i+1]
+			i = i//2 + i%2 - 1 #get next node
 	return count
 
 def cross_reduction(P,L,K,agg=np.mean):
