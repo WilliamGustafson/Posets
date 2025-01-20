@@ -221,9 +221,10 @@ class SplayTree:
 		if this.r is not None: yield from next(this.r)
 
 	def __eq__(this,that):
+#		Assumes that==that.root() and compares this as a subtree to that
 		if not isinstance(that,SplayTree): return False
 		if len(this)!=len(that): return False
-		return all(x in that for x in this)		
+		return all(x in that.root() for x in this)
 
 	def __neq__(this,that):
 		return not this==that

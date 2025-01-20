@@ -91,8 +91,6 @@ class TestSplayTree:
 			)
 		)
 		t.search(10).rotate()
-		print(list(x.size for x in t_rot))
-		print(list(x.size for x in t))
 		assert(t_rot == t)
 
 	def test_rotate60(this):
@@ -245,6 +243,23 @@ class TestSplayTree:
 				)
 			)
 		assert(t.add(4).root() == s.search(4).splay().root())
+	
+	def test_contains(this):
+		s = SplayTree(
+			data=3,
+			l=SplayTree(
+				data=1,
+				r=SplayTree(data=2)
+				),
+			r=SplayTree(
+				data=5,
+				l=SplayTree(4)
+				)
+			)
+		T = s.search(4).splay().root()
+		assert(T.get(2).data == 2)
+		assert(T.root().get(1).data == 1)
+		assert(T.root().get(2).data == 2)
 
 	def test_join(this):
 		s = SplayTree(
@@ -319,7 +334,5 @@ class TestCrossReduction:
 		assert(cross_count_layer(rk_to_layer(Q.ranks[0]),rk_to_layer(Q.ranks[1]),((Vertex(x),Vertex(y)) for x in Q.ranks[0] for y in Q.covers(True)[x]))==12)
 		B=Butterfly(2)
 		assert(cross_count_layer(rk_to_layer(B.ranks[1]),rk_to_layer(B.ranks[2]),((Vertex(x),Vertex(y)) for x in B.ranks[1] for y in B.ranks[2]))==1)
-#
-		
-TestCrossReduction().test_cross_count_layer()
-
+	def test_cross_reduction(this):
+		pass
