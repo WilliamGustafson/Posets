@@ -1,5 +1,29 @@
 from posets import *
 import copy
+def dbug(vars):
+	done = None
+	command=[]
+	while done is None:
+		print('>>> ',end='')
+		command.append(input())
+		if command[-1][-1]=='\\': command[-1]=command[-1][:-1]
+		else:
+			try:
+				if len(command)==1:
+					if command[0] in ('quit','pass'):
+						done=command
+					else:
+						print('\n',eval(command[0],vars))
+				else:
+					exec('\n'.join(command),vars)
+			except Exception as e:
+				print(e)
+				print('Enter "please quit" to exit')
+			finally:
+				command=[]
+	if done=='quit':
+		exit()
+	return
 
 ##########################################
 #Notes and TODOS and Whatnot
@@ -15,7 +39,7 @@ import copy
 #change is that if p has a vertex to the left or to
 #the right but not both you merge p into the container
 #to its right or left resp. and if both adjacent elements
-#to p are vertices you put p into a SplayTree by itself.
+#to p are vertices you put p into a SplayTreeNode by itself.
 #I don't think any other changes are needed so that is what
 #I will do. I'm not going back and fixing all the notes about
 #alternating layers right now but that is TODO.
@@ -36,6 +60,70 @@ import copy
 ##########################################
 
 class SplayTree:
+	def __init__(this, node=None, data=None):
+		if data is not None:
+			if node is not None: raise ValueError('Only one of node or data can be provided')
+			this.node = SplayTreeNode(data=data)
+			return
+		#node is a node
+		if isinstance(node,SplayTreeNode):
+			this.node = node.root()
+			return
+		#node is an iterable
+		if hasattr(node,'__iter__') or hasattr(node,'__getitem__'):
+			d = next(iter(node))
+			this.node = SplayTreeNode(d)
+			for d in node:
+				this.node.add(d)
+			return
+		if node is not None:
+#			breakpoint()
+			raise ValueError('node must be an instance of SplayTreeNode, an iterable or None')
+		this.node = None
+	
+	def root(this):
+		return this.node.root()
+
+	def search(this,data):
+		return None if this.node is None else this.root().search()
+	
+	def get(this,data):
+		if this.node is None: return None
+		ret = this.root().get(data)
+		return ret
+	def add(this,data):
+		this.root().add(data)
+	
+	def join(this,that):
+		this.root().join(that.root())
+	
+	def split(this,data):
+		left,right = this.root().split(data)
+		return SplayTree(left),SplayTree(right)
+	
+	def remove(this,data):
+		return this.root().remove(data)
+	
+	def __iter__(this):
+		return this.root().__iter__()
+	
+	def __eq__(this,that):
+		return isinstance(that,SplayTree) and this.root() == that.root()
+	
+	def __neq__(this,that):
+		return not this==that
+	
+	def __repr__(this):
+		return f'SplayTree(node={this.root()})'
+	
+	def __len__(this):
+		return this.root().size
+	
+	def __contains__(this,key):
+		return key in this.root()
+
+
+class SplayTreeNode:
 
 	def __init__(this, data=None, l=None, r=None, p=None):
 		this.data = data
@@ -173,9 +261,10 @@ class SplayTree:
 
 	def add(this, data):
 		t = this.search(data)
-		if t.data == data: s = t
+		if t.data == data:
+			s = t
 		else:
-			s = SplayTree(data=data,p=t)
+			s = SplayTreeNode(data=data,p=t)
 			if data<t.data: t.l = s
 			if data>t.data: t.r = s
 			t.size+=1
@@ -222,7 +311,7 @@ class SplayTree:
 
 	def __eq__(this,that):
 #		Assumes that==that.root() and compares this as a subtree to that
-		if not isinstance(that,SplayTree): return False
+		if not isinstance(that,SplayTreeNode): return False
 		if len(this)!=len(that): return False
 		return all(x in that.root() for x in this)
 
@@ -230,7 +319,7 @@ class SplayTree:
 		return not this==that
 
 	def __repr__(this):
-		return 'SplayTree(data={}, l={}, r={})'.format(repr(this.data),this.l,this.r)
+		return 'SplayTreeNode(data={}, l={}, r={})'.format(repr(this.data),this.l,this.r)
 
 	def __len__(this):
 		return this.size
@@ -277,7 +366,7 @@ class Segment:
 	def __lt__(this,that):
 		return (this.p.id <= that.p.id and this.q.id < that.q.id) if type(that) is Segment else this.p.id < that.id if type(that) is Vertex else NotImplemented
 	def __gt__(this,that):
-		return (this.p.id >= that.p.id and this.q.id > that.q.id) if type(that) is Segment else this.p.id >= that.id if type(that) is Vertex else NotImplemented
+		return (this.p.id > that.p.id or (this.p.id >= that.p.id and this.q.id > that.q.id)) if type(that) is Segment else this.p.id >= that.id if type(that) is Vertex else NotImplemented
 	def __hash__(this):
 		return hash((this.p.id,this.q.id))
 
@@ -297,18 +386,21 @@ def cross_sort(P,ranks=None,agg=np.mean):
 	Q = P.dual()
 	ranks = copy.deepcopy(P.ranks) if ranks is None else copy.deepcopy(ranks)
 	long_edges = [[(x,y) for x in covers if P.rank(x,True)<i for y in covers[x] if P.rank(y,True)>i] for i in range(len(P.ranks))]
-	ranks = [rank_to_layer(rk,long_edges) for rk in ranks]
+	ranks = [rk_to_layer(rk,long_edges) for rk in ranks]
 	crosses = cross_count(P,ranks)
 
 	old_crosses = 0
 	while old_crosses != crosses:
 		old_crosses = crosses
+		crosses=0
 		#upwards pass
 		for L,K,i in zip(ranks[:-1],ranks[1:],range(1,len(L))):
-			ranks[i] = cross_reduction(P,L,K,agg)
+			ranks[i] = cross_reduction(P,split_verts(L,'q'),K,agg,True)
 		#downwards pass
 		for L,K,i in zip(ranks[-2::-1],ranks[-1:0:-1],range(len(L)-2,-1,-1)):
-			ranks[i] = cross_reduction(Q,K,L,agg)
+			M=split_verts(K,'p')
+			ranks[i] = cross_reduction(Q,M,L,agg,False)
+			crosses += cross_count_layer(M,L,edges_for_split_layer(Q,M,L))
 			#TODO I'm pretty sure on the downward pass notions of p and q swap
 			#maybe add a dual method to vertices and Segments or a dual flag in cross_reduction
 		crosses = cross_count(P,ranks)
@@ -316,17 +408,29 @@ def cross_sort(P,ranks=None,agg=np.mean):
 	P.reorder(perm=perm,indices=True)
 	return P
 
+def edges_for_split_layer(Q,M,L):
+	edges=[]
+	for m in M:
+		if type(m) is Vertex:
+			edges += [(m,l) for l in L if type(l) is Vertex and l.id in Q.covers(True)[m.id]]
+		else:
+			edges.append((m,m))
+	breakpoint()
+	return edges
+
 def rk_to_layer(L):
 	'''
-	Given a rank, meaning a list of indices to elements and pairs of indices indicating segments, return a layer (list of indices and \verb|SplayTree| instances replacing the runs of pairs/$p$-vertices.
+	Given a rank, meaning a list of indices to elements and pairs of indices indicating segments, return a layer (list of indices and \verb|SplayTreeNode| instances replacing the runs of pairs/$p$-vertices.
 	'''
+	print('rk_to_layer')
 	long_edges=[x for x in L if type(x) is tuple]
 	ret = []
 	T = None
 	for x in L:
 		if type(x) is int:
 				if T is not None:
-					ret.append(T.root())
+					print('appending tree:',T)
+					ret.append(T)
 					T = None
 				p = x in [e[0] for e in long_edges]
 				q = x in [e[1] for e in long_edges]
@@ -338,47 +442,70 @@ def rk_to_layer(L):
 				T = SplayTree(data=Segment(p=x[0],q=x[1]))
 			else:
 				T.add(Segment(p=x[0],q=x[1]))
-	if T is not None: ret.append(T.root())
-	return ret
-
-def rk_to_next_layer(L, long_edges):
-	'''
-	Given a rank, meaning a list of indices to elements and pairs of indices indicating segments, return a layer (list of indices and \verb|SplayTree| instances replacing the runs of pairs/$p$-vertices.
-	'''
-	ret = []
-	T = None
-	for x in L:
-		if type(x) is int:
-			p = x in [e[0] for e in long_edges]
-			if p:
-				S = Segment(*next(e for e in long_edges if e[0]==x))
-				if T is None:
-					T = SplayTree(data=S)
-				else:
-					T.add(S)
-			else: #not p
-				if T is not None:
-					ret.append(T)
-					T = None
-				q = x in [e[1] for e in long_edges]
-				S = Segment(*next(e for e in long_edges if e[1] == x)) if q else None
-				ret.append(Vertex(x,p=p,q=q,S=S))
-
-		if type(x) is tuple:
-			if T is None:
-				T = SplayTree(data=x)
-			else:
-				T.add(x)
+				print(f'Adding segment {x[0]} {x[1]}')
 	if T is not None: ret.append(T)
+	print('rk_to_layer returning')
 	return ret
 
-def cross_count(P,layers):
+#def rk_to_next_layer(L, long_edges):
+#	'''
+#	Given a rank, meaning a list of indices to elements and pairs of indices indicating segments, return a layer (list of indices and \verb|SplayTreeNode| instances replacing the runs of pairs/$p$-vertices.
+#	'''
+#	ret = []
+#	T = None
+#	for x in L:
+#		if type(x) is int:
+#			p = x in [e[0] for e in long_edges]
+#			if p:
+#				S = Segment(*next(e for e in long_edges if e[0]==x))
+#				if T is None:
+#					T = SplayTreeNode(data=S)
+#				else:
+#					T.add(S)
+#			else: #not p
+#				if T is not None:
+#					ret.append(T)
+#					T = None
+#				q = x in [e[1] for e in long_edges]
+#				S = Segment(*next(e for e in long_edges if e[1] == x)) if q else None
+#				ret.append(Vertex(x,p=p,q=q,S=S))
+#
+#		if type(x) is tuple:
+#			if T is None:
+#				T = SplayTreeNode(data=x)
+#			else:
+#				T.add(x)
+#	if T is not None: ret.append(T)
+#	return ret
+
+def cross_count(P):
 	'''
-	Given a poset and a list of layers returns the number of crossings in the Hasse diagram of the poset.
+	Given a poset returns the number of crossings in the Hasse diagram of the poset.
 
 	A layer encodes the vertices and segments along a rank and consists of \verb|Vertex| and \verb|Segment| objects.
 	'''
-	raise NotImplementedError
+	long_edges = [[] for _ in range(len(P.ranks))]
+	edges = [[] for _ in range(len(P.ranks))]
+	for i,J in P.covers(True).items():
+		for j in J:
+			#whether vertices or p or q or not doesn't matter here
+			if P.rank(j,True)==P.rank(i,True)+1:
+				edges[P.rank(i,True)].append((Vertex(i),Vertex(j)))
+			else:
+				for k in range(P.rank(i,True)+1,P.rank(j,True)):
+					edges[k].append((Segment(p=i,q=j),Segment(p=i,q=j)))
+					long_edges[k].append((i,j))
+	layers = [rk_to_layer(P.ranks[i]+long_edges[i]) for i in range(len(P.ranks))]
+	print('long_edges[1]',long_edges[1])
+	print('layers[1]',layers[1])
+	print()
+	print('long_edges[2]',long_edges[2])
+	print('layers',layers[2])
+#	input()
+	return sum(cross_count_layer(split_verts(L,'q'),K,edges_for_split_layer(P,split_verts(L,'q'),K)) for L,K,E in zip(layers[:-1],layers[1:],edges))
+def print_layer(x):
+	'''Print a layer in a readable way for debugging'''
+	print([y.id if type(y) is Vertex else [(z.p.id,z.q.id) for z in y] for y in x])
 def cross_count_layer(L,K,edges):
 	'''
 	Given two adjacent ranks of a poset count the number of crossings in the Hasse diagram between those two ranks.
@@ -413,6 +540,7 @@ def cross_count_layer(L,K,edges):
 	#turn ranks into layers
 	#L = rk_to_layer(L,long_edges)
 	#K = rk_to_layer(K,long_edges)
+	print('count_cross_layer')
 	edges = list(edges)
 	swapped = len(L)>len(K)	
 	if swapped: 
@@ -420,7 +548,10 @@ def cross_count_layer(L,K,edges):
 		edges = [e[::-1] for e in edges]
 #	long_edges = [e for e in edges if type(e) is tuple]
 #This line is wrong. Need to go over all covers and long edges and grab indices in the smaller of the two ranks (which is L regardless of \verb|swapped| because we swapped to make that happen)
-	pi = [j for i,j in sorted([(K.index(y),L.index(x)) for x,y in edges])]
+	print('L',L,'\n')
+	print('K',K,'\n')
+#	breakpoint()
+	pi = [j for i,j in sorted([(K.index(y if type(y) is SplayTree else y),L.index(x if type(x) is SplayTree else x)) for x,y in edges])]
 	del swapped
 	n = len(L)
 #	q is a power of 2, q-1 is the size of the binary tree, q/2 must be at least $\abs{L}$
@@ -441,9 +572,32 @@ def cross_count_layer(L,K,edges):
 			if i%2==1: #if left add to count
 				count+=T[i+1]
 			i = i//2 + i%2 - 1 #get next node
+	print('count_cross_layer returning')
 	return count
 
-def cross_reduction(P,L,K,agg=np.mean):
+def split_verts(L,prop):
+#TODO I don't think this is right...
+	new_L = []
+	T = None
+	for x in L:
+		if type(x) is Vertex and getattr(x,prop):
+			if T is None: T = SplayTree(x.S)
+			else: T.add(x.S)
+		elif type(x) is Vertex:
+			if T is not None: new_L.append(T)
+			new_L.append(x)
+		else:
+			if T is not None:
+				for y in x: T.add(y)
+			else:
+				for y in x:
+					if T is None: T=SplayTree(data=y)
+					else: T.add(data=y)
+	if T is not None: new_L.append(T)
+#	breakpoint()
+	return new_L
+
+def cross_reduction(P,L,K,agg=np.mean,upwards=True):
 	'''
 	Given two rank lists \verb|L| and \verb|K| computes a new
 	ordering for \verb|K| to reduce crossings.
@@ -456,23 +610,6 @@ def cross_reduction(P,L,K,agg=np.mean):
 	#then join the container with the next one and remove p.
 	#L = rk_to_next_layer(L) #L is now basically a hybrid of K as a layer and L as a layer (verts from L containers from K)
 	#K = rk_to_layer(K)
-
-	#for each p vertex in L replace with a segment and merge any adjacent containers
-	new_L = []
-	T = None
-	for x in L:
-		if type(x) is Vertex and x.p:
-			if T is None: T = SplayTree(x.S)
-			else: T.add(x)
-		elif type(x) is Vertex:
-			if T is not None: new_L.append(T)
-			new_L.append(x)
-		else:
-			if T is not None: T.add(x)
-			else: T = SplayTree(x)
-	if T is not None: new_L.append(T)
-	L = new_L
-
 
 #set position values for L:
 #		pos(v_{i_0}) = len(S_{i_0})

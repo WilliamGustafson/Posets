@@ -59,7 +59,7 @@ class TestSplayTree:
 
 	def test_iter(this):
 		t=T()
-		assert([x.data for x in t]==[10,15,20,30,40,50,60,70,80,90,100])
+		assert([x for x in t]==[10,15,20,30,40,50,60,70,80,90,100])
 
 	def test_rotate(this):
 		t=T()
@@ -335,4 +335,15 @@ class TestCrossReduction:
 		B=Butterfly(2)
 		assert(cross_count_layer(rk_to_layer(B.ranks[1]),rk_to_layer(B.ranks[2]),((Vertex(x),Vertex(y)) for x in B.ranks[1] for y in B.ranks[2]))==1)
 	def test_cross_reduction(this):
-		pass
+		B = Bruhat(3,weak=True).reorder([0,1,2,4,3,5],indices=True)
+	def test_cross_count(this):
+#		assert(1 == cross_count(Bruhat(3)))
+#		assert(0 == cross_count(Bruhat(3,weak=True)))
+#		assert(2 == cross_count(Boolean(3)))
+#		assert(2 == cross_count(Butterfly(3)))
+		P = TestCrossReduction.make_P()
+		P.incMat[0][7] = 1
+		P.incMat[8][7] = 1
+		P = Poset(incMat=P.incMat,elements=P.elements)
+		assert(2 == cross_count(P))
+TestCrossReduction().test_cross_count()
