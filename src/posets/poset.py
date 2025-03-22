@@ -189,21 +189,27 @@ class Poset:
 				for r in range(len(ranks)-1):
 					for i in ranks[r]:
 						for j in ranks[r+1]:
-							if Less(i, j):
-								this.incMat[i][j]==1
-								this.incMat[i][j]=-1
-							elif Less(j, i):
-								this.incMat[i][j]=-1
-								this.incMat[j][i]=1
+							Less_ij = Less(i,j)
+							if Less_ij:
+								this.incMat[i][j] = int(Less_ij) if (isinstance(Less_ij,bool) or isinstance(Less_ij,np.bool)) else Less_ij
+								this.incMat[j][i] = -int(Less_ij) if (isinstance(Less_ij,bool) or isinstance(Less_ij,np.bool)) else -Less_ij
+							else:
+								Less_ji = Less(j,i)
+								if Less_ji:
+									this.incMat[i][j] = -int(Less_ji) if (isinstance(Less_ji,bool) or isinstance(Less_ji,np.bool)) else -Less_ji
+									this.incMat[j][i] = int(Less_ji) if (isinstance(Less_ji,bool) or isinstance(Less_ji,np.bool)) else Less_ji
 			else: #ranks==None
 				for i in range(len(elements)):
 					for j in range(i+1,len(elements)):
-						if Less(i,j):
-							this.incMat[i][j] = 1
-							this.incMat[j][i] = -1
-						elif Less(j,i):
-							this.incMat[i][j] = -1
-							this.incMat[j][i] = 1
+						Less_ij = Less(i,j)
+						if Less_ij:
+							this.incMat[i][j] = int(Less_ij)
+							this.incMat[j][i] = -int(Less_ij)
+						else:
+							Less_ji = Less(j,i)
+							if Less_ji:
+								this.incMat[i][j] = -int(Less_ji)
+								this.incMat[j][i] = int(Less_ji)
 		elif incMat != None:
 			this.incMat = incMat
 
@@ -230,29 +236,34 @@ class Poset:
 	def transClose(M):
 		r'''
 		@section@Miscellaneous@
-		Given a matrix with entries $1,-1,0$ encoding a relation computes the transitive closure.
+		Given a matrix encoding a (possibly weighted) relation, via $x~y$ when the $x,y$ entry is positive and $y~x$ when negative, computes the transitive closure (any induced relations are weighted 1).
 		'''
+		print('transClose')
+		print(M)
 		for i in range(0,len(M)):
 			#uoi for upper order ideal
-			uoi = [x for x in range(0,len(M)) if M[i][x] == 1]
+			uoi = [x for x in range(0,len(M)) if M[i][x] > 0 or M[x][i] < 0]
 			while True:
 				next = [x for x in uoi]
 				for x in uoi:
 					for y in range(0,len(M)):
-						if M[x][y] == 1 and y not in next: next.append(y)
+						if (M[x][y] > 0 or M[y][x]<0) and y not in next: next.append(y)
 				if uoi == next: break
 				uoi = next
 
 			for x in uoi:
-				M[i][x] = 1
-				M[x][i] = -1
+				if M[i][x] <= 0: M[i][x] = 1
+				if M[x][i] >= 0: M[x][i] = -1
+		print('returning:')
+		print(M)
 
 	def __str__(this):
 		r'''
 		@section@Miscellaneous@
 		Returns a nicely formatted string listing the zeta matrix, the ranks list and the elements of the poset.
 		'''
-		ret = ['zeta = ['] + [' '.join([(' ' if x>=0 else '')+str(x) for x in z]) for z in this.zeta()]+[']']
+		space_len = max(len(str(entry)) for row in this.incMat for entry in row)
+		ret = ['zeta = [']+[', '.join(('{x:'+str(space_len)+'}').format(x=x) for x in z) for z in this.zeta()]+[']']
 		if hasattr(this, 'name'):
 			ret = [this.name]+ret
 		ret.append('ranks = '+str(this.ranks))
@@ -483,16 +494,18 @@ class Poset:
 		@section@Operations@
 		Computes the cartesian product.
 		'''
-		elements = [(p,q) for p in this.elements for q in that.elements]
+		elements = [(p,q) for p,q in itertools.product(this.elements,that.elements)]# in this.elements for q in that.elements]
 		ranks = [[] for i in range(len(this.ranks)+len(that.ranks)-1)]
 		for i in range(len(this.elements)):
 			for j in range(len(that.elements)):
 				ranks[this.rank(i,True)+that.rank(j,True)].append(i*len(that.elements)+j)
 
-		def less(x,y):
-			return x!=y and this.lesseq(x[0],y[0]) and that.lesseq(x[1],y[1])
+		thiszeta = this.zeta()
+		thatzeta = that.zeta()
+		incMat = [[thiszeta[i][j] * thatzeta[k][l] for j,l in itertools.product(range(len(this)),range(len(that)))] for i,k in itertools.product(range(len(this)),range(len(that)))]
 
-		return Poset(elements=elements, ranks=ranks, less=less)
+		print('product incMat\n',incMat)
+		return Poset(elements=elements, ranks=ranks, incMat=incMat)
 
 	def diamondProduct(this, that):
 		r'''
@@ -651,7 +664,7 @@ class Poset:
 		@section@Subposet Selection@
 		Returns a list of the maximal elements of the poset.
 		'''
-		ret_indices = [i for i in range(len(this.incMat)) if 1 not in this.incMat[i]]
+		ret_indices = [i for i in range(len(this.incMat)) if all(m<=0 for m in this.incMat[i])]
 		return ret_indices if indices else [this.elements[i] for i in ret_indices]
 
 	def complSubposet(this, S, indices=False):
@@ -687,7 +700,7 @@ class Poset:
 			i = this.elements.index(i)
 			j = this.elements.index(j)
 		element_indices = [k for k in range(len(this.elements)) if k in (i,j) or \
-		(this.incMat[i][k] == 1 and 1 == this.incMat[k][j]) ]
+		(this.incMat[i][k] > 0 and 0 < this.incMat[k][j]) ]
 
 		return this.subposet(element_indices, indices=True)
 
@@ -755,7 +768,7 @@ class Poset:
 			i = this.elements.index(i)
 			j = this.elements.index(j)
 
-		return this.incMat[i][j]==1
+		return this.incMat[i][j]>0
 
 	def lesseq(this, i, j, indices=False):
 		r'''
@@ -782,13 +795,13 @@ class Poset:
 		'''
 		def _join(i,j,M):
 			if i==j: return i
-			if M[i][j] == -1: return i
-			if M[i][j] == 1: return j
-			m = [x for x in range(0,len(M)) if M[i][x] == 1 and M[j][x] == 1]
+			if M[i][j] < 0: return i
+			if M[i][j] > 0: return j
+			m = [x for x in range(0,len(M)) if M[i][x] > 0 and M[j][x] > 0]
 			for x in range(0,len(m)):
 				is_join = True
 				for y in range(0,len(m)):
-					if x!=y and M[m[x]][m[y]] != 1:
+					if x!=y and M[m[x]][m[y]] <= 0:
 						is_join = False
 						break
 				if is_join: return m[x]
@@ -830,7 +843,7 @@ class Poset:
 			if i == j: return 1
 			ret = 1
 			for k in range(len(this)):
-				if this.incMat[i][k]==1 and this.incMat[k][j]==1:
+				if this.incMat[i][k]>0 and this.incMat[k][j]>0:
 					ret += calc_mobius(this, i,k)
 			return -ret
 
@@ -857,31 +870,34 @@ class Poset:
 	##############
 	#Invariants
 	##############
-	@cached_method
+
 	def fVector(this):
 		r'''
 		@section@Invariants@
-		Returns flag $f$-vector as a dictionary with keys $S\subseteq[n]$.
+		Returns flag $\overline{f}$-vector as a dictionary with keys $S\subseteq[n]$.
 
-		This method is intended for use with a poset that has a unique minimum and maximum. On a general poset this counts chains that contain the first
+		This method is intended for use with a poset, possibly quasi-graded, that has a unique minimum and maximum. On a general poset this counts chains that contain the first
 		minimal element, \verb|this[this.ranks[0][0]]| and ignores the
-		final rank.
+		final rank. For a quasigraded poset, the rank function $\rho$ must be the same as the classical i.e. $\text{rk}$.
+		And \verb|this.incMat| should encode the $\overline{\zeta}$ function.
 		'''
 		n = len(this.ranks)-2
-		def fVectorCalc(ranks,S,M, i, count):
+		def fVectorCalc(ranks,S,M, i, count, weight):
 			newCount = count
-			if S == tuple(): return 1
+			if S == tuple():
+				return weight * M[i][ranks[-1][0]]
 			for j in ranks[S[0]]:
-				if M[i][j] == 1:
-					newCount += fVectorCalc(ranks, S[1:], M, j, count)
+				if M[i][j] > 0:
+					newCount += fVectorCalc(ranks, S[1:], M, j, count, weight*M[i][j])
 			return newCount
 		f = {tuple():1}
 
 		if n<=0: return f
 
 		for S in subsets(range(1,n+1)):
-			f[tuple(S)]=fVectorCalc(this.ranks,S,this.incMat,this.ranks[0][0],0)
+			f[tuple(S)]=fVectorCalc(this.ranks,S,this.incMat,this.ranks[0][0],0,1)
 		return f
+
 	@cached_method
 	def hVector(this):
 		r'''
@@ -929,12 +945,12 @@ class Poset:
 					yield itertools.chain(itertools.repeat(X[i],1), S)
 			yield tuple()
 
-		def fVectorCalc(ranks,S,M,i,count,f,truncated_S):
+		def fVectorCalc(ranks,S,M,i,count,f,truncated_S,weight=1):
 			newCount = count
-			if len(S)==0: return 1
+			if len(S)==0: return weight*M[ranks[0][0]][i]
 			for j in ranks[S[-1]]:
-				if M[i][j] == -1:
-					newCount += fVectorCalc(ranks, S[:-1], M, j, count, f,truncated_S+(S[-1],))
+				if M[i][j] < 0:
+					newCount += fVectorCalc(ranks, S[:-1], M, j, count, f,truncated_S+(S[-1],),weight*M[j][i])
 			return newCount
 		fVector = {}
 		for S in sparseSubsets(tuple(range(1,n+1))):
@@ -1046,7 +1062,7 @@ class Poset:
 		@section@Invariants@
 		Returns the zeta matrix, the matrix whose $i,j$ entry is $1$ if the Boolean \begin{verbatim}this.lesseq(i,j,indices=True)\end{verbatim} is true and $0$ otherwise.
 		'''
-		return [[1 if i==j or this.incMat[i][j]==1 else 0 for j in range(len(this.incMat))] for i in range(len(this.incMat))]
+		return [[1 if i==j else max(this.incMat[i][j],0) for j in range(len(this.incMat))] for i in range(len(this.incMat))]
 
 	@cached_method
 	def bettiNumbers(this):
@@ -1441,9 +1457,9 @@ class Poset:
 		Returns a list of all pairs $(e,f)$ where $e\le f$.
 		'''
 		if indices:
-			return [(i,j) for j in range(len(this.elements)) for i in range(len(this.elements)) if this.incMat[i][j] == 1]
+			return [(i,j) for j in range(len(this.elements)) for i in range(len(this.elements)) if this.incMat[i][j] > 0] 
 
-		return [(this.elements[i],this.elements[j]) for j in range(len(this.elements)) for i in range(len(this.elements)) if this.incMat[i][j]==1]
+		return [(this.elements[i],this.elements[j]) for j in range(len(this.elements)) for i in range(len(this.elements)) if this.incMat[i][j] > 0]
 
 	def relabel(this, elements=None):
 		r'''
@@ -1528,10 +1544,10 @@ class Poset:
 		preranks = {} #keys are indices values are ranks
 		while len(left)>0:
 			for l in left:
-				loi = [i for i in range(len(incMat)) if incMat[i][l]==1]
-				if all([i in preranks.keys() for i in loi]): break
-			preranks[l] = 1+max([-1]+[preranks[i] for i in loi])
-			left.remove(l)
+				loi = [i for i in range(len(incMat)) if incMat[i][l]>0]
+				if all([i in preranks.keys() for i in loi]): 
+					preranks[l] = 1+max([-1]+[preranks[i] for i in loi])
+					left.remove(l)
 		return [[j for j in range(len(incMat)) if preranks[j]==i] for i in range(1+max(preranks.values()))]
 	def isoClass(this):
 		r'''
@@ -1575,7 +1591,7 @@ class PosetIsoClass(Poset):
 		X=set()
 		for r in range(len(this.ranks)-1):
 			for p in this.ranks[r]:
-				X.add((r,len([q for q in this.ranks[r+1] if this.incMat[p][q]==1])))
+				X.add((r,len([q for q in this.ranks[r+1] if this.incMat[p][q]>0])))
 		return hash(frozenset(X))
 	def __str__(this):
 		return "Isomorphism class of "+Poset.__str__(this)
