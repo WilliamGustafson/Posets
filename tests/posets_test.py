@@ -626,6 +626,10 @@ class TestPolynomial:
 		assert(this.p*this.q==Polynomial({'cccc':1,'ccd':2,'dcc':1,'dd':2}))
 	def test_pow(this):
 		assert(this.p**2==Polynomial({'cccc':1,'ccd':1,'dcc':1,'dd':1}))
+	
+	def test_eq(this):
+		assert(Polynomial({'ab':0,'ba':0})==Polynomial())
+		assert(Polynomial({'ab':1,'ba':0,'bb':-1})==Polynomial({'ab':1,'bb':-1,'d':0}))
 ##########################################
 #Misc
 ##########################################

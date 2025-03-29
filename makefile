@@ -11,7 +11,7 @@ set_version :
 	rpl -q 'version = ".*"' "version = "'"'"$(VERSION)"'"' pyproject.toml
 
 test :
-	cd tests; pytest posets_test.py -v
+	cd tests; pytest posets_test.py -vvv
 
 coverage : tests/htmlcov/index.html
 
