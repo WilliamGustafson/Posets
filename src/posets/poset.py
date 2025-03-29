@@ -232,6 +232,7 @@ class Poset:
 		this.name = name
 		if hasse_class == None: hasse_class = HasseDiagram
 		this.hasseDiagram = hasse_class(this, **kwargs)
+	
 
 	def transClose(M):
 		r'''
@@ -1562,6 +1563,75 @@ class Poset:
 ##########################################
 #End Poset Class
 ##########################################
+##############
+#IncAlgElem class
+##############
+class IncAlgElem:
+	r'''
+	@is_section@
+	A class encoding an element of the incidence algebra of a poset.
+
+	This class is mainly provided for the zeta element of a poset, but
+	is essentially just a triangular array.
+
+	Constructor arguments:
+	\begin{itemize}
+		\item[]{\verb|data| -- An iterable specifying the entries in the upper diagonal; may be either a flat list or an iterable of iterables.}
+		\item[]{\verb|rows| -- Number of rows of the data, must be provided if the data is in flat form.}
+		\item[]{\verb|flat| -- Whether the data is in flat form or not.}
+		\item[]{\verb|square| -- Whether the data is a full $n\times n$ square or only the upper triangular entries (including the diagonal)}
+		\end{itemize}
+	'''
+	def __init__(this, data, size=0, flat=False, square=False):
+		if flat:
+			assert(size!=0)
+			this.size = size
+			this.data = [x for x in it]
+		else:
+			this.data = []
+			data_it = iter(data)
+			it = next(data_it)
+			for i,x in enumerate(it): this.data[i].append(x)
+			this.size = i
+			this.data += [0]*((this.size *(this.size-1))//2)
+
+			for y in data_it:
+				col = 0
+				for x in y
+					col+=1
+					i+=1
+					this.data[i] = x
+				assert(col<=this.size)
+	def __getitem__(this, x):
+		r'''
+		Zero based indexing \verb|(i,j)| gives the element in row $i$ and column $j$.
+		'''
+		if isinstance(x,int): return this.data[x]
+		if isinstance(x,tuple): return this.data[n*(x[0]-1)-utils.triangle_num(x[0])+x[1]]
+
+	def make_zeta(relations, elements):
+		r'''
+		@section@Miscellaneous@
+		Given a dictionary of relations and the list of elements returns the zeta function.
+		'''
+		col = 0
+		zeta = [0 for _ in range(utils.triangle_num(len(elements)))]
+		while len(relations)>0:
+			for e in elements:
+				if e not in relations or len(relations[e])==0:
+					for i in range(col):
+					for i,x in enumerate(elements[:col]):
+						if e in relations[x]:
+							relations[x].remove(e)
+							if len(relations[x])==0: del relations[x]
+							zeta[i][col] = 1
+						else:
+							zeta[i][col] = 0
+					zeta[col][col] = 1
+			col +=1	
+##############
+#End IncAlgElem class
+##############
 ##############
 #Poset Iso Class
 ##############
