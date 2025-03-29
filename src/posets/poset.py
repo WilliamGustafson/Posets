@@ -995,7 +995,7 @@ class Poset:
 
 		return Polynomial(ab)
 
-	@cached_method()
+	@cached_method
 	def cdIndex(this):
 		r'''
 		@section@Invariants@

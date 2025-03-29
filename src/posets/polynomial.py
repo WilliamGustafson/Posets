@@ -251,4 +251,4 @@ class Polynomial:
 		return 'Polynomial('+repr(this.data)+')'
 
 	def __eq__(this,that):
-		return isinstance(that,type(this)) and this.data == that.data
+		return isinstance(that,type(this)) and this.strip().data == that.strip().data
