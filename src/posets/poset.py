@@ -455,7 +455,7 @@ class Poset:
 		by \verb|element_union|.
 		'''
 		elements = Poset.element_union(this.elements, that.elements)
-		zeta = [z+[0]*len(that.elements) for z in this.zeta] + [[0]*len(this.elements)+z for z in that.zeta]
+		zeta = [this.zeta[i]+[0]*len(that.elements) for i in range(this.zeta.size)] + [[0]*len(that.elements)] + [that.zeta[i] for i in range(that.zeta.size)]
 
 		that_ranks = [[r+len(this.elements) for r in rk] for rk in that.ranks]
 		if len(this.ranks)>len(that_ranks):
@@ -1560,16 +1560,18 @@ class Poset:
 		@section@Miscellaneous@
 		Used by the constructor to compute the ranks list for a poset when it isn't provided.
 		'''
+		#TODO: can't tell difference between emtpy and singleton posets via zeta
+		#everything got dualed, make coranks then reverse
 		if zeta.size==0: return []
-		left = list(range(zeta.size))
+		left = list(range(zeta.size+1))
 		preranks = {} #keys are indices values are ranks
 		while len(left)>0:
 			for l in left:
-				loi = [i for i in range(l+1,zeta.size) if zeta[l,i]!=0]
+				loi = [i for i in range(l+1,zeta.size+1) if zeta[l,i]!=0]
 				if all([i in preranks.keys() for i in loi]): 
 					preranks[l] = 1+max([-1]+[preranks[i] for i in loi])
 					left.remove(l)
-		return [[j for j in range(zeta.size) if preranks[j]==i] for i in range(1+max(preranks.values()))]
+		return [[j for j in range(zeta.size+1) if preranks[j]==i] for i in range(1+max(preranks.values()))][::-1]
 	def isoClass(this):
 		r'''
 		@section@Miscellaneous@
