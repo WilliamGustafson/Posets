@@ -177,6 +177,7 @@ class Poset:
 					for j,f in enumerate(elements):
 						if Less(e,i,f,j): relations_i.append(j)
 					if len(relations_i)>0: relations[i] = relations_i
+			elements = list(elements)
 			this.zeta,new_order = Poset.zeta_from_relations(relations,elements)
 			this.elements = [elements[i] for i in new_order]
 			if ranks is not None:
@@ -271,9 +272,10 @@ class Poset:
 		Returns \verb|True| when \verb|that| is a \verb|Poset| representing the same poset as \verb|this| and \verb|False| otherwise.
 		'''
 		if not isinstance(that,Poset): return False
-		if set(this.elements)!=set(that.elements): return False
-		inds = [that.elements.index(this[i]) for i in range(len(this))]
-		return all(this.zeta[i, j] == that.zeta[inds[i], inds[j]] for i in range(len(this)) for j in range(i+1,len(this)) )
+		if any(e not in that.elements for e in this) or any(f not in this.elements for f in that): return False
+		inds = [that.elements.index(e) for e in this.elements]
+
+		return all(this.zeta[i, j] == that.zeta[tuple(sorted((inds[i], inds[j])))] for i in range(len(this)-1) for j in range(i+1,len(this)-1) )
 
 	def __iter__(this):
 		r'''
