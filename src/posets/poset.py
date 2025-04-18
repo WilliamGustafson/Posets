@@ -240,7 +240,6 @@ class Poset:
 		@section@Miscellaneous@
 		Returns a nicely formatted string listing the zeta matrix, the ranks list and the elements of the poset.
 		'''
-		space_len = max(len(str(entry)) for row in this.zeta for entry in row)
 		ret = ['zeta = ']+[str(this.zeta)]
 		if hasattr(this, 'name'):
 			ret = [this.name]+ret

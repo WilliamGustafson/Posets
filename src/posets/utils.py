@@ -108,14 +108,17 @@ class TriangularArray:
 		r'''
 		Zero based indexing \verb|(i,j)| gives the element in row $i$ and column $j$.
 		'''
-		if isinstance(x,int): return this.data[1 + this.size*x - triangle_num(x) : this.size*(x+1) - x - triangle_num(x)+1]
-		if isinstance(x,tuple): return this.data[x[1] - x[0] + this.size*x[0] - triangle_num(x[0])]
+		if isinstance(x,int): return this.data[this.size*x - triangle_num(x) : this.size*(x+1) - x - triangle_num(x)]
+		if isinstance(x,tuple): return this.data[x[1] - x[0] - 1 + this.size*x[0] - triangle_num(x[0])]
 		#if isinstance(x,tuple): return this.data[this.size*(x[0]-1)-triangle_num(x[0]+1)+x[1]-1]
 
 	def __str__(this):
 		space_len = max(len(str(entry)) for entry in this)
-
-		return ''.join(' '.join(('{x:'+str(space_len)+'}').format(x=x)+('\n' if t==this.size-1 else '') for x,t in zip(this,TriangleRange(this.size))))
+		ret = []
+		for i in range(this.size):
+			row = this[i]
+			ret.append(' '*i*(space_len+1)+ ' '.join(('{x:'+str(space_len)+'}').format(x=x) for x in row))
+		return '\n'.join(ret)
 	def __iter__(this):
 		return iter(this.data)
 	
