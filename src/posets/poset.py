@@ -305,7 +305,7 @@ class Poset:
 		By default the label is 0 and if 0 is already an element the default label is
 		the first positive integer that is not an element.
 		'''
-		zeta = TriangularArray([1 for p in this.elements]+this.zeta.data)
+		zeta = TriangularArray([1 for p in this.elements]+this.zeta.data,size=this.zeta.size+1)
 		#zeta = [[0]+[1 for p in this.elements]]+[[-1]+this.zeta[i] for i in range(len(this.elements))]
 		if label==None:
 			label=0
@@ -321,7 +321,6 @@ class Poset:
 			P.cache['isGorenstein()'] = False
 		if 'isEulerian()' in this.cache and this.cache['isEulerian()']:
 			P.cache['isEulerian()'] = False
-		breakpoint()
 		return P
 
 	def adjoin_onehat(this, label=None):
@@ -331,7 +330,23 @@ class Poset:
 
 		The label default is the same as \verb|Poset.adjoin_zerohat()|
 		'''
-		return this.dual().adjoin_zerohat(label).dual()
+		zeta = TriangularArray(itertools.chain(*(this.zeta[i]+[1] for i in range(this.zeta.size)),[1]),size=this.zeta.size+1)
+		if label==None:
+			label=0
+			while label in this.elements:
+				label += 1
+		assert(not label in this.elements)
+		ranks = [[r for r in row] for row in this.ranks] + [[len(this.elements)]]
+		elements=this.elements+[label]
+		P = Poset(zeta = zeta, elements = elements, ranks = ranks, trans_close = False)
+		if 'isRanked()' in this.cache:
+			P.cache['isRanked()'] = this.cache['isRanked()']
+		if 'isGorenstein()' in this.cache and this.cache['isGorenstein()']:
+			P.cache['isGorenstein()'] = False
+		if 'isEulerian()' in this.cache and this.cache['isEulerian()']:
+			P.cache['isEulerian()'] = False
+		return P
+#		return this.dual().adjoin_zerohat(label).dual()
 
 	def identify(this, X, indices=False):
 		r'''
@@ -391,7 +406,6 @@ class Poset:
 			P.cache['isEulerian()'] = this.cache['isEulerian()']
 		if 'isGorenstein()' in this.cache:
 			P.cache['isGorenstein()'] = this.cache['isGorenstein()']
-		breakpoint()
 		return P
 
 	def element_union(E, F):
@@ -1518,10 +1532,7 @@ class Poset:
 		preranks = {} #keys are indices values are ranks
 		while len(left)>0:
 			for l in left:
-				try:
-					loi = [i for i in range(l+1,zeta.size) if zeta[l,i]]
-				except:
-					breakpoint()
+				loi = [i for i in range(l+1,zeta.size) if zeta[l,i]!=0]
 				if all([i in preranks.keys() for i in loi]): 
 					preranks[l] = 1+max([-1]+[preranks[i] for i in loi])
 					left.remove(l)

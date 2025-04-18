@@ -104,6 +104,7 @@ class TriangularArray:
 		else:
 			this.size = len(data) if size==0 else size
 			this.data = list(itertools.chain(*data))
+		assert(triangle_num(this.size+1) == len(this.data))
 	def __getitem__(this, x):
 		r'''
 		Zero based indexing \verb|(i,j)| gives the element in row $i$ and column $j$.
@@ -113,6 +114,7 @@ class TriangularArray:
 		#if isinstance(x,tuple): return this.data[this.size*(x[0]-1)-triangle_num(x[0]+1)+x[1]-1]
 
 	def __str__(this):
+		if this.size==0: return ''
 		space_len = max(len(str(entry)) for entry in this)
 		ret = []
 		for i in range(this.size):
