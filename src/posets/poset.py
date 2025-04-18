@@ -144,7 +144,7 @@ class Poset:
 		elif relations is not None:
 			if isinstance(relations,dict):
 				this.elements = list(set(itertools.chain(*relations.values(),relations.keys()))) if elements is None else elements
-				this.zeta,this.elements = Poset.zeta_from_relations(relations,this.elements)
+#				this.zeta,this.elements = Poset.zeta_from_relations(relations,this.elements)
 			else:
 				elems = set() if elements is None else MockSet()
 				dict_relations = {}
@@ -153,7 +153,11 @@ class Poset:
 					dict_relations[x].append(y)
 					elems.add(x)
 					elems.add(y)
-				this.zeta,this.elements = Poset.zeta_from_relations(dict_relations, elems if elements is None else elements)
+				relations = dict_relations
+				this.elements = elems if elements is None else elements
+			if not indices:
+				relations = {i : [this.elements.index(f) for f in relations[e]] for i,e in enumerate(relations)}
+			this.zeta,this.elements = Poset.zeta_from_relations(relations, this.elements)
 		elif less is not None:
 			assert elements is not None,'`elements` must be provided if specifying a poset via `less`'
 			relations = {}
@@ -178,6 +182,10 @@ class Poset:
 						if Less(e,i,f,j): relations_i.append(j)
 					if len(relations_i)>0: relations[i] = relations_i
 			elements = list(elements)
+			if not indices:
+				relations = {i : [elements.index(f) for f in relations[e]] for i,e in enumerate(elements)}
+				breakpoint()
+			breakpoint()
 			this.zeta,new_order = Poset.zeta_from_relations(relations,elements)
 			this.elements = [elements[i] for i in new_order]
 			if ranks is not None:
@@ -210,8 +218,13 @@ class Poset:
 		linear_elements = []
 		#find linear extension
 		#TODO preserve order within ranks (for plotting)
+		print('elements',elements)
+		print('relations',relations)
 		while len(E)>0:
 			minimal = E.difference(itertools.chain(*(relations[e] for e in E.intersection(relations))))
+			print('minimal',minimal)
+			print('E',E)
+			input()
 			linear_elements.extend(minimal)
 			E = E.difference(minimal)
 		zeta = []
