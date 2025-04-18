@@ -180,6 +180,7 @@ class Poset:
 				for i,e in enumerate(elements):
 					relations_i = []
 					for j,f in enumerate(elements):
+						if i==j: continue
 						if Less(e,i,f,j): relations_i.append(j)
 					if len(relations_i)>0: relations[i] = relations_i
 			elements = list(elements)
@@ -1521,6 +1522,8 @@ class Poset:
 
 		Raises \verb|ValueError| if \verb|key| is not a linear extension of the poset.
 		'''
+		#TODO find nearest linear extension
+		return this
 		if indices:
 			perm = sorted(this.elements, key = lambda p: key(this.elements.index(p)) )
 		else:
