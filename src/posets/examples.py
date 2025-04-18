@@ -181,7 +181,7 @@ def Boolean(n):
 		X = None
 	P = Poset()
 	P.elements = list(range(1<<n))
-	P.zeta = TriangularArray([[1 if i&j==i else 0 for j in P.elements] for i in P.elements],square=True)
+	P.zeta = TriangularArray([1 if i&j==i else 0 for i in range(1<<n) for j in range(i+1,1<<n)],size=len(P.elements)-1)
 	P.ranks = [[] for _ in range(n+1)]
 	for p in P.elements:
 		P.ranks[len([c for c in bin(p) if c=='1'])].append(p) #p==P.elements.index(p)
