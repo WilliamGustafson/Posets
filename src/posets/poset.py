@@ -150,7 +150,7 @@ class Poset:
 				dict_relations = {}
 				for x,y in relations:
 					if x not in dict_relations: dict_relations[x] = []
-					dict_relations.append(y)
+					dict_relations[x].append(y)
 					elems.add(x)
 					elems.add(y)
 				this.zeta,this.elements = Poset.zeta_from_relations(dict_relations, elems if elements is None else elements)
@@ -188,7 +188,7 @@ class Poset:
 				this.zeta = TriangularArray(data=[],size=0)
 				this.elements = []
 			else:
-				this.zeta = TriangularArray((0 for i in range(len(elements)) for _ in range(i+1,len(elements))), size=len(elements))
+				this.zeta = TriangularArray((0 for i in range(len(elements)) for _ in range(i+1,len(elements))), size=len(elements)-1)
 
 		if not hasattr(this, 'elements'):
 			this.elements = list(range(this.zeta.size)) if elements is None else elements
