@@ -59,3 +59,27 @@ def triangle_num(n):
 	r'''@no_doc@'''
 	return n*(n-1) // 2
 
+class TriangleRange:
+	r'''@no_doc@
+	Iterator for a triangle of numbers $n,n-1,\dots,1,n-1,\dots,1,n-2,\dots,1,\dots,2,1,1$.
+	'''
+	def __init__(this, n):
+		this.n = n-1
+		this.row = 0
+		this.col = -1
+	
+	def __iter__(this):
+		return this
+	
+	def __next__(this):
+		if this.col == this.n-this.row:
+			if this.row == this.n: raise StopIteration
+			this.row+= 1
+			this.col = 0
+		else:
+			this.col+=1
+		return this.col
+
+class MockSet:
+	def add(this):
+		pass

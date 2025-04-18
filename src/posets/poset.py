@@ -31,7 +31,7 @@ class Poset:
 	A class representing a finite partially ordered set.
 
 	Posets are encoded by a list \verb|elements|, an incidence
-	matrix \verb|incMat| describing the relations and a
+	matrix \verb|zeta| describing the relations and a
 	list \verb|ranks| that specifies the length of each element.
 	This last attribute is not strictly needed to encode a poset
 	but many calculations use the length of elements so it is
@@ -40,7 +40,7 @@ class Poset:
 	of the \verb|HasseDiagram| class used for plotting the poset.
 
 	To construct a poset you must pass at least either an incident
-	matrix \verb|incMat|, a function \verb|less| or a list/dictionary
+	matrix \verb|zeta|, a function \verb|less| or a list/dictionary
 	\verb|relations| to describe
 	the relations. Additionally you may wish to specify the
 	elements as a list called \verb|elements| or by using
@@ -49,13 +49,13 @@ class Poset:
 
 	\begin{itemize}
 		\item[]{
-		\verb|incMat| -- A matrix whose $i,j$ entry is 1 if the $i$th element is strictly less
+		\verb|zeta| -- A matrix whose $i,j$ entry is 1 if the $i$th element is strictly less
 			than the $j$th element.
 		}
 		\item[]{
 		\verb|elements| -- A list specifying the elements of the poset.
 
-			The default value is \verb|[0,...,len(incMat)-1]|
+			The default value is \verb|[0,...,len(zeta)-1]|
 		}
 		\item[]{
 		\verb|ranks| -- A list of lists. The $i$th list is a list of indices of element of
@@ -67,11 +67,11 @@ class Poset:
 		\item[]{
 		\verb|relations| -- Either a list of pairs $(x,y)$ such that $x<y$ or a dictionary
 			whose values are lists of elements greater than the associated key.
-			This is used to construct incMat if it is not provided.
+			This is used to construct zeta if it is not provided.
 		}
 		\item[]{
 		\verb|less| -- A function that given two elements $p,q$ returns \verb|True| when
-			$p < q$. This is used to construct incMat if neither \verb|incMat|
+			$p < q$. This is used to construct zeta if neither \verb|zeta|
 			nor \verb|relations| are provided.
 		}
 		\item[]{
@@ -93,10 +93,10 @@ class Poset:
 			The default value is \verb|HasseDiagram|.
 		}
 		\item[]{
-		\verb|trans_close| -- If \verb|True| the transitive closure of \verb|incMat| is
+		\verb|trans_close| -- If \verb|True| the transitive closure of \verb|zeta| is
 			computed, this should be \verb|False| only if the provided matrix satisfies
 				\[
-				\verb|incMat[i][j] ==|\begin{cases}
+				\verb|zeta[i, j] ==|\begin{cases}
 						1 & \text{when } i<j\\
 						-1 & \text{when } i>j\\
 						0 & \text{otherwise}.
@@ -113,158 +113,126 @@ class Poset:
 	\verb|Poset| objects may be considered immutable (this is not enforced in any way),
 	or if you alter a poset you should clear the cache via: \verb|this.cache = {}|.
 	'''
-	__slots__ = ('cache','hasseDiagram','incMat','elements','ranks','name')
-	def __init__(this, incMat=None, elements=None, ranks=None, less=None, name='',\
+	__slots__ = ('cache','hasseDiagram','zeta','elements','ranks','name')
+	def __init__(this, zeta=None, elements=None, ranks=None, less=None, name='',\
 		 hasse_class=None, trans_close=True, relations=None, indices=False, that=None,**kwargs):
 		r'''
 		@section@Miscellaneous@
 		See \verb|Poset|.
 		'''
+		#defining data in order or priority: Poset instance, zeta function, relations, less function
 		if that!=None:
-			incMat = that
-		if isinstance(incMat, Poset):
+			zeta = that #copy can be keyword or first arg
+		if isinstance(zeta, Poset):
+			
 			for s in Poset.__slots__:
-				setattr(this, s, getattr(incMat, s))
-			this.cache = {k:v for k,v in incMat.cache.items()}
-			this.hasseDiagram = copy.copy(incMat.hasseDiagram)
+				setattr(this, s, getattr(zeta, s))
+			this.cache = {k:v for k,v in zeta.cache.items()}
+			this.hasseDiagram = copy.copy(zeta.hasseDiagram)
 			this.hasseDiagram.P = this
-			#this.hasseDiagram = type(incMat.hasseDiagram)(that=incMat.hasseDiagram,P=this,**kwargs) if hasse_class==None else hasse_class(that=incMat.hasseDiagram,P=this,**kwargs)
 			return
-
-		if elements !=None: elements = list(elements) #can take any iterable but need indexing
-		#####
-		#make incMat
-		#####
-		if type(relations) == list:
-			if elements == None:
-				this.elements = list(set(tuple(itertools.chain(*relations))))
+		elif zeta is not None:
+			this.zeta = zeta	
+		elif relations is not None:
+			if isinstance(relations,dict):
+				this.elements = list(set(itertools.chain(*relations.values(),relations.keys()))) if elements is None else elements
+				this.zeta,this.elements = Poset.zeta_from_relations(relations,this.elements)
 			else:
-				this.elements = elements
-
-			this.incMat = [[0]*len(this.elements) for e in this.elements]
-			if indices:
-				for rel in relations:
-					this.incMat[rel[0]][rel[1]] = 1
-					this.incMat[rel[1]][rel[0]] = -1
+				elems = set() if elements is None else MockSet()
+				dict_relations = {}
+				for x,y in relations:
+					if x not in dict_relations: dict_relations[x] = []
+					dict_relations.append(y)
+					elems.add(x)
+					elems.add(y)
+				this.zeta,this.elements = Poset.zeta_from_relations(dict_relations, elems if elements is None else elements)
+		elif less is not None:
+			assert elements is not None,'`elements` must be provided if specifying a poset via `less`'
+			relations = {}
+			if ranks is not None:
+				for rk in range(len(ranks)-1):
+					for i in ranks[rk]:
+						relations[i] = []
+						for j in ranks[rk+1]:
+							if less(i,j): relations[i].append(j)
 			else:
-				elems_to_indices = {}
-				for i in range(len(this.elements)): elems_to_indices[this.elements[i]] = i
-
-				for rel in relations:
-					i = elems_to_indices[rel[0]]
-					j = elems_to_indices[rel[1]]
-					this.incMat[i][j] = 1
-					this.incMat[j][i] = -1
-
-		elif type(relations)==dict:
-			if elements == None:
-				this.elements = list(set(itertools.chain(*relations.values())).union(relations.keys()))
-			else:
-				this.elements = elements
-			elems_to_indices = {}
-			for i in range(len(this.elements)): elems_to_indices[this.elements[i]] = i
-
-			this.incMat = [[0]*len(this.elements) for e in this.elements]
-			if indices:
-				for i in relations:
-					for j in relations[i]:
-						this.incMat[i][j] = 1
-						this.incMat[j][i] = -1
-			else:
-				elems_to_indices = {}
-				for i in range(len(this.elements)): elems_to_indices[this.elements[i]] = i
-
-				for p in relations:
-					i = elems_to_indices[p]
-
-					for q in relations[p]:
-						j = elems_to_indices[q]
-						this.incMat[i][j] = 1
-						this.incMat[j][i] = -1
-
-		elif less != None:
-			this.incMat = [[0]*len(elements) for e in elements]
-			Less = less if indices else (lambda x,y: less(elements[x],elements[y]))
-			if False and ranks!=None:
-				for r in range(len(ranks)-1):
-					for i in ranks[r]:
-						for j in ranks[r+1]:
-							Less_ij = Less(i,j)
-							if Less_ij:
-								this.incMat[i][j] = int(Less_ij) if (isinstance(Less_ij,bool) or isinstance(Less_ij,np.bool)) else Less_ij
-								this.incMat[j][i] = -int(Less_ij) if (isinstance(Less_ij,bool) or isinstance(Less_ij,np.bool)) else -Less_ij
-							else:
-								Less_ji = Less(j,i)
-								if Less_ji:
-									this.incMat[i][j] = -int(Less_ji) if (isinstance(Less_ji,bool) or isinstance(Less_ji,np.bool)) else -Less_ji
-									this.incMat[j][i] = int(Less_ji) if (isinstance(Less_ji,bool) or isinstance(Less_ji,np.bool)) else Less_ji
-			else: #ranks==None
-				for i in range(len(elements)):
-					for j in range(i+1,len(elements)):
-						Less_ij = Less(i,j)
-						if Less_ij:
-							this.incMat[i][j] = int(Less_ij)
-							this.incMat[j][i] = -int(Less_ij)
-						else:
-							Less_ji = Less(j,i)
-							if Less_ji:
-								this.incMat[i][j] = -int(Less_ji)
-								this.incMat[j][i] = int(Less_ji)
-		elif incMat != None:
-			this.incMat = incMat
+				if indices:
+					Less = lambda e,i,f,j:less(i,j)
+				else:
+					Less = lambda e,i,f,j:less(e,f)
+				for i,e in enumerate(elements):
+					relations[i] = []
+					for j,f in enumerate(elements):
+						if Less(e,i,f,j): relations[i].append(j)
+								
 
 		else: #no data provided poset is (possibly empty) antichain
 			if elements == None:
-				this.incMat = []
+				this.zeta = IncAlgElem()
+				this.elements = []
 			else:
-				this.incMat = [[0]*len(elements) for e in elements]
+				this.zeta = IncAlgElem((0 for i in range(len(elements)) for _ in range(i+1,len(elements))), size=len(elements))
 
-		if len(this.incMat)>0:
-			for i in range(len(this.incMat)):
-				this.incMat[i][i]=0
-			if trans_close: Poset.transClose(this.incMat)
-		#####
-		#####
 		if not hasattr(this, 'elements'):
-			this.elements = list(range(len(this.incMat))) if elements == None else elements
-		this.ranks = ranks if ranks!=None else Poset.make_ranks(this.incMat)
+			this.elements = list(range(this.zeta.size)) if elements is None else elements
+		this.ranks = Poset.make_ranks(this.zeta) if ranks is None else ranks
 		this.cache = {}
 		this.name = name
 		if hasse_class == None: hasse_class = HasseDiagram
 		this.hasseDiagram = hasse_class(this, **kwargs)
-	
+
+	def zeta_from_relations(relations,elements):
+		r'''
+		@section@Miscellaneous@
+		Given a dictionary of relations and a list of elements returns the zeta matrix and the elements reordered in a linear extension.
+
+		\verb|relations| should have keys items in \verb|elements| and values lists of items
+		in \verb|elements|. If \verb|i| is in contained in \verb|relations[j]| then $j<i$ in the poset.
+		'''
+		E = set(elements)
+		linear_elements = []
+		#find linear extension
+		while len(E)>0:
+			minimal = E.difference(itertools.chain(*(relations[e] for e in E.intersection(relations))))
+			for m in minimal: linear_elements.append(m)
+			E = E.difference(minimal)
+		zeta = []
+		for i,e in enumerate(linear_elements):
+			if e not in relations:
+				zeta+=[0]*(len(linear_elements)-i-1)
+			else:
+				zeta+=[1 if f in relations[e] else 0 for f in linear_elements[i+1:]]
+#		zeta = IncAlgElem([1 if linear_elements[j] in relations[linear_elements[i]] else 0 for i in range(len(linear_elements)) for j in range(i+1,len(linear_elements))])
+		zeta = IncAlgElem(zeta,size=len(linear_elements))
+		return zeta, linear_elements
+
+
 
 	def transClose(M):
 		r'''
 		@section@Miscellaneous@
-		Given a matrix encoding a (possibly weighted) relation, via $x~y$ when the $x,y$ entry is positive and $y~x$ when negative, computes the transitive closure (any induced relations are weighted 1).
-		'''
-		print('transClose')
-		print(M)
-		for i in range(0,len(M)):
-			#uoi for upper order ideal
-			uoi = [x for x in range(0,len(M)) if M[i][x] > 0 or M[x][i] < 0]
-			while True:
-				next = [x for x in uoi]
-				for x in uoi:
-					for y in range(0,len(M)):
-						if (M[x][y] > 0 or M[y][x]<0) and y not in next: next.append(y)
-				if uoi == next: break
-				uoi = next
+		Given an instance of \verb|IncAlgElem| encoding a (possibly weighted) relation, via $x~y$ when the $x,y$ entry is positive and $y~x$ when negative, computes the transitive closure (any induced relations are weighted 1).
 
-			for x in uoi:
-				if M[i][x] <= 0: M[i][x] = 1
-				if M[x][i] >= 0: M[x][i] = -1
-		print('returning:')
-		print(M)
+		TODO: doc string
+		'''
+		for i in range(M.size):
+			uoi = [x for x in range(M.size) if M[*sorted(i,x)]]
+			while True:
+				next_uoi = [x for x in uoi]
+				for x in uoi:
+					for y in range(M.size):
+						if M[*sorted(x,y)] and y not in next_uoi: next_uoi.append(y)
+				if uoi == next_uoi: break
+				uoi = next_uoi
+			for x in uoi: M[*sorted(x,i)] = 1
 
 	def __str__(this):
 		r'''
 		@section@Miscellaneous@
 		Returns a nicely formatted string listing the zeta matrix, the ranks list and the elements of the poset.
 		'''
-		space_len = max(len(str(entry)) for row in this.incMat for entry in row)
-		ret = ['zeta = [']+[', '.join(('{x:'+str(space_len)+'}').format(x=x) for x in z) for z in this.zeta()]+[']']
+		space_len = max(len(str(entry)) for row in this.zeta for entry in row)
+		ret = ['zeta = ']+[str(this.zeta)]
 		if hasattr(this, 'name'):
 			ret = [this.name]+ret
 		ret.append('ranks = '+str(this.ranks))
@@ -279,7 +247,7 @@ class Poset:
 		To \verb|eval| the returned string \verb|Poset| must be in the namespace and \verb|repr(this.elements)|
 		must return a suitable string for evaluation.
 		'''
-		return 'Poset(incMat='+repr(this.incMat)+', elements='+repr(this.elements)+', ranks='+repr(this.ranks)+',name='+repr(this.name)+')'
+		return 'Poset(zeta='+repr(this.zeta)+', elements='+repr(this.elements)+', ranks='+repr(this.ranks)+',name='+repr(this.name)+')'
 
 	def __eq__(this,that):
 		r'''
@@ -289,7 +257,7 @@ class Poset:
 		if not isinstance(that,Poset): return False
 		if set(this.elements)!=set(that.elements): return False
 		inds = [that.elements.index(this[i]) for i in range(len(this))]
-		return all(this.incMat[i][j] == that.incMat[inds[i]][inds[j]] for i in range(len(this)) for j in range(i+1,len(this)) )
+		return all(this.zeta[i, j] == that.zeta[inds[i], inds[j]] for i in range(len(this)) for j in range(i+1,len(this)) )
 
 	def __iter__(this):
 		r'''
@@ -329,7 +297,7 @@ class Poset:
 		By default the label is 0 and if 0 is already an element the default label is
 		the first positive integer that is not an element.
 		'''
-		incMat = [[0]+[1 for p in this.elements]]+[[-1]+this.incMat[i] for i in range(len(this.elements))]
+		zeta = [[0]+[1 for p in this.elements]]+[[-1]+this.zeta[i] for i in range(len(this.elements))]
 		if label==None:
 			label=0
 			while label in this.elements:
@@ -337,7 +305,7 @@ class Poset:
 		assert(not label in this.elements)
 		ranks = [[0]]+[[r+1 for r in row] for row in this.ranks]
 		elements=[label]+this.elements
-		P = Poset(incMat = incMat, elements = elements, ranks = ranks, trans_close = False)
+		P = Poset(zeta = zeta, elements = elements, ranks = ranks, trans_close = False)
 		if 'isRanked()' in this.cache:
 			P.cache['isRanked()'] = this.cache['isRanked()']
 		if 'isGorenstein()' in this.cache and this.cache['isGorenstein()']:
@@ -400,13 +368,13 @@ class Poset:
 		P = Poset()
 		P.elements = this.elements
 		P.ranks = this.ranks[::-1]
-		P.incMat = [[this.incMat[j][i] for j in range(len(this.elements))] for i in range(len(this.elements))]
+		P.zeta = [[this.zeta[j, i] for j in range(len(this.elements))] for i in range(len(this.elements))]
 		P.hasseDiagram = copy.copy(this.hasseDiagram)
 		P.hasseDiagram.P = P
 		if 'isRanked()' in this.cache:
 			P.cache['isRanked()'] = this.cache['isRanked()']
 		if not this.isRanked():
-			P.ranks = Poset.make_ranks(P.incMat)
+			P.ranks = Poset.make_ranks(P.zeta)
 		if 'isEulerian()' in this.cache:
 			P.cache['isEulerian()'] = this.cache['isEulerian()']
 		if 'isGorenstein()' in this.cache:
@@ -437,7 +405,7 @@ class Poset:
 		by \verb|element_union|.
 		'''
 		elements = Poset.element_union(this.elements, that.elements)
-		incMat = [z+[0]*len(that.elements) for z in this.incMat] + [[0]*len(this.elements)+z for z in that.incMat]
+		zeta = [z+[0]*len(that.elements) for z in this.zeta] + [[0]*len(this.elements)+z for z in that.zeta]
 
 		that_ranks = [[r+len(this.elements) for r in rk] for rk in that.ranks]
 		if len(this.ranks)>len(that_ranks):
@@ -450,7 +418,7 @@ class Poset:
 
 		ranks = [small_ranks[i]+big_ranks[i] for i in range(len(small_ranks))]
 
-		return Poset(incMat, elements, ranks)
+		return Poset(zeta, elements, ranks)
 
 	def bddUnion(this, that):
 		r'''
@@ -485,10 +453,10 @@ class Poset:
 		that_part = that.complSubposet(that.min())
 		this_part = this.complSubposet(this.max())
 		elements = Poset.element_union(this_part.elements, that_part.elements)
-		incMat = [z+[1]*len(that_part.elements) for z in this_part.incMat]+[[-1]*len(this_part.elements)+z for z in that_part.incMat]
+		zeta = [z+[1]*len(that_part.elements) for z in this_part.zeta]+[[-1]*len(this_part.elements)+z for z in that_part.zeta]
 		ranks = this_part.ranks + [[r+len(this_part.elements) for r in rk ] for rk in that_part.ranks]
 
-		return Poset(incMat, elements, ranks)
+		return Poset(zeta, elements, ranks)
 
 	def cartesianProduct(this, that):
 		r'''
@@ -501,12 +469,11 @@ class Poset:
 			for j in range(len(that.elements)):
 				ranks[this.rank(i,True)+that.rank(j,True)].append(i*len(that.elements)+j)
 
-		thiszeta = this.zeta()
-		thatzeta = that.zeta()
-		incMat = [[thiszeta[i][j] * thatzeta[k][l] for j,l in itertools.product(range(len(this)),range(len(that)))] for i,k in itertools.product(range(len(this)),range(len(that)))]
+		thiszeta = this.zeta
+		thatzeta = that.zeta
+		zeta = [[thiszeta[i, j] * thatzeta[k, l] for j,l in itertools.product(range(len(this)),range(len(that)))] for i,k in itertools.product(range(len(this)),range(len(that)))]
 
-		print('product incMat\n',incMat)
-		return Poset(elements=elements, ranks=ranks, incMat=incMat)
+		return Poset(elements=elements, ranks=ranks, zeta=zeta)
 
 	def diamondProduct(this, that):
 		r'''
@@ -544,7 +511,7 @@ class Poset:
 		'''
 		return all(all(this.rank(v)==this.rank(k)+1 for v in V)for (k,V) in this.covers().items())
 #		for i in range(len(this)):
-#			row = this.incMat[i]
+#			row = this.zeta[i]
 #			rk = this.rank(i,indices=True)
 #			found = True
 #			for j in range(len(this)):
@@ -665,7 +632,7 @@ class Poset:
 		@section@Subposet Selection@
 		Returns a list of the maximal elements of the poset.
 		'''
-		ret_indices = [i for i in range(len(this.incMat)) if all(m<=0 for m in this.incMat[i])]
+		ret_indices = [i for i in range(len(this.zeta)) if all(m<=0 for m in this.zeta[i])]
 		return ret_indices if indices else [this.elements[i] for i in ret_indices]
 
 	def complSubposet(this, S, indices=False):
@@ -675,7 +642,7 @@ class Poset:
 		'''
 		if not indices:
 			S = [this.elements.index(s) for s in S]
-		return this.subposet([i for i in range(len(this.incMat)) if i not in S],True)
+		return this.subposet([i for i in range(len(this.zeta)) if i not in S],True)
 
 	def subposet(this, S, indices=False, keep_hasseDiagram=True):
 		r'''
@@ -685,8 +652,8 @@ class Poset:
 		if not indices:
 			S = [this.elements.index(s) for s in S]
 		elements = [this.elements[s] for s in S]
-		incMat = [[this.incMat[s][r] for r in S] for s in S]
-		P = Poset(incMat, elements)
+		zeta = [[this.zeta[s, r] for r in S] for s in S]
+		P = Poset(zeta, elements)
 		if keep_hasseDiagram:
 			P.hasseDiagram = copy.copy(this.hasseDiagram)
 			P.hasseDiagram.P = P
@@ -701,7 +668,7 @@ class Poset:
 			i = this.elements.index(i)
 			j = this.elements.index(j)
 		element_indices = [k for k in range(len(this.elements)) if k in (i,j) or \
-		(this.incMat[i][k] > 0 and 0 < this.incMat[k][j]) ]
+		(this.zeta[i, k] > 0 and 0 < this.zeta[k, j]) ]
 
 		return this.subposet(element_indices, indices=True)
 
@@ -769,7 +736,7 @@ class Poset:
 			i = this.elements.index(i)
 			j = this.elements.index(j)
 
-		return this.incMat[i][j]>0
+		return this.zeta[i, j]>0
 
 	def lesseq(this, i, j, indices=False):
 		r'''
@@ -796,13 +763,13 @@ class Poset:
 		'''
 		def _join(i,j,M):
 			if i==j: return i
-			if M[i][j] < 0: return i
-			if M[i][j] > 0: return j
-			m = [x for x in range(0,len(M)) if M[i][x] > 0 and M[j][x] > 0]
+			if M[i, j] < 0: return i
+			if M[i, j] > 0: return j
+			m = [x for x in range(0,len(M)) if M[i, x] > 0 and M[j, x] > 0]
 			for x in range(0,len(m)):
 				is_join = True
 				for y in range(0,len(m)):
-					if x!=y and M[m[x]][m[y]] <= 0:
+					if x!=y and M[m[x], m[y]] <= 0:
 						is_join = False
 						break
 				if is_join: return m[x]
@@ -811,10 +778,10 @@ class Poset:
 		if not indices:
 			i = this.elements.index(i)
 			j = this.elements.index(j)
-			ret = _join(i, j, this.incMat)
+			ret = _join(i, j, this.zeta)
 			if ret == None: return None
 			return this.elements[ret]
-		return _join(i, j, this.incMat)
+		return _join(i, j, this.zeta)
 
 	def mobius(this, i=None, j=None, indices=False):
 		r'''
@@ -844,7 +811,7 @@ class Poset:
 			if i == j: return 1
 			ret = 1
 			for k in range(len(this)):
-				if this.incMat[i][k]>0 and this.incMat[k][j]>0:
+				if this.zeta[i, k]>0 and this.zeta[k, j]>0:
 					ret += calc_mobius(this, i,k)
 			return -ret
 
@@ -880,23 +847,23 @@ class Poset:
 		This method is intended for use with a poset, possibly quasi-graded, that has a unique minimum and maximum. On a general poset this counts chains that contain the first
 		minimal element, \verb|this[this.ranks[0][0]]| and ignores the
 		final rank. For a quasigraded poset, the rank function $\rho$ must be the same as the classical i.e. $\text{rk}$.
-		And \verb|this.incMat| should encode the $\overline{\zeta}$ function.
+		And \verb|this.zeta| should encode the $\overline{\zeta}$ function.
 		'''
 		n = len(this.ranks)-2
 		def fVectorCalc(ranks,S,M, i, count, weight):
 			newCount = count
 			if S == tuple():
-				return weight * M[i][ranks[-1][0]]
+				return weight * M[i, ranks[-1][0]]
 			for j in ranks[S[0]]:
-				if M[i][j] > 0:
-					newCount += fVectorCalc(ranks, S[1:], M, j, count, weight*M[i][j])
+				if M[i, j] > 0:
+					newCount += fVectorCalc(ranks, S[1:], M, j, count, weight*M[i, j])
 			return newCount
 		f = {tuple():1}
 
 		if n<=0: return f
 
 		for S in subsets(range(1,n+1)):
-			f[tuple(S)]=fVectorCalc(this.ranks,S,this.incMat,this.ranks[0][0],0,1)
+			f[tuple(S)]=fVectorCalc(this.ranks,S,this.zeta,this.ranks[0][0],0,1)
 		return f
 
 	@cached_method
@@ -950,14 +917,14 @@ class Poset:
 			newCount = count
 			if len(S)==0: return weight*M[ranks[0][0]][i]
 			for j in ranks[S[-1]]:
-				if M[i][j] < 0:
-					newCount += fVectorCalc(ranks, S[:-1], M, j, count, f,truncated_S+(S[-1],),weight*M[j][i])
+				if M[i, j] < 0:
+					newCount += fVectorCalc(ranks, S[:-1], M, j, count, f,truncated_S+(S[-1],),weight*M[j, i])
 			return newCount
 		fVector = {}
 		for S in sparseSubsets(tuple(range(1,n+1))):
 			S = tuple(S)
 			if S in fVector: break
-			fVector[S] = fVectorCalc(this.ranks,S,this.incMat,this.ranks[-1][0],0,fVector,tuple())
+			fVector[S] = fVectorCalc(this.ranks,S,this.zeta,this.ranks[-1][0],0,fVector,tuple())
 
 		kVector = {}
 		for S in fVector:
@@ -1058,13 +1025,6 @@ class Poset:
 			phi[cdMonom(S,n)] = coeff
 		return phi
 
-	def zeta(this):
-		r'''
-		@section@Invariants@
-		Returns the zeta matrix, the matrix whose $i,j$ entry is $1$ if the Boolean \begin{verbatim}this.lesseq(i,j,indices=True)\end{verbatim} is true and $0$ otherwise.
-		'''
-		return [[1 if i==j else max(this.incMat[i][j],0) for j in range(len(this.incMat))] for i in range(len(this.incMat))]
-
 	@cached_method
 	def bettiNumbers(this):
 		r'''
@@ -1126,7 +1086,7 @@ class Poset:
 #			return tuple([len(x) for x in l])
 		def set_comp_rks(P,d,ranks):
 			for i in range(len(P)):
-				row = P.incMat[i]
+				row = P.zeta[i]
 				upset = frozenset(collections.Counter(ranks[j] for j in range(len(P)) if row[j] == 1).items())
 				downset = frozenset(collections.Counter(ranks[j] for j in range(len(P)) if row[j] == -1).items())
 				d[i] = (upset, downset) #get_lengths(P.filter([i],indices=True).ranks), get_lengths(P.ideal([i],indices=True).ranks))
@@ -1162,7 +1122,7 @@ class Poset:
 #				#skip if j is already hit
 #				if j in map.values(): continue
 #				#i-> is order-preserving
-#				if all(P.incMat[m[0]][i] == Q.incMat[m[1]][j] for m in map.items()):
+#				if all(P.zeta[m[0], i] == Q.zeta[m[1], j] for m in map.items()):
 #					new_map = {i:j}
 #					new_map.update(map)
 #					new_map = iso(P,Q,new_map,dP,dQ,dPinv,dQinv,i+1)
@@ -1175,7 +1135,7 @@ class Poset:
 			for j_ in range(jstart,len(cands)):
 				j = cands[j_]
 				if j in [m[1] for m in map]: continue
-				if all(this.incMat[m[0]][i] == that.incMat[m[1]][j] for m in map):
+				if all(this.zeta[m[0], i] == that.zeta[m[1], j] for m in map):
 					return map+[[i,j]], j_+1, False
 			return None, j_+1, True
 
@@ -1237,7 +1197,7 @@ class Poset:
 		X=set()
 		for r in range(len(this.ranks)-1):
 			for p in this.ranks[r]:
-				X.add((r,len([q for q in this.ranks[r+1] if this.incMat[p][q]==1])))
+				X.add((r,len([q for q in this.ranks[r+1] if this.zeta[p, q]==1])))
 		return hash((frozenset(this.elements),frozenset(X)))
 
 	def copy(this):
@@ -1436,17 +1396,17 @@ class Poset:
 		for i in range(len(elements)):
 			ranks[len(elements[i])].append(i)
 
-		incMat = [[0]*len(elements) for e in elements]
+		zeta = [[0]*len(elements) for e in elements]
 		for i in range(len(elements)):
 			for j in range(i+1, len(elements)):
 				if all([x in elements[j] for x in elements[i]]):
-					incMat[i][j] = 1
-					incMat[j][i] = -1
+					zeta[i, j] = 1
+					zeta[j, i] = -1
 				elif all([x in elements[i] for x in elements[j]]):
-					incMat[j][i] = 1
-					incMat[i][j] = -1
+					zeta[j, i] = 1
+					zeta[i, j] = -1
 
-		args = {'elements': elements, 'ranks': ranks, 'incMat': incMat, 'trans_close': False}
+		args = {'elements': elements, 'ranks': ranks, 'zeta': zeta, 'trans_close': False}
 		if hasattr(this,'name'): args['name'] = 'Order complex of '+this.name
 		P = Poset(**args)
 
@@ -1458,9 +1418,9 @@ class Poset:
 		Returns a list of all pairs $(e,f)$ where $e\le f$.
 		'''
 		if indices:
-			return [(i,j) for j in range(len(this.elements)) for i in range(len(this.elements)) if this.incMat[i][j] > 0] 
+			return [(i,j) for j in range(len(this.elements)) for i in range(len(this.elements)) if this.zeta[i, j] > 0] 
 
-		return [(this.elements[i],this.elements[j]) for j in range(len(this.elements)) for i in range(len(this.elements)) if this.incMat[i][j] > 0]
+		return [(this.elements[i],this.elements[j]) for j in range(len(this.elements)) for i in range(len(this.elements)) if this.zeta[i, j] > 0]
 
 	def relabel(this, elements=None):
 		r'''
@@ -1489,10 +1449,10 @@ class Poset:
 			perm = [this.elements.index(p) for p in perm]
 
 		elements = [this.elements[i] for i in perm]
-		incMat = [[this.incMat[i][j] for j in perm] for i in perm]
+		zeta = [[this.zeta[i, j] for j in perm] for i in perm]
 		ranks = [sorted([perm.index(i) for i in rk]) for rk in this.ranks]
 
-		P = Poset(elements = elements, incMat = incMat, ranks = ranks, trans_close = False)
+		P = Poset(elements = elements, zeta = zeta, ranks = ranks, trans_close = False)
 		P.hasseDiagram = this.hasseDiagram
 		P.hasseDiagram.P = P
 
@@ -1533,23 +1493,23 @@ class Poset:
 		'''
 		rels = [ [x,y] for x,y in P.relations() if x!=y]
 		return Poset(relations=rels)
-#		return Poset(incMat = P.lequal_matrix(), elements =  P.list())
+#		return Poset(zeta = P.lequal_matrix(), elements =  P.list())
 
-	def make_ranks(incMat):
+	def make_ranks(zeta):
 		r'''
 		@section@Miscellaneous@
 		Used by the constructor to compute the ranks list for a poset when it isn't provided.
 		'''
-		if len(incMat)==0: return []
-		left = list(range(len(incMat)))
+		if zeta.size==0: return []
+		left = list(range(zeta.size))
 		preranks = {} #keys are indices values are ranks
 		while len(left)>0:
 			for l in left:
-				loi = [i for i in range(len(incMat)) if incMat[i][l]>0]
+				loi = [i for i in range(l+1,zeta.size) if zeta[l,i]]
 				if all([i in preranks.keys() for i in loi]): 
 					preranks[l] = 1+max([-1]+[preranks[i] for i in loi])
 					left.remove(l)
-		return [[j for j in range(len(incMat)) if preranks[j]==i] for i in range(1+max(preranks.values()))]
+		return [[j for j in range(zeta.size) if preranks[j]==i] for i in range(1+max(preranks.values()))]
 	def isoClass(this):
 		r'''
 		@section@Miscellaneous@
@@ -1582,53 +1542,36 @@ class IncAlgElem:
 		\item[]{\verb|square| -- Whether the data is a full $n\times n$ square or only the upper triangular entries (including the diagonal)}
 		\end{itemize}
 	'''
-	def __init__(this, data, size=0, flat=False, square=False):
+	def __init__(this, data, size=0, flat=True, square=False):
 		if flat:
-			assert(size!=0)
 			this.size = size
-			this.data = [x for x in it]
+			this.data = [x for x in data]
 		else:
-			this.data = []
-			data_it = iter(data)
-			it = next(data_it)
-			for i,x in enumerate(it): this.data[i].append(x)
-			this.size = i
-			this.data += [0]*((this.size *(this.size-1))//2)
-
-			for y in data_it:
-				col = 0
-				for x in y
-					col+=1
-					i+=1
-					this.data[i] = x
-				assert(col<=this.size)
+			if size==0: size = len(data)
+			if square:
+				this.data = []
+				for x,skip in zip(data,range(size)):
+					for i,y in enumerate(x):
+						if i<skip: continue
+						this.data.append(y)
+			else:
+				this.data = list(itertools.chain(*data))
 	def __getitem__(this, x):
 		r'''
 		Zero based indexing \verb|(i,j)| gives the element in row $i$ and column $j$.
 		'''
 		if isinstance(x,int): return this.data[x]
-		if isinstance(x,tuple): return this.data[n*(x[0]-1)-utils.triangle_num(x[0])+x[1]]
+		if isinstance(x,tuple): return this.data[this.size*(x[0]-1)-triangle_num(x[0]+1)+x[1]-1]
 
-	def make_zeta(relations, elements):
-		r'''
-		@section@Miscellaneous@
-		Given a dictionary of relations and the list of elements returns the zeta function.
-		'''
-		col = 0
-		zeta = [0 for _ in range(utils.triangle_num(len(elements)))]
-		while len(relations)>0:
-			for e in elements:
-				if e not in relations or len(relations[e])==0:
-					for i in range(col):
-					for i,x in enumerate(elements[:col]):
-						if e in relations[x]:
-							relations[x].remove(e)
-							if len(relations[x])==0: del relations[x]
-							zeta[i][col] = 1
-						else:
-							zeta[i][col] = 0
-					zeta[col][col] = 1
-			col +=1	
+	def __str__(this):
+		space_len = max(len(str(entry)) for entry in this)
+
+		return ''.join(' '.join(('{x:'+str(space_len)+'}').format(x=x)+('\n' if t==this.size-1 else '') for x,t in zip(this,TriangleRange(this.size))))
+	def __iter__(this):
+		return iter(this.data)
+	
+	def __repr__(this):
+		return 'IncAlgElem(('+', '.join(repr(x) for x in this)+'), flat=True,size='+str(this.size)+')'
 ##############
 #End IncAlgElem class
 ##############
@@ -1661,7 +1604,7 @@ class PosetIsoClass(Poset):
 		X=set()
 		for r in range(len(this.ranks)-1):
 			for p in this.ranks[r]:
-				X.add((r,len([q for q in this.ranks[r+1] if this.incMat[p][q]>0])))
+				X.add((r,len([q for q in this.ranks[r+1] if this.zeta[p, q]>0])))
 		return hash(frozenset(X))
 	def __str__(this):
 		return "Isomorphism class of "+Poset.__str__(this)
