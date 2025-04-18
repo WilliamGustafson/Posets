@@ -398,13 +398,14 @@ class Poset:
 		r'''
 		@section@Operations@
 		Returns the dual poset which has the same elements and relation $p\le q$ when $q\le p$ in the original poset.
+
+		TODO: borked
 		'''
 		P = Poset()
 		P.elements = this.elements[::-1]
 		P.ranks = this.ranks[::-1]
 		n = len(P.elements)-1
-		P.zeta = TriangularArray([this.zeta[i, j] for i in range(n) for j in range(n,i,-1)], size = n)
-		#P.zeta = TriangularArray([[this.zeta[j, i] for j in range(len(this.elements))] for i in range(len(this.elements))],square = True)
+		P.zeta = this.zeta.revtranspose()
 		P.hasseDiagram = copy.copy(this.hasseDiagram)
 		P.hasseDiagram.P = P
 		if 'isRanked()' in this.cache:
@@ -625,12 +626,8 @@ class Poset:
 
 		We say $q$ covers $p$ when $p<q$ and $p<r<q$ implies $r=p$ or $r=q$.
 		'''
-		#isRanked calls covers so we can't call isRanked
-		#TODO: this branch will almost never be called right?
-		#except in built ins where we manually cache it I guess
-		#TODO: check times on like big Booleans or cubes or something
-		#is it worth it to have this branch that only gets called
-		#when the cache is manually set?
+		#isRanked calls covers so we can't call isRanked,
+		#but if its cached calling it doesn't really call it
 		if 'isRanked()' in this.cache and this.isRanked():
 			ret = {}
 			non_max = [i for i in range(len(this)) if i not in this.max(indices=True)]
@@ -660,6 +657,7 @@ class Poset:
 		@section@Subposet Selection@
 		Returns a list of the minimal elements of the poset.
 		'''
+		#TODO this copies all the elements and junk
 		return this.dual().max(indices)
 
 	@cached_method
@@ -668,7 +666,7 @@ class Poset:
 		@section@Subposet Selection@
 		Returns a list of the maximal elements of the poset.
 		'''
-		ret_indices = [i for i in range(this.zeta.size) if all(m==0 for m in this.zeta[i])]
+		ret_indices = [i for i in range(this.zeta.size) if all(m==0 for m in this.zeta[i])]+[len(this.elements)-1]
 		return ret_indices if indices else [this.elements[i] for i in ret_indices]
 
 	def complSubposet(this, S, indices=False):
@@ -1480,12 +1478,17 @@ class Poset:
 		Returns a new \verb|Poset| object (representing the same poset) with the elements reordered.
 
 		\verb|perm| should be a list of elements if \verb|indices| is \verb|False| or a list of indices if \verb|True|. The returned poset has elements in the given order, i.e. \verb|perm[i]| is the $i$th element.
+
+		Raises \verb|ValueError| if \verb|perm| is not a linear extension of the poset.
 		'''
 		if not indices:
 			perm = [this.elements.index(p) for p in perm]
 
 		elements = [this.elements[i] for i in perm]
-		zeta = [[this.zeta[i, j] for j in perm] for i in perm]
+		if not any(any(this.less(perm[i],perm[j],True) for j in range(i)) for i in range(1,len(this.elements))):
+			raise ValueError("`perm` must be a linear extension of the poset.")
+#		zeta = [[this.zeta[i, j] for j in perm] for i in perm]
+		zeta = TriangularArray((this.zeta[i,j] for i in perm for j in perm[i+1:]),size=this.zeta.size)
 		ranks = [sorted([perm.index(i) for i in rk]) for rk in this.ranks]
 
 		P = Poset(elements = elements, zeta = zeta, ranks = ranks, trans_close = False)
@@ -1499,6 +1502,8 @@ class Poset:
 		r'''
 		@section@Miscellaneous@
 		Returns a new \verb|Poset| object (representing the same poset) with the elements sorted.
+
+		Raises \verb|ValueError| if \verb|key| is not a linear extension of the poset.
 		'''
 		if indices:
 			perm = sorted(this.elements, key = lambda p: key(this.elements.index(p)) )

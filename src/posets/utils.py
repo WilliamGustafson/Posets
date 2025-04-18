@@ -126,6 +126,13 @@ class TriangularArray:
 	
 	def __repr__(this):
 		return 'TriangularArray(('+', '.join(repr(x) for x in this)+'), flat=True,size='+str(this.size)+')'
+
+	def revtranspose(this):
+		r'''
+		Returns a new instance of \verb|TriangularArray| by reversing columns and then transposing.
+		'''
+		return TriangularArray([this.data[len(this.data) - i - triangle_num(j) - j - 1] for i in range(this.size) for j in range(i,this.size)],size=this.size)
+
 ##############
 #End TriangularArray class
 ##############
