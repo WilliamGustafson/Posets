@@ -148,7 +148,7 @@ def Chain(n):
 	elements = list(range(n+1))
 	ranks = [[i] for i in elements]
 	import operator
-	P = Poset(elements=elements, ranks=ranks, less=operator.lt, name = "Length "+str(n)+" chain", trans_close=False)
+	P = Poset(zeta = TriangularArray([1 for _ in TriangleRange(len(elements)-1)],size=n-1), elements=elements, ranks=ranks, name = "Length "+str(n)+" chain", trans_close=False)
 	#cach some values for queries
 	P.cache['isRanked()']=True
 	P.cache['isEulerian()']=False
