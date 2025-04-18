@@ -169,9 +169,10 @@ class Poset:
 				else:
 					Less = lambda e,i,f,j:less(e,f)
 				for i,e in enumerate(elements):
-					relations[i] = []
+					relations_i = []
 					for j,f in enumerate(elements):
-						if Less(e,i,f,j): relations[i].append(j)
+						if Less(e,i,f,j): relations_i.append(j)
+					if len(relations_i)>0: relations[i] = relations_i
 			this.zeta,this.elements = Poset.zeta_from_relations(relations,elements)
 								
 
@@ -195,12 +196,13 @@ class Poset:
 		@section@Miscellaneous@
 		Given a dictionary of relations and a list of elements returns the zeta matrix and the elements reordered in a linear extension.
 
-		\verb|relations| should have keys items in \verb|elements| and values lists of items
-		in \verb|elements|. If \verb|i| is in contained in \verb|relations[j]| then $j<i$ in the poset.
+		\verb|relations| should have keys indices into \verb|elements| and values lists of indices 
+		into \verb|elements|. If \verb|i| is in contained in \verb|relations[j]| then $j<i$ in the poset.
 		'''
-		E = set(elements)
+		E = set(range(len(elements)))
 		linear_elements = []
 		#find linear extension
+		#TODO preserve order within ranks (for plotting)
 		while len(E)>0:
 			minimal = E.difference(itertools.chain(*(relations[e] for e in E.intersection(relations))))
 			for m in minimal: linear_elements.append(m)
@@ -213,7 +215,7 @@ class Poset:
 				zeta+=[1 if f in relations[e] else 0 for f in linear_elements[i+1:]]
 #		zeta = TriangularArray([1 if linear_elements[j] in relations[linear_elements[i]] else 0 for i in range(len(linear_elements)) for j in range(i+1,len(linear_elements))])
 		zeta = TriangularArray(zeta,size=len(linear_elements)-1)
-		return zeta, linear_elements
+		return zeta, [elements[i] for i in linear_elements]
 
 
 
