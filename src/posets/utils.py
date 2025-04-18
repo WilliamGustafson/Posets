@@ -133,6 +133,12 @@ class TriangularArray:
 		'''
 		return TriangularArray([this.data[len(this.data) - i - triangle_num(j) - j - 1] for i in range(this.size) for j in range(i,this.size)],size=this.size)
 
+	def subarray(this, S):
+		'''
+		Returns a sub-triangular array with rows indexed by \verb|S[:-1]| and columns by \verb|S[1:]+1|.
+		'''
+		S = sorted(S)
+		return TriangularArray([this.data[s + S[i]*(this.size-1)-triangle_num(S[i])-1] for i in range(len(S)-1) for s in S[i+1:]], size=len(S)-1)
 ##############
 #End TriangularArray class
 ##############
