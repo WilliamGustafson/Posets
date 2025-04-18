@@ -676,6 +676,7 @@ class Poset:
 			S = [this.elements.index(s) for s in S]
 		return this.subposet([i for i in range(len(this.zeta)) if i not in S],True)
 
+
 	def subposet(this, S, indices=False, keep_hasseDiagram=True):
 		r'''
 		@section@Subposet Selection@
@@ -683,8 +684,10 @@ class Poset:
 		'''
 		if not indices:
 			S = [this.elements.index(s) for s in S]
+		#TODO don't force sort S but ensure it is a linear extension?
+		S = sorted(S)
 		elements = [this.elements[s] for s in S]
-		zeta = [[this.zeta[s, r] for r in S] for s in S]
+		zeta = this.zeta.subarray(S)
 		P = Poset(zeta, elements)
 		if keep_hasseDiagram:
 			P.hasseDiagram = copy.copy(this.hasseDiagram)
