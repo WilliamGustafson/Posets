@@ -154,10 +154,11 @@ class Poset:
 					elems.add(x)
 					elems.add(y)
 				relations = dict_relations
-				this.elements = elems if elements is None else elements
+				this.elements = list(elems) if elements is None else list(elements)
 			if not indices:
 				relations = {this.elements.index(e) : [this.elements.index(f) for f in relations[e]] for e in relations}
-			this.zeta,this.elements = Poset.zeta_from_relations(relations, this.elements)
+			this.zeta,new_order = Poset.zeta_from_relations(relations, this.elements)
+			this.elements = [this.elements[i] for i in new_order]
 		elif less is not None:
 			assert elements is not None,'`elements` must be provided if specifying a poset via `less`'
 			relations = {}
@@ -201,6 +202,8 @@ class Poset:
 		this.name = name
 		if hasse_class == None: hasse_class = HasseDiagram
 		this.hasseDiagram = hasse_class(this, **kwargs)
+		if trans_close: 
+			Poset.transClose(this.zeta)
 
 	def zeta_from_relations(relations,elements):
 		r'''
@@ -229,23 +232,30 @@ class Poset:
 
 
 
-	def transClose(M):
+	def transClose(T):
 		r'''
 		@section@Miscellaneous@
 		Given an instance of \verb|TriangularArray| encoding a (possibly weighted) relation, via $x~y$ when the $x,y$ entry is positive and $y~x$ when negative, computes the transitive closure (any induced relations are weighted 1).
 
 		TODO: doc string
 		'''
-		for i in range(M.size):
-			uoi = [x for x in range(M.size) if M[tuple(sorted(i,x))]]
-			while True:
-				next_uoi = [x for x in uoi]
-				for x in uoi:
-					for y in range(M.size):
-						if M[tuple(sorted(x,y))] and y not in next_uoi: next_uoi.append(y)
-				if uoi == next_uoi: break
-				uoi = next_uoi
-			for x in uoi: M[tuple(sorted(x,i))] = 1
+		for i in range(T.size-2,-1,-1):
+			for j in range(i+1,T.size+1):
+				if T[i, j]==0: continue
+				for k in range(j+1,T.size+1):
+					if T[j, k]!=0: T[i, k] = T[i,j]*T[j,k]
+				
+		return
+#		for i in range(T.size):
+#			uoi = [x for x in range(T.size) if x!=i and T[tuple(sorted((i,x)))]!=0]
+#			while True:
+#				next_uoi = set(x for x in uoi)
+#				for x in uoi:
+#					for y in range(x+1,T.size):
+#						if x!=y and T[tuple(sorted((x,y)))] and y not in next_uoi: next_uoi.append(y)
+#				if uoi == next_uoi: break
+#				uoi = next_uoi
+#			for x in uoi: T[tuple(sorted((x,i)))] = 1
 
 	def __str__(this):
 		r'''
@@ -277,8 +287,7 @@ class Poset:
 		if not isinstance(that,Poset): return False
 		if any(e not in that.elements for e in this) or any(f not in this.elements for f in that): return False
 		inds = [that.elements.index(e) for e in this.elements]
-
-		return all(this.zeta[i, j] == that.zeta[tuple(sorted((inds[i], inds[j])))] for i in range(len(this)-1) for j in range(i+1,len(this)-1) )
+		return all(this.zeta[i, j] == that.zeta[tuple(sorted((inds[i], inds[j])))] for i in range(this.zeta.size) for j in range(i+1,this.zeta.size+1) )
 
 	def __iter__(this):
 		r'''
@@ -679,7 +688,7 @@ class Poset:
 		'''
 		if not indices:
 			S = [this.elements.index(s) for s in S]
-		return this.subposet([i for i in range(len(this.zeta)) if i not in S],True)
+		return this.subposet([i for i in range(this.zeta.size) if i not in S],True)
 
 
 	def subposet(this, S, indices=False, keep_hasseDiagram=True):
