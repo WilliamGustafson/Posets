@@ -143,5 +143,5 @@ class TriangularArray:
 #End TriangularArray class
 ##############
 class MockSet:
-	def add(this):
+	def add(this,x):
 		pass
