@@ -79,7 +79,51 @@ class TriangleRange:
 		else:
 			this.col+=1
 		return this.col
+##############
+#TriangularArray class
+##############
+class TriangularArray:
+	r'''
+	@is_section@
+	A class encoding an element of the incidence algebra of a poset.
 
+	This class is mainly provided for the zeta element of a poset, but
+	is essentially just a triangular array.
+
+	Constructor arguments:
+	\begin{itemize}
+		\item[]{\verb|data| -- An iterable specifying the entries in the upper diagonal; may be either a flat list or an iterable of iterables.}
+		\item[]{\verb|rows| -- Number of rows of the data, must be provided if the data is in flat form.}
+		\item[]{\verb|flat| -- Whether the data is in flat form or not.}
+		\end{itemize}
+	'''
+	def __init__(this, data, size=0, flat=True):
+		if flat:
+			this.size = size
+			this.data = [x for x in data]
+		else:
+			this.size = len(data) if size==0 else size
+			this.data = list(itertools.chain(*data))
+	def __getitem__(this, x):
+		r'''
+		Zero based indexing \verb|(i,j)| gives the element in row $i$ and column $j$.
+		'''
+		if isinstance(x,int): return this.data[1 + this.size*x - triangle_num(x) : this.size*(x+1) - x - triangle_num(x)+1]
+		if isinstance(x,tuple): return this.data[x[1] - x[0] + this.size*x[0] - triangle_num(x[0])]
+		#if isinstance(x,tuple): return this.data[this.size*(x[0]-1)-triangle_num(x[0]+1)+x[1]-1]
+
+	def __str__(this):
+		space_len = max(len(str(entry)) for entry in this)
+
+		return ''.join(' '.join(('{x:'+str(space_len)+'}').format(x=x)+('\n' if t==this.size-1 else '') for x,t in zip(this,TriangleRange(this.size))))
+	def __iter__(this):
+		return iter(this.data)
+	
+	def __repr__(this):
+		return 'TriangularArray(('+', '.join(repr(x) for x in this)+'), flat=True,size='+str(this.size)+')'
+##############
+#End TriangularArray class
+##############
 class MockSet:
 	def add(this):
 		pass

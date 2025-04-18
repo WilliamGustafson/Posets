@@ -49,8 +49,13 @@ class Poset:
 
 	\begin{itemize}
 		\item[]{
-		\verb|zeta| -- A matrix whose $i,j$ entry is 1 if the $i$th element is strictly less
-			than the $j$th element.
+		\verb|zeta| -- A triangular array indexed by $i,j$ such
+		that $i<j$ whose entries are 0 if $i$ and $j$ are
+		incomparable and otherwise an arbitrary weight. This
+		argument may be an instance of \verb|posets.TriangularArray|,
+		a nested iterable or a flat iterable in the latter case
+		\verb|flat_zeta| should be \verb|True|. Elements are
+		read row-wise when \verb|zeta| is an iterable.
 		}
 		\item[]{
 		\verb|elements| -- A list specifying the elements of the poset.
@@ -115,7 +120,7 @@ class Poset:
 	'''
 	__slots__ = ('cache','hasseDiagram','zeta','elements','ranks','name')
 	def __init__(this, zeta=None, elements=None, ranks=None, less=None, name='',\
-		 hasse_class=None, trans_close=True, relations=None, indices=False, that=None,**kwargs):
+		 hasse_class=None, trans_close=True, relations=None, indices=False, flat_zeta=False, that=None,**kwargs):
 		r'''
 		@section@Miscellaneous@
 		See \verb|Poset|.
@@ -132,10 +137,10 @@ class Poset:
 			this.hasseDiagram.P = this
 			return
 		elif zeta is not None:
-			if isinstance(zeta,IncAlgElem):
+			if isinstance(zeta,TriangularArray):
 				this.zeta = zeta	
 			else:
-				this.zeta = IncAlgElem(zeta,square=True)
+				this.zeta = TriangularArray(zeta,flat=flat_zeta)
 		elif relations is not None:
 			if isinstance(relations,dict):
 				this.elements = list(set(itertools.chain(*relations.values(),relations.keys()))) if elements is None else elements
@@ -172,10 +177,10 @@ class Poset:
 
 		else: #no data provided poset is (possibly empty) antichain
 			if elements == None:
-				this.zeta = IncAlgElem(data=[],size=0)
+				this.zeta = TriangularArray(data=[],size=0)
 				this.elements = []
 			else:
-				this.zeta = IncAlgElem((0 for i in range(len(elements)) for _ in range(i+1,len(elements))), size=len(elements))
+				this.zeta = TriangularArray((0 for i in range(len(elements)) for _ in range(i+1,len(elements))), size=len(elements))
 
 		if not hasattr(this, 'elements'):
 			this.elements = list(range(this.zeta.size)) if elements is None else elements
@@ -206,8 +211,8 @@ class Poset:
 				zeta+=[0]*(len(linear_elements)-i-1)
 			else:
 				zeta+=[1 if f in relations[e] else 0 for f in linear_elements[i+1:]]
-#		zeta = IncAlgElem([1 if linear_elements[j] in relations[linear_elements[i]] else 0 for i in range(len(linear_elements)) for j in range(i+1,len(linear_elements))])
-		zeta = IncAlgElem(zeta,size=len(linear_elements)-1)
+#		zeta = TriangularArray([1 if linear_elements[j] in relations[linear_elements[i]] else 0 for i in range(len(linear_elements)) for j in range(i+1,len(linear_elements))])
+		zeta = TriangularArray(zeta,size=len(linear_elements)-1)
 		return zeta, linear_elements
 
 
@@ -215,7 +220,7 @@ class Poset:
 	def transClose(M):
 		r'''
 		@section@Miscellaneous@
-		Given an instance of \verb|IncAlgElem| encoding a (possibly weighted) relation, via $x~y$ when the $x,y$ entry is positive and $y~x$ when negative, computes the transitive closure (any induced relations are weighted 1).
+		Given an instance of \verb|TriangularArray| encoding a (possibly weighted) relation, via $x~y$ when the $x,y$ entry is positive and $y~x$ when negative, computes the transitive closure (any induced relations are weighted 1).
 
 		TODO: doc string
 		'''
@@ -301,7 +306,7 @@ class Poset:
 		By default the label is 0 and if 0 is already an element the default label is
 		the first positive integer that is not an element.
 		'''
-		zeta = IncAlgElem([1 for p in this.elements]+this.zeta.data)
+		zeta = TriangularArray([1 for p in this.elements]+this.zeta.data)
 		#zeta = [[0]+[1 for p in this.elements]]+[[-1]+this.zeta[i] for i in range(len(this.elements))]
 		if label==None:
 			label=0
@@ -375,8 +380,8 @@ class Poset:
 		P.elements = this.elements[::-1]
 		P.ranks = this.ranks[::-1]
 		n = len(P.elements)-1
-		P.zeta = IncAlgElem([this.zeta[i, j] for i in range(n) for j in range(n,i,-1)], size = n)
-		#P.zeta = IncAlgElem([[this.zeta[j, i] for j in range(len(this.elements))] for i in range(len(this.elements))],square = True)
+		P.zeta = TriangularArray([this.zeta[i, j] for i in range(n) for j in range(n,i,-1)], size = n)
+		#P.zeta = TriangularArray([[this.zeta[j, i] for j in range(len(this.elements))] for i in range(len(this.elements))],square = True)
 		P.hasseDiagram = copy.copy(this.hasseDiagram)
 		P.hasseDiagram.P = P
 		if 'isRanked()' in this.cache:
@@ -1535,59 +1540,6 @@ class Poset:
 ##########################################
 #End Poset Class
 ##########################################
-##############
-#IncAlgElem class
-##############
-class IncAlgElem:
-	r'''
-	@is_section@
-	A class encoding an element of the incidence algebra of a poset.
-
-	This class is mainly provided for the zeta element of a poset, but
-	is essentially just a triangular array.
-
-	Constructor arguments:
-	\begin{itemize}
-		\item[]{\verb|data| -- An iterable specifying the entries in the upper diagonal; may be either a flat list or an iterable of iterables.}
-		\item[]{\verb|rows| -- Number of rows of the data, must be provided if the data is in flat form.}
-		\item[]{\verb|flat| -- Whether the data is in flat form or not.}
-		\item[]{\verb|square| -- Whether the data is a full $n\times n$ square or only the upper triangular entries (including the diagonal)}
-		\end{itemize}
-	'''
-	def __init__(this, data, size=0, flat=True, square=False):
-		if flat:
-			this.size = size
-			this.data = [x for x in data]
-		else:
-			if size==0: size = len(data)
-			if square:
-				this.data = []
-				for x,skip in zip(data,range(size)):
-					for i,y in enumerate(x):
-						if i<skip: continue
-						this.data.append(y)
-			else:
-				this.data = list(itertools.chain(*data))
-	def __getitem__(this, x):
-		r'''
-		Zero based indexing \verb|(i,j)| gives the element in row $i$ and column $j$.
-		'''
-		if isinstance(x,int): return this.data[1 + this.size*x - triangle_num(x) : this.size*(x+1) - x - triangle_num(x)+1]
-		if isinstance(x,tuple): return this.data[x[1] - x[0] + this.size*x[0] - triangle_num(x[0])]
-		#if isinstance(x,tuple): return this.data[this.size*(x[0]-1)-triangle_num(x[0]+1)+x[1]-1]
-
-	def __str__(this):
-		space_len = max(len(str(entry)) for entry in this)
-
-		return ''.join(' '.join(('{x:'+str(space_len)+'}').format(x=x)+('\n' if t==this.size-1 else '') for x,t in zip(this,TriangleRange(this.size))))
-	def __iter__(this):
-		return iter(this.data)
-	
-	def __repr__(this):
-		return 'IncAlgElem(('+', '.join(repr(x) for x in this)+'), flat=True,size='+str(this.size)+')'
-##############
-#End IncAlgElem class
-##############
 ##############
 #Poset Iso Class
 ##############
