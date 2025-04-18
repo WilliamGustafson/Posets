@@ -219,6 +219,7 @@ class Poset:
 		#TODO preserve order within ranks (for plotting)
 		while len(E)>0:
 			minimal = E.difference(itertools.chain(*(relations[e] for e in E.intersection(relations))))
+			if len(minimal)==0: raise ValueError("Relations do not specify a poset because the anti-symmetry axiom is violated")
 			linear_elements.extend(minimal)
 			E = E.difference(minimal)
 		zeta = []
@@ -785,7 +786,7 @@ class Poset:
 			i = this.elements.index(i)
 			j = this.elements.index(j)
 
-		return this.zeta[i, j]>0
+		return i < j and this.zeta[i, j]!=0
 
 	def lesseq(this, i, j, indices=False):
 		r'''
