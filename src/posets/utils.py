@@ -54,3 +54,8 @@ def cached_method(f, *args, **kwargs):
 	except:
 		pass
 	return ret
+
+def triangle_num(n):
+	r'''@no_doc@'''
+	return n*(n-1) // 2
+
