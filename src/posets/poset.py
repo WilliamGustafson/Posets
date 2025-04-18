@@ -180,8 +180,7 @@ class Poset:
 			this.zeta,new_order = Poset.zeta_from_relations(relations,elements)
 			this.elements = [elements[i] for i in new_order]
 			if ranks is not None:
-				this.ranks = [[new_order.index(i) for i in rk] for rk in ranks]
-								
+				ranks = [[new_order.index(i) for i in rk] for rk in ranks]
 
 		else: #no data provided poset is (possibly empty) antichain
 			if elements == None:
@@ -212,7 +211,7 @@ class Poset:
 		#TODO preserve order within ranks (for plotting)
 		while len(E)>0:
 			minimal = E.difference(itertools.chain(*(relations[e] for e in E.intersection(relations))))
-			for m in minimal: linear_elements.append(m)
+			linear_elements.extend(minimal)
 			E = E.difference(minimal)
 		zeta = []
 		for i,e in enumerate(linear_elements):
@@ -398,8 +397,6 @@ class Poset:
 		r'''
 		@section@Operations@
 		Returns the dual poset which has the same elements and relation $p\le q$ when $q\le p$ in the original poset.
-
-		TODO: borked
 		'''
 		P = Poset()
 		P.elements = this.elements[::-1]
@@ -630,10 +627,11 @@ class Poset:
 		#but if its cached calling it doesn't really call it
 		if 'isRanked()' in this.cache and this.isRanked():
 			ret = {}
-			non_max = [i for i in range(len(this)) if i not in this.max(indices=True)]
-			for i in non_max:
+			for i in set(range(len(this))).difference(this.max(indices=True)):
 				p = i if indices else this[i]
 				ret[p] = []
+				print('rk(',p,')',this.rank(p,indices))
+				print(len(this.ranks))
 				for j in this.ranks[this.rank(p,indices)+1]:
 					q = j if indices else this[j]
 					if this.less(i,j,indices=True):

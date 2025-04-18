@@ -288,6 +288,7 @@ def Cube(n):
 #	P.incMat = [[1 if less(x,y) else -1 if less(y,x) else 0 for y in P.elements] for x in P.elements]
 	ranks = [[] for _ in range(n+1)]
 	for p in elements:
+		print('p',p,'rank',len([c for c in p if c=='*']))
 		ranks[len([c for c in p if c=='*'])].append(elements.index(p))
 	name = str(n)+"-cube face lattice"
 
@@ -394,7 +395,7 @@ def Torus(n=2, m=2):
 	def sort_key(F): #revlex induced by 0 < A < B < 1
 		return tuple([order.index(f) for f in F][::-1])
 
-	P = Poset(less=less, ranks=ranks, elements=elements, name = str(m)+" subdivided "+str(n)+"-torus",nodeName=nodeName).sort(sort_key).adjoin_zerohat().adjoin_onehat()
+	P = Poset(less=less, ranks=ranks, elements=elements, name = str(m)+" subdivided "+str(n)+"-torus",nodeName=nodeName)#.sort(sort_key).adjoin_zerohat().adjoin_onehat()
 	#cache some values for queries
 	P.cache['isRanked()']=True
 	P.cache['isEulerian()']= n%2 == 1
@@ -527,7 +528,7 @@ def Grid(n=2,d=None):
 	#build the complex as a union and the list of gluings
 	for i in itertools.product(*[range(j) for j in d]):
 		elements = [(F, i) for F in cube]
-		Gamma = Gamma.union(Poset(elements = elements, incMat = cube.incMat, ranks = cube.ranks))
+		Gamma = Gamma.union(Poset(elements = elements, zeta = cube.zeta, ranks = cube.ranks))
 
 		for j in range(n):
 			if i[j] == d[j]-1: continue
