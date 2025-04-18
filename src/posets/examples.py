@@ -279,18 +279,17 @@ def Cube(n):
 	def less(x,y):
 		return x!=y and all([x[i]==y[i] or y[i]=='*' for i in range(len(x))])
 
-	E = ['']
-	for i in range(n): E = expand(E)
-	P = Poset()
-	P.elements = E
-	P.incMat = [[1 if less(x,y) else -1 if less(y,x) else 0 for y in P.elements] for x in P.elements]
-	P.ranks = [[] for _ in range(n+1)]
-	for p in P.elements:
-		P.ranks[len([c for c in p if c=='*'])].append(P.elements.index(p))
-	P.name = str(n)+"-cube face lattice"
-
 	def sort_key(F): #revlex induced by 0<*<1
 		return ''.join(['1' if f == '*' else '2' if f == '1' else '0' for f in F][::-1])
+
+	elements = ['']
+	for i in range(n): elements = expand(elements)
+	elements.sort(key=sort_key)
+#	P.incMat = [[1 if less(x,y) else -1 if less(y,x) else 0 for y in P.elements] for x in P.elements]
+	ranks = [[] for _ in range(n+1)]
+	for p in elements:
+		ranks[len([c for c in p if c=='*'])].append(elements.index(p))
+	name = str(n)+"-cube face lattice"
 
 	if n>=1:
 		def nodeName(this,i):
@@ -298,9 +297,8 @@ def Cube(n):
 	else:
 		def nodeName(this,i):
 			return ['0','*','1','-'][i]
-	P.hasseDiagram.nodeName = nodeName
+	P = Poset(elements = elements, ranks = ranks, less = less, name = name, nodeName = nodeName).adjoin_zerohat()
 
-	P = P.sort(sort_key).adjoin_zerohat()
 	#cache some values for queries
 	P.cache['isRanked()']=True
 	P.cache['isEulerian()']=True

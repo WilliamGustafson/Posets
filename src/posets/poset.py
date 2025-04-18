@@ -158,11 +158,15 @@ class Poset:
 			assert elements is not None,'`elements` must be provided if specifying a poset via `less`'
 			relations = {}
 			if ranks is not None:
+				if not indices:
+					given_less = less
+					less = lambda i,j : given_less(elements[i],elements[j])
 				for rk in range(len(ranks)-1):
 					for i in ranks[rk]:
-						relations[i] = []
+						relations_i = []
 						for j in ranks[rk+1]:
-							if less(i,j): relations[i].append(j)
+							if less(i,j): relations_i.append(j)
+						if len(relations_i)>0: relations[i] = relations_i
 			else:
 				if indices:
 					Less = lambda e,i,f,j:less(i,j)
@@ -173,7 +177,10 @@ class Poset:
 					for j,f in enumerate(elements):
 						if Less(e,i,f,j): relations_i.append(j)
 					if len(relations_i)>0: relations[i] = relations_i
-			this.zeta,this.elements = Poset.zeta_from_relations(relations,elements)
+			this.zeta,new_order = Poset.zeta_from_relations(relations,elements)
+			this.elements = [elements[i] for i in new_order]
+			if ranks is not None:
+				this.ranks = [[new_order.index(i) for i in rk] for rk in ranks]
 								
 
 		else: #no data provided poset is (possibly empty) antichain
@@ -215,7 +222,7 @@ class Poset:
 				zeta+=[1 if f in relations[e] else 0 for f in linear_elements[i+1:]]
 #		zeta = TriangularArray([1 if linear_elements[j] in relations[linear_elements[i]] else 0 for i in range(len(linear_elements)) for j in range(i+1,len(linear_elements))])
 		zeta = TriangularArray(zeta,size=len(linear_elements)-1)
-		return zeta, [elements[i] for i in linear_elements]
+		return zeta, linear_elements
 
 
 
