@@ -105,6 +105,9 @@ class TriangularArray:
 			this.size = len(data) if size==0 else size
 			this.data = list(itertools.chain(*data))
 		assert(triangle_num(this.size+1) == len(this.data))
+	def __setitem__(this, idx, x):
+		this.data[idx[1] - idx[0] -1 + this.size*idx[0] - triangle_num(idx[0])] = x
+
 	def __getitem__(this, x):
 		r'''
 		Zero based indexing \verb|(i,j)| gives the element in row $i$ and column $j$.
