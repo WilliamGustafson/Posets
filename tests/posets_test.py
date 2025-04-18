@@ -16,16 +16,16 @@ import subprocess
 class P:
 	def __init__(this, incMat=None, elements=None, ranks=None):
 		if type(incMat) == Poset: #construct from a poset
-			this.incMat = incMat.incMat
+			this.zeta = incMat.zeta
 			this.ranks = incMat.ranks
 			this.elements = incMat.elements
 			return
 		#construct explicitly
-		this.incMat = incMat
+		this.zeta = incMat
 		this.elements = elements
 		this.ranks = ranks
 	def __eq__(this, that):
-		return this.incMat == that.incMat and this.elements == that.elements and this.ranks == that.ranks
+		return this.zeta == that.zeta and this.elements == that.elements and this.ranks == that.ranks
 	def __neq__(this, that):
 		return not this == that
 	def __repr__(this):
@@ -35,7 +35,7 @@ class P:
 ##########################################
 
 class TestConstructorOptions:
-	Bool3 = Poset(zeta = [[1,1,1,1,1,1,1], [0,1,0,1,0,1], [1,0,0,1,1], [0,0,0,1], [0,0,1], [0,1], [1]],elements = [tuple(),(1,),(2,),(1,2),(3,),(1,3),(2,3),(1,2,3)],ranks=[[0],[1,2,4],[3,5,6],[7]])
+	Bool3 = Poset(incMat = [[0,1,1,1,1,1,1,1],[-1,0,0,1,0,1,0,1],[-1,0,0,1,0,0,1,1],[-1,-1,-1,0,0,0,0,1],[-1,0,0,0,0,1,1,1],[-1,-1,0,0,-1,0,0,1],[-1,0,-1,0,-1,0,0,1],[-1,-1,-1,-1,-1,-1,-1,0]], elements = [tuple(),(1,),(2,),(1,2),(3,),(1,3),(2,3),(1,2,3)],ranks=[[0],[1,2,4],[3,5,6],[7]])
 
 	def test_relsListIndices(this):
 		'''
@@ -89,7 +89,7 @@ class TestConstructorOptions:
 ##########################################
 class DontTestExamples:
 	def test_Bool(this):
-		Bool3 = Poset(zeta = [[1,1,1,1,1,1,1], [0,1,0,1,0,1], [1,0,0,1,1], [0,0,0,1], [0,0,1], [0,1], [1]],elements = [tuple(),(1,),(2,),(1,2),(3,),(1,3),(2,3),(1,2,3)],ranks=[[0],[1,2,4],[3,5,6],[7]])
+		Bool3 = Poset(incMat = [[0,1,1,1,1,1,1,1],[-1,0,0,1,0,1,0,1],[-1,0,0,1,0,0,1,1],[-1,-1,-1,0,0,0,0,1],[-1,0,0,0,0,1,1,1],[-1,-1,0,0,-1,0,0,1],[-1,0,-1,0,-1,0,0,1],[-1,-1,-1,-1,-1,-1,-1,0]], elements = [tuple(),(1,),(2,),(1,2),(3,),(1,3),(2,3),(1,2,3)],ranks=[[0],[1,2,4],[3,5,6],[7]])
 		assert(Bool3==Boolean(3))
 	def test_chain(this):
 		chain3 = P([[0,1,1,1],[-1,0,1,1],[-1,-1,0,1],[-1,-1,-1,0]], list(range(4)), [[i] for i in range(4)])
@@ -447,7 +447,7 @@ class TestOperations:
 	V = Poset(relations={'*':['x','y']})
 	AB = Poset(relations={'a':['b']})
 	ABC = Poset(relations={'a':['b'],'b':['c']})
-	Bool3 = Poset(zeta = [[1,1,1,1,1,1,1], [0,1,0,1,0,1], [1,0,0,1,1], [0,0,0,1], [0,0,1], [0,1], [1]],elements = [tuple(),(1,),(2,),(1,2),(3,),(1,3),(2,3),(1,2,3)],ranks=[[0],[1,2,4],[3,5,6],[7]])
+	Bool3 = Poset(incMat = [[0,1,1,1,1,1,1,1],[-1,0,0,1,0,1,0,1],[-1,0,0,1,0,0,1,1],[-1,-1,-1,0,0,0,0,1],[-1,0,0,0,0,1,1,1],[-1,-1,0,0,-1,0,0,1],[-1,0,-1,0,-1,0,0,1],[-1,-1,-1,-1,-1,-1,-1,0]], elements = [tuple(),(1,),(2,),(1,2),(3,),(1,3),(2,3),(1,2,3)],ranks=[[0],[1,2,4],[3,5,6],[7]])
 	def test_adjoin_zerohat(this):
 		A2 = Poset(elements=[0,1])
 		assert(P(elements=[2,0,1],incMat=[[0,1,1],[-1,0,0],[-1,0,0]],ranks=[[0],[1,2]])==A2.adjoin_zerohat())
