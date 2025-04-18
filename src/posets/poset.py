@@ -132,7 +132,10 @@ class Poset:
 			this.hasseDiagram.P = this
 			return
 		elif zeta is not None:
-			this.zeta = zeta	
+			if isinstance(zeta,IncAlgElem):
+				this.zeta = zeta	
+			else:
+				this.zeta = IncAlgElem(zeta,square=True)
 		elif relations is not None:
 			if isinstance(relations,dict):
 				this.elements = list(set(itertools.chain(*relations.values(),relations.keys()))) if elements is None else elements
@@ -164,11 +167,12 @@ class Poset:
 					relations[i] = []
 					for j,f in enumerate(elements):
 						if Less(e,i,f,j): relations[i].append(j)
+			this.zeta,this.elements = Poset.zeta_from_relations(relations,elements)
 								
 
 		else: #no data provided poset is (possibly empty) antichain
 			if elements == None:
-				this.zeta = IncAlgElem()
+				this.zeta = IncAlgElem(data=[],size=0)
 				this.elements = []
 			else:
 				this.zeta = IncAlgElem((0 for i in range(len(elements)) for _ in range(i+1,len(elements))), size=len(elements))
@@ -203,7 +207,7 @@ class Poset:
 			else:
 				zeta+=[1 if f in relations[e] else 0 for f in linear_elements[i+1:]]
 #		zeta = IncAlgElem([1 if linear_elements[j] in relations[linear_elements[i]] else 0 for i in range(len(linear_elements)) for j in range(i+1,len(linear_elements))])
-		zeta = IncAlgElem(zeta,size=len(linear_elements))
+		zeta = IncAlgElem(zeta,size=len(linear_elements)-1)
 		return zeta, linear_elements
 
 
@@ -216,15 +220,15 @@ class Poset:
 		TODO: doc string
 		'''
 		for i in range(M.size):
-			uoi = [x for x in range(M.size) if M[*sorted(i,x)]]
+			uoi = [x for x in range(M.size) if M[tuple(sorted(i,x))]]
 			while True:
 				next_uoi = [x for x in uoi]
 				for x in uoi:
 					for y in range(M.size):
-						if M[*sorted(x,y)] and y not in next_uoi: next_uoi.append(y)
+						if M[tuple(sorted(x,y))] and y not in next_uoi: next_uoi.append(y)
 				if uoi == next_uoi: break
 				uoi = next_uoi
-			for x in uoi: M[*sorted(x,i)] = 1
+			for x in uoi: M[tuple(sorted(x,i))] = 1
 
 	def __str__(this):
 		r'''
@@ -297,7 +301,8 @@ class Poset:
 		By default the label is 0 and if 0 is already an element the default label is
 		the first positive integer that is not an element.
 		'''
-		zeta = [[0]+[1 for p in this.elements]]+[[-1]+this.zeta[i] for i in range(len(this.elements))]
+		zeta = IncAlgElem([1 for p in this.elements]+this.zeta.data)
+		#zeta = [[0]+[1 for p in this.elements]]+[[-1]+this.zeta[i] for i in range(len(this.elements))]
 		if label==None:
 			label=0
 			while label in this.elements:
@@ -312,6 +317,7 @@ class Poset:
 			P.cache['isGorenstein()'] = False
 		if 'isEulerian()' in this.cache and this.cache['isEulerian()']:
 			P.cache['isEulerian()'] = False
+		breakpoint()
 		return P
 
 	def adjoin_onehat(this, label=None):
@@ -366,9 +372,11 @@ class Poset:
 		Returns the dual poset which has the same elements and relation $p\le q$ when $q\le p$ in the original poset.
 		'''
 		P = Poset()
-		P.elements = this.elements
+		P.elements = this.elements[::-1]
 		P.ranks = this.ranks[::-1]
-		P.zeta = [[this.zeta[j, i] for j in range(len(this.elements))] for i in range(len(this.elements))]
+		n = len(P.elements)-1
+		P.zeta = IncAlgElem([this.zeta[i, j] for i in range(n) for j in range(n,i,-1)], size = n)
+		#P.zeta = IncAlgElem([[this.zeta[j, i] for j in range(len(this.elements))] for i in range(len(this.elements))],square = True)
 		P.hasseDiagram = copy.copy(this.hasseDiagram)
 		P.hasseDiagram.P = P
 		if 'isRanked()' in this.cache:
@@ -379,6 +387,7 @@ class Poset:
 			P.cache['isEulerian()'] = this.cache['isEulerian()']
 		if 'isGorenstein()' in this.cache:
 			P.cache['isGorenstein()'] = this.cache['isGorenstein()']
+		breakpoint()
 		return P
 
 	def element_union(E, F):
@@ -632,7 +641,7 @@ class Poset:
 		@section@Subposet Selection@
 		Returns a list of the maximal elements of the poset.
 		'''
-		ret_indices = [i for i in range(len(this.zeta)) if all(m<=0 for m in this.zeta[i])]
+		ret_indices = [i for i in range(this.zeta.size) if all(m==0 for m in this.zeta[i])]
 		return ret_indices if indices else [this.elements[i] for i in ret_indices]
 
 	def complSubposet(this, S, indices=False):
@@ -1505,7 +1514,10 @@ class Poset:
 		preranks = {} #keys are indices values are ranks
 		while len(left)>0:
 			for l in left:
-				loi = [i for i in range(l+1,zeta.size) if zeta[l,i]]
+				try:
+					loi = [i for i in range(l+1,zeta.size) if zeta[l,i]]
+				except:
+					breakpoint()
 				if all([i in preranks.keys() for i in loi]): 
 					preranks[l] = 1+max([-1]+[preranks[i] for i in loi])
 					left.remove(l)
@@ -1560,8 +1572,9 @@ class IncAlgElem:
 		r'''
 		Zero based indexing \verb|(i,j)| gives the element in row $i$ and column $j$.
 		'''
-		if isinstance(x,int): return this.data[x]
-		if isinstance(x,tuple): return this.data[this.size*(x[0]-1)-triangle_num(x[0]+1)+x[1]-1]
+		if isinstance(x,int): return this.data[1 + this.size*x - triangle_num(x) : this.size*(x+1) - x - triangle_num(x)+1]
+		if isinstance(x,tuple): return this.data[x[1] - x[0] + this.size*x[0] - triangle_num(x[0])]
+		#if isinstance(x,tuple): return this.data[this.size*(x[0]-1)-triangle_num(x[0]+1)+x[1]-1]
 
 	def __str__(this):
 		space_len = max(len(str(entry)) for entry in this)

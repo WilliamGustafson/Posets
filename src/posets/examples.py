@@ -1,5 +1,5 @@
 '''@no_doc@no_children@'''
-from .poset import Poset,Genlatt
+from .poset import Poset,Genlatt,IncAlgElem
 from .hasseDiagram import *
 import itertools
 
@@ -179,8 +179,7 @@ def Boolean(n):
 		X = None
 	P = Poset()
 	P.elements = list(range(1<<n))
-	P.incMat = [[1 if i&j==i else 0 for j in P.elements] for i in P.elements]
-	P.incMat = [[P.incMat[i][j] - P.incMat[j][i] for j in range(len(P))] for i in range(len(P))]
+	P.zeta = IncAlgElem([[1 if i&j==i else 0 for j in P.elements] for i in P.elements],square=True)
 	P.ranks = [[] for _ in range(n+1)]
 	for p in P.elements:
 		P.ranks[len([c for c in bin(p) if c=='1'])].append(p) #p==P.elements.index(p)
