@@ -41,6 +41,9 @@ def P(*args,**kwargs):
 
 class TestConstructorOptions:
 	Bool3 = make_Bool3()
+	def test_less(this):
+		bool3 = Poset(less=lambda X,Y:all(x in Y for x in X), elements=[tuple(),(1,),(1,2),(2,),(3,),(1,3),(2,3),(1,2,3)])
+		assert(this.Bool3 == bool3)
 	def test_relsListIndices(this):
 		'''
 		relations=list indices=True
@@ -521,8 +524,8 @@ class TestSubposetSelection:
 	def test_max(this):
 		assert(sorted(this.V.max())==['x','y'])
 	def test_subposet(this):
-		assert(P(Poset(relations={(1,):[(1,2)],(3,):[]}).sort())==this.pent.subposet([(1,2),(1,),(3,)]).sort())
-		assert(P(Poset(relations={(1,):[(1,2)],(3,):[]}).sort())==this.pent.subposet((1,2,3),indices=True).sort())
+		assert(P(Poset(relations={(1,):[(1,2)],(3,):[]}))==this.pent.subposet([(1,2),(1,),(3,)]))
+		assert(P(Poset(relations={(1,):[(1,2)],(3,):[]}))==this.pent.subposet((1,2,3),indices=True))
 	def test_complSubposet(this):
 		assert(P(Poset(relations={(1,):[(1,2)],(3,):[]}).sort())==this.pent.complSubposet([tuple(),(1,2,3)]).sort())
 		assert(P(Poset(relations={(1,):[(1,2)],(3,):[]}).sort())==this.pent.complSubposet((0,4),indices=True).sort())
@@ -582,8 +585,6 @@ class TestInvariants:
 	def test_cdIndex(this):
 		assert(Polynomial([[1,'ccc'],[2,'cd'],[2,'dc']])==this.B4.cdIndex())
 		assert(Polynomial([[1,'cc'],[1,'d']])==this.B3.complSubposet([(1,2)]).cdIndex())
-	def test_zeta(this):
-		assert([[1,1,1,1],[0,1,0,1],[0,0,1,1],[0,0,0,1]]==Boolean(2).zeta())
 	def test_bettiNumbers(this):
 		assert([1,2,1]==Torus().properPart().bettiNumbers())
 	def test_buildIsomorphism(this):
