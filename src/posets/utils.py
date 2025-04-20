@@ -97,23 +97,23 @@ class TriangularArray:
 		\item[]{\verb|flat| -- Whether the data is in flat form or not.}
 		\end{itemize}
 	'''
-	def __init__(this, data, size=0, flat=True):
+	def __init__(this, data, flat=True):
 		if flat:
-			this.size = size
 			this.data = [x for x in data]
 		else:
-			this.size = len(data) if size==0 else size
 			this.data = list(itertools.chain(*data))
-		assert(triangle_num(this.size+1) == len(this.data))
+		size = int(0.5 + (2*len(this.data)+0.25)**0.5)-1
+		assert(triangle_num(size+1) == len(this.data))
+		this.size = size
 	def __setitem__(this, idx, x):
-		this.data[idx[1] - idx[0] -1 + this.size*idx[0] - triangle_num(idx[0])] = x
-
+		this.data[idx[1] - idx[0] + this.size*idx[0] - triangle_num(idx[0])] = x
+	def row(this, i):
+		return this.data[this.size*i - triangle_num(i) : this.size*(i+1) - i - triangle_num(i)]
 	def __getitem__(this, x):
 		r'''
 		Zero based indexing \verb|(i,j)| gives the element in row $i$ and column $j$.
 		'''
-		if isinstance(x,int): return this.data[this.size*x - triangle_num(x) : this.size*(x+1) - x - triangle_num(x)]
-		if isinstance(x,tuple): return this.data[x[1] - x[0] - 1 + this.size*x[0] - triangle_num(x[0])]
+		return this.data[x[1] - x[0] + this.size*x[0] - triangle_num(x[0])]
 		#if isinstance(x,tuple): return this.data[this.size*(x[0]-1)-triangle_num(x[0]+1)+x[1]-1]
 
 	def __str__(this):
@@ -121,27 +121,28 @@ class TriangularArray:
 		space_len = max(len(str(entry)) for entry in this)
 		ret = []
 		for i in range(this.size):
-			row = this[i]
+			row = this.row(i)
 			ret.append(' '*i*(space_len+1)+ ' '.join(('{x:'+str(space_len)+'}').format(x=x) for x in row))
 		return '\n'.join(ret)
 	def __iter__(this):
 		return iter(this.data)
 	
 	def __repr__(this):
-		return 'TriangularArray(('+', '.join(repr(x) for x in this)+'), flat=True,size='+str(this.size)+')'
+		return 'TriangularArray(('+', '.join(repr(x) for x in this)+'), flat=True)'
 
 	def revtranspose(this):
 		r'''
 		Returns a new instance of \verb|TriangularArray| by reversing columns and then transposing.
 		'''
-		return TriangularArray([this.data[len(this.data) - i - triangle_num(j) - j - 1] for i in range(this.size) for j in range(i,this.size)],size=this.size)
+		return TriangularArray([this.data[len(this.data) - i - triangle_num(j) - j - 1] for i in range(this.size) for j in range(i,this.size)])
 
 	def subarray(this, S):
 		'''
 		Returns a sub-triangular array with rows indexed by \verb|S[:-1]| and columns by \verb|S[1:]+1|.
 		'''
 		S = sorted(S)
-		return TriangularArray([this.data[s + S[i]*(this.size-1)-triangle_num(S[i])-1] for i in range(len(S)-1) for s in S[i+1:]], size=len(S)-1)
+		return TriangularArray([this.data[s + S[i]*(this.size)-triangle_num(S[i])] for i in range(len(S)) for s in S[i+1:]])
+		#return TriangularArray([this.data[s + S[i]*(this.size-1)-triangle_num(S[i])-1] for i in range(len(S)) for s in S[i+1:]], size=len(S))
 ##############
 #End TriangularArray class
 ##############

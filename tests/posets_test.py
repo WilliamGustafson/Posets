@@ -11,7 +11,7 @@ from posets import *
 import subprocess
 
 def make_Bool3():
-	return Poset(zeta = [[1,1,1,1,1,1,1], [0,1,0,1,0,1], [1,0,0,1,1], [0,0,0,1],[1,1,1], [0,1], [1]], elements=[tuple(),(1,),(2,),(1,2),(3,),(1,3),(2,3),(1,2,3)],ranks=[[0],[1,2,4],[3,5,6],[7]])
+	return Poset(zeta = [[1,1,1,1,1,1,1,1], [1,0,1,0,1,0,1], [1,1,0,0,1,1], [1,0,0,0,1],[1,1,1,1], [1,0,1], [1,1],[1]], elements=[tuple(),(1,),(2,),(1,2),(3,),(1,3),(2,3),(1,2,3)],ranks=[[0],[1,2,4],[3,5,6],[7]])
 
 #mock poset class that overrides equality
 #checking x==y when x is an instance of P and y a Poset
@@ -150,7 +150,7 @@ class DontTestExamples:
 				('1*',(1,0)):[('**',(1,0))],
 				}
 			).adjoin_zerohat().sort(key=str))
-		grid = P(Poset(zeta=[[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0], [0, 0], [0]], elements=[('**', (0, 0)), ('**', (1, 0)), ('*0', (0, 0)), ('*0', (1, 0)), ('*1', (0, 0)), ('*1', (1, 0)), ('0*', (0, 0)), ('00', (0, 0)), ('01', (0, 0)), ('1*', (0, 0)), ('1*', (1, 0)), ('10', (0, 0)), ('10', (1, 0)), ('11', (0, 0)), ('11', (1, 0)), 0], ranks=[[15], [7, 8, 11, 12, 13, 14], [2, 3, 4, 5, 6, 9, 10], [0, 1]]))
+		grid = P(Poset(zeta=[ [1,0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1,0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1,0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1,0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1,0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1,0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1,0, 0, 0, 0, 0, 0, 0, 0, 0], [1,0, 0, 0, 0, 0, 0, 0, 0], [1,0, 0, 0, 0, 0, 0, 0], [1,0, 0, 0, 0, 0, 0], [1,0, 0, 0, 0, 0], [1,0, 0, 0, 0], [1,0, 0, 0], [1,0, 0], [1,0],[1]], elements=[('**', (0, 0)), ('**', (1, 0)), ('*0', (0, 0)), ('*0', (1, 0)), ('*1', (0, 0)), ('*1', (1, 0)), ('0*', (0, 0)), ('00', (0, 0)), ('01', (0, 0)), ('1*', (0, 0)), ('1*', (1, 0)), ('10', (0, 0)), ('10', (1, 0)), ('11', (0, 0)), ('11', (1, 0)), 0], ranks=[[15], [7, 8, 11, 12, 13, 14], [2, 3, 4, 5, 6, 9, 10], [0, 1]]))
 		assert(grid==Grid(2,[2,1]).sort(key=str))
 
 	def test_kleinBottle(this):
@@ -458,10 +458,12 @@ class TestOperations:
 	Bool3 = make_Bool3()
 	def test_adjoin_zerohat(this):
 		A2 = Poset(elements=[0,1])
-		assert(P(elements=[2,0,1],zeta=[[1,1],[0]],ranks=[[0],[1,2]])==A2.adjoin_zerohat())
+		X = A2.adjoin_zerohat()
+		Y=P(elements=[2,0,1],zeta=[[1,1,1],[1,0],[1]],ranks=[[0],[1,2]])
+		assert(P(elements=[2,0,1],zeta=[[1,1,1],[1,0],[1]],ranks=[[0],[1,2]])==A2.adjoin_zerohat())
 	def test_adjoin_onehat(this):
 		A2 = Poset(elements=[0,1])
-		assert(P(elements=[0,1,2],zeta=[[0,1],[1]],ranks=[[0,1],[2]])==A2.adjoin_onehat())
+		assert(P(elements=[0,1,2],zeta=[[1,0,1],[1,1],[1]],ranks=[[0,1],[2]])==A2.adjoin_onehat())
 
 	def test_identify(this):
 		Q = this.Bool3.identify({tuple():[(1,),(2,)], (3,):[(1,3),(2,3)]})
@@ -650,8 +652,8 @@ class TestMisc:
 		assert([('a0','a1'),('a0','b1'),('b0','a1'),('b0','b1')]==sorted(this.B.relations()))
 		assert([(0,1),(0,3),(2,1),(2,3)]==sorted(this.B.sort().relations(indices=True)))
 	def test_reorder(this):
-		assert(P(Poset(elements=['b1','a0','b0','a1'],zeta=[[0,0,0],[0,1],[1]]))==this.B.reorder(['b1','a0','b0','a1']))
-		assert(P(Poset(elements=['b1','a0','b0','a1'],zeta=[[0,0,0],[0,1],[1]]))==this.B.sort().reorder([3,0,2,1],indices=True))
+		assert(P(Poset(elements=['b1','a0','b0','a1'],zeta=[[1,0,0,0],[1,0,1],[1,1],[1]]))==this.B.reorder(['b1','a0','b0','a1']))
+		assert(P(Poset(elements=['b1','a0','b0','a1'],zeta=[[1,0,0,0],[1,0,1],[1,1],[1]]))==this.B.sort().reorder([3,0,2,1],indices=True))
 		assert(P(Poset(elements=['a0','a1','b0','b1'],relations={0:[1,3],2:[1,3]},indices=True))==this.B.reorder(this.B.elements[::-1]).sort())
 	def test_shuffle(this):
 		assert(this.B.shuffle()==this.B)

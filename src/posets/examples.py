@@ -148,7 +148,7 @@ def Chain(n):
 	elements = list(range(n+1))
 	ranks = [[i] for i in elements]
 	import operator
-	P = Poset(zeta = TriangularArray([1 for _ in TriangleRange(len(elements)-1)],size=n-1), elements=elements, ranks=ranks, name = "Length "+str(n)+" chain", trans_close=False)
+	P = Poset(zeta = TriangularArray([1 for _ in TriangleRange(len(elements)-1)]), elements=elements, ranks=ranks, name = "Length "+str(n)+" chain", trans_close=False)
 	#cach some values for queries
 	P.cache['isRanked()']=True
 	P.cache['isEulerian()']=False
@@ -181,7 +181,7 @@ def Boolean(n):
 		X = None
 	P = Poset()
 	P.elements = list(range(1<<n))
-	P.zeta = TriangularArray([1 if i&j==i else 0 for i in range(1<<n) for j in range(i+1,1<<n)],size=len(P.elements)-1)
+	P.zeta = TriangularArray([1 if i&j==i else 0 for i in range(1<<n) for j in range(i+1,1<<n)])
 	P.ranks = [[] for _ in range(n+1)]
 	for p in P.elements:
 		P.ranks[len([c for c in bin(p) if c=='1'])].append(p) #p==P.elements.index(p)

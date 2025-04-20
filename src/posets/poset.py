@@ -186,16 +186,16 @@ class Poset:
 			elements = list(elements)
 			this.zeta,new_order = Poset.zeta_from_relations(relations,elements)
 			this.elements = [elements[i] for i in new_order]
+			if ranks == [[0],[1,2]]: breakpoint()
 			if ranks is not None:
 				ranks = [[new_order.index(i) for i in rk] for rk in ranks]
 
 		else: #no data provided poset is (possibly empty) antichain
 			if elements == None:
-				this.zeta = TriangularArray(data=[],size=0)
+				this.zeta = TriangularArray(data=[])
 				this.elements = []
 			else:
-				this.zeta = TriangularArray((0 for i in range(len(elements)) for _ in range(i+1,len(elements))), size=len(elements)-1)
-
+				this.zeta = TriangularArray((1 if i==0 else 0 for i in TriangleRange(len(elements))))
 		if not hasattr(this, 'elements'):
 			this.elements = list(range(this.zeta.size)) if elements is None else elements
 		this.ranks = Poset.make_ranks(this.zeta) if ranks is None else ranks
@@ -226,10 +226,10 @@ class Poset:
 		zeta = []
 		for i,e in enumerate(linear_elements):
 			if e not in relations:
-				zeta+=[0]*(len(linear_elements)-i-1)
+				zeta+=[1]+[0]*(len(linear_elements)-i-1)
 			else:
-				zeta+=[1 if f in relations[e] else 0 for f in linear_elements[i+1:]]
-		zeta = TriangularArray(zeta,size=len(linear_elements)-1)
+				zeta+=[1]+[1 if f in relations[e] else 0 for f in linear_elements[i+1:]]
+		zeta = TriangularArray(zeta)
 		return zeta, linear_elements
 
 
@@ -241,23 +241,16 @@ class Poset:
 
 		TODO: doc string
 		'''
-		for i in range(T.size-2,-1,-1):
-			for j in range(i+1,T.size+1):
+		if len(T.data)==0: return
+		for i in range(T.size-1,-1,-1):
+			T[i,i] = 1
+			for j in range(i+1,T.size):
 				if T[i, j]==0: continue
-				for k in range(j+1,T.size+1):
+				for k in range(j+1,T.size):
 					if T[j, k]!=0: T[i, k] = T[i,j]*T[j,k]
+		T.data[-1] = 1
 				
 		return
-#		for i in range(T.size):
-#			uoi = [x for x in range(T.size) if x!=i and T[tuple(sorted((i,x)))]!=0]
-#			while True:
-#				next_uoi = set(x for x in uoi)
-#				for x in uoi:
-#					for y in range(x+1,T.size):
-#						if x!=y and T[tuple(sorted((x,y)))] and y not in next_uoi: next_uoi.append(y)
-#				if uoi == next_uoi: break
-#				uoi = next_uoi
-#			for x in uoi: T[tuple(sorted((x,i)))] = 1
 
 	def __str__(this):
 		r'''
@@ -289,7 +282,7 @@ class Poset:
 		if not isinstance(that,Poset): return False
 		if any(e not in that.elements for e in this) or any(f not in this.elements for f in that): return False
 		inds = [that.elements.index(e) for e in this.elements]
-		return all(this.zeta[i, j] == that.zeta[tuple(sorted((inds[i], inds[j])))] for i in range(this.zeta.size) for j in range(i+1,this.zeta.size+1) )
+		return all(this.zeta[i, j] == that.zeta[tuple(sorted((inds[i], inds[j])))] for i in range(this.zeta.size) for j in range(i,this.zeta.size) )
 
 	def __iter__(this):
 		r'''
@@ -329,8 +322,8 @@ class Poset:
 		By default the label is 0 and if 0 is already an element the default label is
 		the first positive integer that is not an element.
 		'''
-		zeta = TriangularArray([1 for p in this.elements]+this.zeta.data,size=this.zeta.size+1)
-		#zeta = [[0]+[1 for p in this.elements]]+[[-1]+this.zeta[i] for i in range(len(this.elements))]
+		zeta = TriangularArray([1 for _ in range(len(this.elements)+1)]+this.zeta.data)
+		#zeta = [[0]+[1 for p in this.elements]]+[[-1]+this.zeta.row(i) for i in range(len(this.elements))]
 		if label==None:
 			label=0
 			while label in this.elements:
@@ -354,7 +347,7 @@ class Poset:
 
 		The label default is the same as \verb|Poset.adjoin_zerohat()|
 		'''
-		zeta = TriangularArray(itertools.chain(*(this.zeta[i]+[1] for i in range(this.zeta.size)),[1]),size=this.zeta.size+1)
+		zeta = TriangularArray(itertools.chain(*(this.zeta.row(i)+[1] for i in range(this.zeta.size)),[1]))
 		if label==None:
 			label=0
 			while label in this.elements:
@@ -455,7 +448,7 @@ class Poset:
 		by \verb|element_union|.
 		'''
 		elements = Poset.element_union(this.elements, that.elements)
-		zeta = [this.zeta[i]+[0]*len(that.elements) for i in range(this.zeta.size)] + [[0]*len(that.elements)] + [that.zeta[i] for i in range(that.zeta.size)]
+		zeta = [this.zeta.row(i)+[0]*len(that.elements) for i in range(this.zeta.size)] + [that.zeta.row(i) for i in range(that.zeta.size)]
 
 		that_ranks = [[r+len(this.elements) for r in rk] for rk in that.ranks]
 		if len(this.ranks)>len(that_ranks):
@@ -477,20 +470,14 @@ class Poset:
 
 		The labels in the returned poset are the same as in \verb|element_union|.
 		'''
-		this_proper = this.complSubposet(this.max(True)+this.min(True), True)
-		that_proper = that.complSubposet(that.max(True)+that.min(True), True)
-
-		return this_proper.union(that_proper).adjoin_zerohat().adjoin_onehat()
+		return this.properPart().union(that.properPart()).adjoin_zerohat().adjoin_onehat()
 
 	def bddProduct(this, that):
 		r'''
 		@section@Operations@
 		Computes the Cartesian product of two posets with maximum and minimum adjoined, that is, the poset \[\big((P\wout\{\max P,\min P\})\times(Q\wout\{\max Q,\min Q\})\big)\cup\{\zerohat,\onehat\}.\]
 		'''
-		this_proper = this.complSubposet(this.max(True)+this.min(True), True)
-		that_proper = that.complSubposet(that.max(True)+that.min(True), True)
-
-		return this_proper.cartesianProduct(that_proper).adjoin_zerohat().adjoin_onehat()
+		return this.properPart().cartesianProduct(that.properPart()).adjoin_zerohat().adjoin_onehat()
 
 	def starProduct(this, that):
 		r'''
@@ -503,7 +490,7 @@ class Poset:
 		that_part = that.complSubposet(that.min())
 		this_part = this.complSubposet(this.max())
 		elements = Poset.element_union(this_part.elements, that_part.elements)
-		zeta = [z+[1]*len(that_part.elements) for z in this_part.zeta]+[[-1]*len(this_part.elements)+z for z in that_part.zeta]
+		zeta = [this.zeta.rows(i)+[1]*len(that_part.elements) for i in range(this.zeta.size)]+that_part.zeta.data
 		ranks = this_part.ranks + [[r+len(this_part.elements) for r in rk ] for rk in that_part.ranks]
 
 		return Poset(zeta, elements, ranks)
@@ -530,9 +517,7 @@ class Poset:
 		@section@Operations@
 		Computes the diamond product which is the Cartesian product of the two posets with their minimums removed and then adjoined with a new minimum.
 		'''
-		this_proper = this.complSubposet(this.min(True), True)
-		that_proper = that.complSubposet(that.min(True), True)
-		return this_proper.cartesianProduct(that_proper).adjoin_zerohat()
+		return this.properPart().cartesianProduct(that.properPart()).adjoin_zerohat().adjoin_onehat()
 
 	def pyr(this):
 		r'''
@@ -560,20 +545,6 @@ class Poset:
 		Checks whether the poset is ranked.
 		'''
 		return all(all(this.rank(v)==this.rank(k)+1 for v in V)for (k,V) in this.covers().items())
-#		for i in range(len(this)):
-#			row = this.zeta[i]
-#			rk = this.rank(i,indices=True)
-#			found = True
-#			for j in range(len(this)):
-#				if row[j]==1:
-#					if this.rank(j,indices=True)==rk+1:
-#						found = True
-#						break
-#					else:
-#						found = False
-#			if not found:
-#				return False
-#		return True
 
 	@cached_method
 	def isEulerian(this):
@@ -581,6 +552,7 @@ class Poset:
 		@section@Queries@
 		Checks whether the given poset is Eulerian (every interval with at least 2 elements has an equal number of odd and even rank elements).
 		'''
+		#TODO fix
 		if 'isRanked()' in this.cache and this.cache['isRanked()']==False: return False
 		bottom = this.min()
 		top = this.max()
@@ -646,8 +618,6 @@ class Poset:
 			for i in set(range(len(this))).difference(this.max(indices=True)):
 				p = i if indices else this[i]
 				ret[p] = []
-				print('rk(',p,')',this.rank(p,indices))
-				print(len(this.ranks))
 				for j in this.ranks[this.rank(p,indices)+1]:
 					q = j if indices else this[j]
 					if this.less(i,j,indices=True):
@@ -671,16 +641,16 @@ class Poset:
 		@section@Subposet Selection@
 		Returns a list of the minimal elements of the poset.
 		'''
-		#TODO this copies all the elements and junk
-		return this.dual().max(indices)
-
+		z = this.zeta.data
+		ret_indices = [j for j in range(this.zeta.size) if all(z[j+i*(this.zeta.size-i)]==0 for i in range(j))]
+		return ret_indices if indices else [this.elements[i] for i in ret_indices]
 	@cached_method
 	def max(this, indices=False):
 		r'''
 		@section@Subposet Selection@
 		Returns a list of the maximal elements of the poset.
 		'''
-		ret_indices = [i for i in range(this.zeta.size) if all(m==0 for m in this.zeta[i])]+[len(this.elements)-1]
+		ret_indices = [i for i in range(this.zeta.size) if all(m==0 for m in this.zeta.row(i)[1:])]
 		return ret_indices if indices else [this.elements[i] for i in ret_indices]
 
 	def complSubposet(this, S, indices=False):
@@ -718,8 +688,8 @@ class Poset:
 		if not indices:
 			i = this.elements.index(i)
 			j = this.elements.index(j)
-		element_indices = [k for k in range(len(this.elements)) if k in (i,j) or \
-		(this.zeta[i, k] > 0 and 0 < this.zeta[k, j]) ]
+		zeta = this.zeta
+		element_indices = [k for k in range(i,j+1) if zeta[i,k]!=0]
 
 		return this.subposet(element_indices, indices=True)
 
@@ -731,6 +701,7 @@ class Poset:
 		If \verb|strict| is \verb|True| then \verb|x| is not included in the returned poset and
 		if it is \verb|False| \verb|x| is included.
 		'''
+		#TODO find indices only look at indices after the min index
 		if indices: x = [this[i] for i in x]
 
 		comp = this.less if strict else this.lesseq
@@ -746,6 +717,7 @@ class Poset:
 
 		Wrapper for \verb|this.dual().filter|.
 		'''
+		#TODO don't make a new poset for this, implement directly
 		return this.dual().filter(x,indices,strict)
 
 	@cached_method
@@ -755,11 +727,9 @@ class Poset:
 		Returns the subposet of all elements that are neither maximal nor minimal.
 		'''
 		P = this
-		if len(P.min()) == 1:
-			P = P.complSubposet(P.min())
-		if len(P.max()) == 1:
-			P = P.complSubposet(P.max())
-		return P
+		P_min = P.min()
+		P_max = P.max()
+		return P.complSubposet((P_min if len(P_min)>1 else [])+(P_max if len(P_max)>1 else []))
 
 	def rankSelection(this, S):
 		r'''
@@ -794,17 +764,17 @@ class Poset:
 		@section@Internal Computations@
 		Returns whether $i$ is less than or equal to $j$.
 		'''
-		return i==j or this.less(i,j, indices)
+		if not indices:
+			i = this.elements.index(i)
+			j = this.elements.index(j)
+		return i<=j and this.zeta[i, j]!=0
 
 	def isAntichain(this, A, indices=False):
 		r'''
 		@section@Internal Computations@
 		Returns whether the given set is an antichain ($i\not<j$ for all $i$ and $j$).
 		'''
-		for i in range(len(A)):
-			for j in range(i+1,len(A)):
-				if this.lesseq(A[i],A[j],indices) or this.lesseq(A[j],A[i],indices): return False
-		return True
+		return all(x==0 for x in this.zeta.data)
 
 	@cached_method
 	def join(this, i, j, indices=False):
@@ -813,14 +783,13 @@ class Poset:
 		Computes the join of $i$ and $j$, if it does not exist returns \verb|None|.
 		'''
 		def _join(i,j,M):
-			if i==j: return i
-			if M[i, j] < 0: return i
-			if M[i, j] > 0: return j
-			m = [x for x in range(0,len(M)) if M[i, x] > 0 and M[j, x] > 0]
+			if this.lesseq(i,j): return j
+			elif this.less(j,i): return i
+			m = [x for x in range(max(i,j)+1,len(this)) if this.less(i,x) and this.less(j,x)]
 			for x in range(0,len(m)):
 				is_join = True
 				for y in range(0,len(m)):
-					if x!=y and M[m[x], m[y]] <= 0:
+					if x!=y and this.zeta[y,x]!=0:
 						is_join = False
 						break
 				if is_join: return m[x]
@@ -861,8 +830,8 @@ class Poset:
 		def calc_mobius(this, i,j):
 			if i == j: return 1
 			ret = 1
-			for k in range(len(this)):
-				if this.zeta[i, k]>0 and this.zeta[k, j]>0:
+			for k in range(i+1,j):
+				if this.zeta[i,k]!=0 and this.zeta[k,j]!=0:
 					ret += calc_mobius(this, i,k)
 			return -ret
 
@@ -906,7 +875,7 @@ class Poset:
 			if S == tuple():
 				return weight * M[i, ranks[-1][0]]
 			for j in ranks[S[0]]:
-				if M[i, j] > 0:
+				if M[i, j]!=0:
 					newCount += fVectorCalc(ranks, S[1:], M, j, count, weight*M[i, j])
 			return newCount
 		f = {tuple():1}
@@ -968,7 +937,7 @@ class Poset:
 			newCount = count
 			if len(S)==0: return weight*M[ranks[0][0]][i]
 			for j in ranks[S[-1]]:
-				if M[i, j] < 0:
+				if M[j, i]!=0:
 					newCount += fVectorCalc(ranks, S[:-1], M, j, count, f,truncated_S+(S[-1],),weight*M[j, i])
 			return newCount
 		fVector = {}
@@ -1137,7 +1106,7 @@ class Poset:
 #			return tuple([len(x) for x in l])
 		def set_comp_rks(P,d,ranks):
 			for i in range(len(P)):
-				row = P.zeta[i]
+				row = P.zeta.row(i)
 				upset = frozenset(collections.Counter(ranks[j] for j in range(len(P)) if row[j] == 1).items())
 				downset = frozenset(collections.Counter(ranks[j] for j in range(len(P)) if row[j] == -1).items())
 				d[i] = (upset, downset) #get_lengths(P.filter([i],indices=True).ranks), get_lengths(P.ideal([i],indices=True).ranks))
@@ -1164,21 +1133,6 @@ class Poset:
 		d1Inv = invert(d1)
 		d2Inv = invert(d2)
 
-#		def iso(P, Q, map, dP, dQ, dPinv, dQinv, i):
-#			#all values set return
-#			if i==len(P): return map
-#			#candidates are elements that compare to the same number of elements per rank
-#			cands = dQinv[dP[i]]
-#			for j in cands:
-#				#skip if j is already hit
-#				if j in map.values(): continue
-#				#i-> is order-preserving
-#				if all(P.zeta[m[0], i] == Q.zeta[m[1], j] for m in map.items()):
-#					new_map = {i:j}
-#					new_map.update(map)
-#					new_map = iso(P,Q,new_map,dP,dQ,dPinv,dQinv,i+1)
-#					if new_map!=None: return new_map
-#			return None
 
 		def nextchoice(map, i, jstart):
 			if i==len(this): return map, -1, True
@@ -1186,7 +1140,7 @@ class Poset:
 			for j_ in range(jstart,len(cands)):
 				j = cands[j_]
 				if j in [m[1] for m in map]: continue
-				if all(this.zeta[m[0], i] == that.zeta[m[1], j] for m in map):
+				if all(this.zeta[tuple(sorted((m[0],i)))] == that.zeta[tuple(sorted((m[1],j)))] for m in map):
 					return map+[[i,j]], j_+1, False
 			return None, j_+1, True
 
@@ -1449,13 +1403,12 @@ class Poset:
 
 		zeta = [[0]*len(elements) for e in elements]
 		for i in range(len(elements)):
+			zeta[i,i] = 1
 			for j in range(i+1, len(elements)):
 				if all([x in elements[j] for x in elements[i]]):
 					zeta[i, j] = 1
-					zeta[j, i] = -1
 				elif all([x in elements[i] for x in elements[j]]):
 					zeta[j, i] = 1
-					zeta[i, j] = -1
 
 		args = {'elements': elements, 'ranks': ranks, 'zeta': zeta, 'trans_close': False}
 		if hasattr(this,'name'): args['name'] = 'Order complex of '+this.name
@@ -1469,9 +1422,9 @@ class Poset:
 		Returns a list of all pairs $(e,f)$ where $e\le f$.
 		'''
 		if indices:
-			return [(i,j) for j in range(len(this.elements)) for i in range(len(this.elements)) if this.zeta[i, j] > 0] 
+			return [(i,j) for i in range(len(this.elements)-1) for j in range(i+1,len(this.elements)) if this.zeta[i, j] != 0] 
 
-		return [(this.elements[i],this.elements[j]) for j in range(len(this.elements)) for i in range(len(this.elements)) if this.zeta[i, j] > 0]
+		return [(this.elements[i],this.elements[j]) for j in range(i+1, len(this.elements)) for i in range(len(this.elements)-1) if this.zeta[i, j] != 0]
 
 	def relabel(this, elements=None):
 		r'''
@@ -1486,7 +1439,7 @@ class Poset:
 			elements = list(range(len(this)))
 		ret = Poset(this)
 		ret.elements = elements
-		ret.cache = {}
+#		ret.cache = {}
 		return ret
 
 	def reorder(this, perm, indices=False):
@@ -1496,16 +1449,21 @@ class Poset:
 
 		\verb|perm| should be a list of elements if \verb|indices| is \verb|False| or a list of indices if \verb|True|. The returned poset has elements in the given order, i.e. \verb|perm[i]| is the $i$th element.
 
-		Raises \verb|ValueError| if \verb|perm| is not a linear extension of the poset.
+		If \verb|perm| is not a linear extension it is coerced into a
+		linear extension by placing elements of lower rank before those
+		of higher rank while preserving the given ordering otherwise.
 		'''
 		if not indices:
 			perm = [this.elements.index(p) for p in perm]
 
-		elements = [this.elements[i] for i in perm]
+			
 		if not any(any(this.less(perm[i],perm[j],True) for j in range(i)) for i in range(1,len(this.elements))):
-			raise ValueError("`perm` must be a linear extension of the poset.")
-#		zeta = [[this.zeta[i, j] for j in perm] for i in perm]
-		zeta = TriangularArray((this.zeta[i,j] for i in perm for j in perm[i+1:]),size=this.zeta.size)
+			#coerce new ordering into a linear extension
+			elements = list(itertools.chains(*([p for p in perm if p in this.ranks[i]] for i in range(len(this.ranks)))))
+#			raise ValueError("`perm` must be a linear extension of the poset.")
+		else:
+			elements = [this.elements[p] for p in perm]
+		zeta = TriangularArray((this.zeta[i,j] for i in perm for j in perm[i+1:]))
 		ranks = [sorted([perm.index(i) for i in rk]) for rk in this.ranks]
 
 		P = Poset(elements = elements, zeta = zeta, ranks = ranks, trans_close = False)
@@ -1545,31 +1503,30 @@ class Poset:
 		Converts this to an instance of \verb|sage.combinat.posets.posets.FinitePoset|.
 		'''
 		import sage
-		return sage.combinat.posets.posets.Poset((this.elements,[[p,q] for p in this for q in this if this.lesseq(p,q)]), facade=False)
+		return sage.combinat.posets.posets.Poset((this.elements,[[p,q] for i,p in enumerate(this.elements) for j,q in enumerate(this.elements[i+1:]) if this.zeta[i,j]!=0]), facade=False)
 	def fromSage(P):
 		r'''
 		@section@Miscellaneous@
 		Convert an instance of \verb|sage.combinat.posets.poset.FinitePoset| to an instance of \verb|Poset|.
 		'''
-		rels = [ [x,y] for x,y in P.relations() if x!=y]
+		rels = [[x,y] for x,y in P.relations() if x!=y]
 		return Poset(relations=rels)
-#		return Poset(zeta = P.lequal_matrix(), elements =  P.list())
 
 	def make_ranks(zeta):
 		r'''
 		@section@Miscellaneous@
 		Used by the constructor to compute the ranks list for a poset when it isn't provided.
 		'''
-		#TODO: can't tell difference between emtpy and singleton posets via zeta
-		#everything got dualed, make coranks then reverse
+		#makes coranks list and then reverses
 		if zeta.size==0: return []
 		left = list(range(zeta.size+1))
 		preranks = {} #keys are indices values are ranks
 		while len(left)>0:
 			for l in left:
-				loi = [i for i in range(l+1,zeta.size+1) if zeta[l,i]!=0]
-				if all([i in preranks.keys() for i in loi]): 
-					preranks[l] = 1+max([-1]+[preranks[i] for i in loi])
+				zetal = zeta.row(l)
+				uoi = [l+i for i in range(1,len(zetal)) if zetal[i]!=0]
+				if all([i in preranks.keys() for i in uoi]): 
+					preranks[l] = 1+max([-1]+[preranks[i] for i in uoi])
 					left.remove(l)
 		return [[j for j in range(zeta.size+1) if preranks[j]==i] for i in range(1+max(preranks.values()))][::-1]
 	def isoClass(this):
@@ -1614,12 +1571,12 @@ class PosetIsoClass(Poset):
 		X=set()
 		for r in range(len(this.ranks)-1):
 			for p in this.ranks[r]:
-				X.add((r,len([q for q in this.ranks[r+1] if this.zeta[p, q]>0])))
+				X.add((r,len([q for q in this.ranks[r+1] if this.zeta[p, q]!=0])))
 		return hash(frozenset(X))
 	def __str__(this):
 		return "Isomorphism class of "+Poset.__str__(this)
 	def __repr__(this):
-		return "PosetIsoClass("+Poset.__repr__(this)[6:]
+		return "PosetIsoClass("+Poset.__repr__(this)[len('Poset('):]
 @decorator.decorator
 def return_iso(f, *args, **kwargs):
 	r'''
@@ -1803,7 +1760,7 @@ class Genlatt(Poset):
 	def __str__(this):
 		return super().__str__() + '\nG = '+str(this.G)
 	def __repr__(this):
-		return 'Genlatt'+super().__repr__()[5:-1] + ', G='+repr(this.G)+')'
+		return 'Genlatt'+super().__repr__()[len('Poset'):-1] + ', G='+repr(this.G)+')'
 	def minorPoset(this, weak=False, **kwargs):
 		r'''
 		Returns the minor poset of the given \verb|Genlatt| instance.
