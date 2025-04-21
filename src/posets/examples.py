@@ -103,11 +103,10 @@ def Butterfly(n):
 	'''
 	elements = [('a' if i%2==0 else 'b')+str(i//2) for i in range(2*n)]
 	ranks = [[i,i+1] for i in range(0,2*n,2)]
-	zeta = [([] if i%2 else [0]) + [1]*(len(elements)-((i//2+1)*2)) for i in range(len(elements)-1)]
-#	incMat = [[0]*(i//2+1)*2 + [1]*(len(elements)-((i//2+1)*2)) for i in range(len(elements))]
+	zeta = [([1] if i%2 else [1,0]) + [1]*(len(elements)-((i//2+1)*2)) for i in range(len(elements))]
 	name = "Rank "+str(n+1)+" butterfly poset"
 
-	P = Poset(zeta, elements, ranks, name = name,nodeName = lambda this,i: str(this.P[i]))#.adjoin_zerohat().adjoin_onehat()
+	P = Poset(zeta, elements, ranks, name = name,nodeName = lambda this,i: str(this.P[i])).adjoin_zerohat().adjoin_onehat()
 	#cache some values for queries
 	P.cache['isRanked()']=True
 	P.cache['isEulerian()']=True
@@ -181,7 +180,7 @@ def Boolean(n):
 		X = None
 	P = Poset()
 	P.elements = list(range(1<<n))
-	P.zeta = TriangularArray([1 if i&j==i else 0 for i in range(1<<n) for j in range(i+1,1<<n)])
+	P.zeta = TriangularArray([1 if i&j==i else 0 for i in range(1<<n) for j in range(i,1<<n)])
 	P.ranks = [[] for _ in range(n+1)]
 	for p in P.elements:
 		P.ranks[len([c for c in bin(p) if c=='1'])].append(p) #p==P.elements.index(p)
@@ -395,7 +394,7 @@ def Torus(n=2, m=2):
 	def sort_key(F): #revlex induced by 0 < A < B < 1
 		return tuple([order.index(f) for f in F][::-1])
 
-	P = Poset(less=less, ranks=ranks, elements=elements, name = str(m)+" subdivided "+str(n)+"-torus",nodeName=nodeName)#.sort(sort_key).adjoin_zerohat().adjoin_onehat()
+	P = Poset(less=less, ranks=ranks, elements=elements, name = str(m)+" subdivided "+str(n)+"-torus",nodeName=nodeName).sort(sort_key).adjoin_zerohat().adjoin_onehat()
 	#cache some values for queries
 	P.cache['isRanked()']=True
 	P.cache['isEulerian()']= n%2 == 1
@@ -664,7 +663,7 @@ def Uncrossing(t, upper=False, weak=False, E_only=False, zerohat=True):
 
 		P=[t]
 		ranks = [[0]] #this is built up backwards for convenience and reversed before returning
-		M=[[0]]
+		M=[[1]]
 
 		num = 1 #index in to P of next element to add
 		level = [t] #list of current rank to expand in next step
@@ -730,6 +729,7 @@ def Uncrossing(t, upper=False, weak=False, E_only=False, zerohat=True):
 			newRank = []
 
 		ranks = ranks[::-1]
+		M = TriangularArray([m[i:] for i,m in enumerate(M)],flat=False)
 		Poset.transClose(M)
 		return P,ranks,M
 

@@ -66,6 +66,16 @@ class TestTriangularArray:
 			assert(x[j:j+(T.size-i)]==T.row(i))
 			j+=T.size - i
 	
+	def test_col(this):
+		T = TriangularArray(range(10))
+		#0 1 2 3
+		#  4 5 6
+		#    7 8
+		#      9
+		cols = [[0],[1,4],[2,5,7],[3,6,8,9]]
+		for j in range(len(cols)):
+			assert(cols[j] == list(T.col(j)))
+	
 	def test_revtranspose(this):
 		assert(TriangularArray(range(10)).revtranspose() == TriangularArray([9,8,6,3,7,5,2,4,1,0]))
 	
@@ -113,17 +123,26 @@ class TestConstructorOptions:
 		assert(bool3==this.Bool3)
 
 	def test_reorder(this):
-		bool3 = P(this.Bool3.reorder(this.Bool3.elements[::-1]))
-		assert(bool3!=this.Bool3)
+		B = Boolean(3).reorder([0,1,2,4,3,5,6,7],indices=True)
+		assert(B.elements==[tuple(),(1,),(2,),(3,),(1,2),(1,3),(2,3),(1,2,3)])
+		B = Boolean(3).reorder([tuple(),(1,2),(1,),(3,),(2,),(2,3),(1,3),(1,2,3)])
+		assert(B.elements == [tuple(),(1,),(3,),(2,),(1,2),(2,3),(1,3),(1,2,3)])
+#		bool3 = P(this.Bool3.reorder(this.Bool3.elements[::-1]))
+#		assert(bool3!=this.Bool3)
+#
+#	def test_reorderIndices(this):
+#		bool3 = P(this.Bool3.reorder(list(range(len(this.Bool3)))[::-1], indices=True))
+#		assert(bool3!=this.Bool3)
 
-	def test_reorderIndices(this):
-		bool3 = P(this.Bool3.reorder(list(range(len(this.Bool3)))[::-1], indices=True))
-		assert(bool3!=this.Bool3)
-
-	@pytest.mark.skip(reason="Reimplement this test, can only sort by a linear extension now")
 	def test_sort(this):
-		assert(this.Bool3.sort(indices=True,key=lambda x:-x).elements==[(1,2,3),(2,3),(1,3),(3,),(1,2),(2,),(1,),tuple()])
-		assert(this.Bool3.reorder(list(range(len(this.Bool3)))[::-1], indices=True).sort()==this.Bool3)
+		B3 = Poset(elements=range(8), less = lambda i,j:i&j==i)
+		P = Poset(elements=[0,2,1,4,6,5,3,7],less=lambda i,j:i&j==i)
+		assert(B3==P)
+		assert(B3.elements!=P.elements)
+		assert(B3.elements == P.sort().elements)
+#		assert(this.Bool3.sort(indices=True,key=lambda x:-x).elements==[(1,2,3),(2,3),(1,3),(3,),(1,2),(2,),(1,),tuple()])
+#		assert(this.Bool3.reorder(list(range(len(this.Bool3)))[::-1], indices=True).sort()==this.Bool3)
+
 
 ##		b3_rels_list = [[tuple(),(1,)],[tuple(),(2,)],[tuple(),(3,)],[(1,),(1,2)],[(1,),(1,3)],[(2,),(1,2)],[(2,),(2,3)],[(3,),(1,3)],[(3,),(2,3)],[(1,2),(1,2,3)],[(1,3),(1,2,3)],[(2,3),(1,2,3)]]
 ##		bool3 = P(Poset(relations=b3_rels_list).sort())
@@ -139,7 +158,8 @@ class TestConstructorOptions:
 ##########################################
 #test example posets
 ##########################################
-class DontTestExamples:
+#@pytest.mark.skip(reason="Most examples are broken, fix them before testing")
+class TestExamples:
 	def test_Bool(this):
 		Bool3 = make_Bool3()
 		assert(Bool3==Boolean(3))
@@ -569,6 +589,7 @@ class TestSubposetSelection:
 		assert(['*']==this.V.min())
 	def test_max(this):
 		assert(sorted(this.V.max())==['x','y'])
+		assert(make_Bool3().max()==[(1,2,3)])
 	def test_subposet(this):
 		assert(P(Poset(relations={(1,):[(1,2)],(3,):[]}))==this.pent.subposet([(1,2),(1,),(3,)]))
 		assert(P(Poset(relations={(1,):[(1,2)],(3,):[]}))==this.pent.subposet((1,2,3),indices=True))
@@ -579,11 +600,15 @@ class TestSubposetSelection:
 	def test_interval(this):
 		assert(P(Poset(relations={(1,):[(1,2)],(1,2):[(1,2,3)]}).sort())==this.pent.interval((1,),(1,2,3)).sort())
 		assert(P(Poset(relations={(1,):[(1,2)],(1,2):[(1,2,3)]}).sort())==this.pent.interval(1,4,indices=True).sort())
+		assert(P(Poset(relations={tuple():[(3,)]}))==this.pent.interval(tuple(),(3,)))
 
 	def test_filter(this):
 		assert(P(Poset(relations={(1,):[(1,2)],(1,2):[(1,2,3)]}).sort())==this.pent.filter(((1,),)).sort())
 		assert(P(Poset(relations={(1,2):[(1,2,3)]}).sort())==this.pent.filter(((1,),),strict=True).sort())
-		assert(P(Poset(relations={1:[2],2:[4]}).sort())==this.pent.filter((1,),indices=True).sort())
+	
+	def test_ideal(this):
+		assert(P(Poset(relations={tuple():[(1,),(1,2)],(1,):[(1,2)]}).sort())==this.pent.ideal(((1,2),)).sort())
+		assert(P(Poset(relations={tuple():[(1,),(3,)]}).sort())==this.pent.ideal(((1,),(3,))).sort())
 
 	def test_properPart(this):
 		assert(P(Poset(relations={(1,):[(1,2)],(3,):[]}).sort())==this.pent.properPart().sort())
@@ -593,7 +618,8 @@ class TestSubposetSelection:
 #Internal Computations
 ##########################################
 class TestInternalComputations:
-	pent = LatticeOfFlats([0,1,2,2,1,3,3,3])
+#	pent = LatticeOfFlats([0,1,2,2,1,3,3,3])
+	pent = Poset(elements=[tuple(),(1,),(1,2),(3,),(1,2,3)],zeta=[1,1,1,1,1, 1,1,0,1, 1,0,1, 1,1, 1],flat_zeta=True)
 	def test_less(this):
 		assert(not this.pent.less((1,),(1,)))
 		assert(not this.pent.less((1,),(3,)))
@@ -631,6 +657,7 @@ class TestInvariants:
 	def test_cdIndex(this):
 		assert(Polynomial([[1,'ccc'],[2,'cd'],[2,'dc']])==this.B4.cdIndex())
 		assert(Polynomial([[1,'cc'],[1,'d']])==this.B3.complSubposet([(1,2)]).cdIndex())
+		assert(Polynomial({'c'*4:1,'ccd':3,'cdc':5,'dcc':3,'dd':4})==Boolean(5).cdIndex())
 	def test_bettiNumbers(this):
 		assert([1,2,1]==Torus().properPart().bettiNumbers())
 	def test_buildIsomorphism(this):
@@ -639,6 +666,7 @@ class TestInvariants:
 		P=Bruhat(3,True).union(Bruhat(3))
 		Q=Bruhat(3,True).union(Bruhat(3))
 		Q=Q.reorder(Q.elements[::-1])
+		assert(len(Q)==Q.zeta.size)
 		print(Q.elements)
 		print(P.elements)
 		for _ in range(2): #do it twice to test cache
@@ -691,19 +719,22 @@ class TestMisc:
 	def test_chains(this):
 		assert(this.B_chains==sorted(this.B.chains()))
 	def test_orderComplex(this):
-		assert(P(Poset(relations={0:[1,4,5,8],1:[2,3],4:[2,6],5:[6,7],8:[7,3]},indices=True,elements=this.B_chains))==this.B.orderComplex().sort())
+#		assert(P(Poset(relations={0:[1,2,3,4],1:[5,6],2:[5,7],3:[7,8],4:[3,8]},indices=True,elements=this.B_chains
+		assert(P(Poset(relations={0:[1,4,5,8],1:[2,3],4:[2,6],5:[6,7],8:[7,3]},indices=True,elements=this.B_chains).sort())==this.B.orderComplex().sort())
 	def test_relations(this):
 		assert([('a0','a1'),('a0','b1'),('b0','a1'),('b0','b1')]==sorted(this.B.relations()))
-		assert([(0,1),(0,3),(2,1),(2,3)]==sorted(this.B.sort().relations(indices=True)))
-	def test_reorder(this):
-		assert(P(Poset(elements=['b1','a0','b0','a1'],zeta=[[1,0,0,0],[1,0,1],[1,1],[1]]))==this.B.reorder(['b1','a0','b0','a1']))
-		assert(P(Poset(elements=['b1','a0','b0','a1'],zeta=[[1,0,0,0],[1,0,1],[1,1],[1]]))==this.B.sort().reorder([3,0,2,1],indices=True))
-		assert(P(Poset(elements=['a0','a1','b0','b1'],relations={0:[1,3],2:[1,3]},indices=True))==this.B.reorder(this.B.elements[::-1]).sort())
+		assert([(0,2),(0,3),(1,2),(1,3)]==sorted(this.B.sort().relations(indices=True)))
+#	def test_reorder(this):
+#		assert(P(Poset(elements=['b1','a0','b0','a1'],zeta=[[1,0,0,0],[1,0,1],[1,1],[1]]))==this.B.reorder(['b1','a0','b0','a1']))
+#		assert(P(Poset(elements=['b1','a0','b0','a1'],zeta=[[1,0,0,0],[1,0,1],[1,1],[1]]))==this.B.sort().reorder([3,0,2,1],indices=True))
+#		assert(P(Poset(elements=['a0','a1','b0','b1'],relations={0:[1,3],2:[1,3]},indices=True))==this.B.reorder(this.B.elements[::-1]).sort())
 	def test_shuffle(this):
 		assert(this.B.shuffle()==this.B)
 	def test_ranks(this):
-		pent = LatticeOfFlats([0,1,2,2,1,3,3,3])
-		assert([[0],[1,4],[2],[3]]==Poset(relations=pent.relations()).sort().ranks)
+		pent = Poset(relations={0:[1,2],1:[3],2:[4],3:[4]})
+		assert([[0],[1,2],[3],[4]] == Poset.make_ranks(pent.zeta))
+#		pent = LatticeOfFlats([0,1,2,2,1,3,3,3])
+#		assert([[0],[1,4],[2],[3]]==Poset(relations=pent.relations()).sort().ranks)
 	def test_copy(this):
 		P = Boolean(3)
 		Q = Poset(P)

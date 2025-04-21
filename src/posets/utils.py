@@ -111,6 +111,16 @@ class TriangularArray:
 		return isinstance(that,TriangularArray) and this.data == that.data
 	def row(this, i):
 		return this.data[this.size*i - triangle_num(i) : this.size*(i+1) - i - triangle_num(i)]
+	def col(this, j):
+		data = this.data
+		n = this.size
+		idx = j
+		i = 0
+		while i<=j:
+			yield data[idx]
+			i+=1
+			idx += n-i
+
 	def __getitem__(this, x):
 		r'''
 		Zero based indexing \verb|(i,j)| gives the element in row $i$ and column $j$.
