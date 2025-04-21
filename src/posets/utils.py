@@ -107,6 +107,8 @@ class TriangularArray:
 		this.size = size
 	def __setitem__(this, idx, x):
 		this.data[idx[1] - idx[0] + this.size*idx[0] - triangle_num(idx[0])] = x
+	def __eq__(this,that):
+		return isinstance(that,TriangularArray) and this.data == that.data
 	def row(this, i):
 		return this.data[this.size*i - triangle_num(i) : this.size*(i+1) - i - triangle_num(i)]
 	def __getitem__(this, x):
@@ -118,17 +120,15 @@ class TriangularArray:
 
 	def __str__(this):
 		if this.size==0: return ''
-		space_len = max(len(str(entry)) for entry in this)
+		space_len = max(len(str(entry)) for entry in this.data)
 		ret = []
 		for i in range(this.size):
 			row = this.row(i)
 			ret.append(' '*i*(space_len+1)+ ' '.join(('{x:'+str(space_len)+'}').format(x=x) for x in row))
 		return '\n'.join(ret)
-	def __iter__(this):
-		return iter(this.data)
 	
 	def __repr__(this):
-		return 'TriangularArray(('+', '.join(repr(x) for x in this)+'), flat=True)'
+		return 'TriangularArray(('+', '.join(repr(x) for x in this.data)+'), flat=True)'
 
 	def revtranspose(this):
 		r'''
@@ -141,7 +141,10 @@ class TriangularArray:
 		Returns a sub-triangular array with rows indexed by \verb|S[:-1]| and columns by \verb|S[1:]+1|.
 		'''
 		S = sorted(S)
-		return TriangularArray([this.data[s + S[i]*(this.size)-triangle_num(S[i])] for i in range(len(S)) for s in S[i+1:]])
+		return TriangularArray([this.data[t+s*(this.size)-triangle_num(s+1)] for i,s in enumerate(S) for t in S[i:]])
+
+			
+#		return TriangularArray([this.data[s + S[i]*(this.size)-triangle_num(S[i])] for i in range(len(S)) for s in S[i+1:]])
 		#return TriangularArray([this.data[s + S[i]*(this.size-1)-triangle_num(S[i])-1] for i in range(len(S)) for s in S[i+1:]], size=len(S))
 ##############
 #End TriangularArray class

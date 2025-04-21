@@ -490,27 +490,28 @@ class Poset:
 		that_part = that.complSubposet(that.min())
 		this_part = this.complSubposet(this.max())
 		elements = Poset.element_union(this_part.elements, that_part.elements)
-		zeta = [this.zeta.rows(i)+[1]*len(that_part.elements) for i in range(this.zeta.size)]+that_part.zeta.data
+		zeta = itertools.chain(*(this.zeta.row(i)+[1]*len(that_part.elements) for i in range(this.zeta.size)), that_part.zeta.data)
 		ranks = this_part.ranks + [[r+len(this_part.elements) for r in rk ] for rk in that_part.ranks]
 
-		return Poset(zeta, elements, ranks)
+		return Poset(zeta, elements, ranks, flat_zeta=True)
 
 	def cartesianProduct(this, that):
 		r'''
 		@section@Operations@
 		Computes the cartesian product.
 		'''
-		elements = [(p,q) for p,q in itertools.product(this.elements,that.elements)]# in this.elements for q in that.elements]
+		elements = list(itertools.product(this.elements,that.elements))# in this.elements for q in that.elements]
 		ranks = [[] for i in range(len(this.ranks)+len(that.ranks)-1)]
 		for i in range(len(this.elements)):
 			for j in range(len(that.elements)):
 				ranks[this.rank(i,True)+that.rank(j,True)].append(i*len(that.elements)+j)
 
+
 		thiszeta = this.zeta
 		thatzeta = that.zeta
-		zeta = [[thiszeta[i, j] * thatzeta[k, l] for j,l in itertools.product(range(len(this)),range(len(that)))] for i,k in itertools.product(range(len(this)),range(len(that)))]
-
-		return Poset(elements=elements, ranks=ranks, zeta=zeta)
+		pair_inds = list(itertools.product(range(len(this.elements)),range(len(that.elements))))	
+		zeta = [(0 if pair_inds[i][0]>pair_inds[j][0] else thiszeta[pair_inds[i][0],pair_inds[j][0]]) * (0 if pair_inds[i][1] > pair_inds[j][1] else thatzeta[pair_inds[i][1],pair_inds[j][1]]) for i in range(len(pair_inds)) for j in range(i,len(pair_inds))]
+		return Poset(elements=elements, ranks=ranks, zeta=zeta,flat_zeta=True)
 
 	def diamondProduct(this, that):
 		r'''
@@ -729,7 +730,7 @@ class Poset:
 		P = this
 		P_min = P.min()
 		P_max = P.max()
-		return P.complSubposet((P_min if len(P_min)>1 else [])+(P_max if len(P_max)>1 else []))
+		return P.complSubposet((P_min if len(P_min)==1 else [])+(P_max if len(P_max)==1 else []))
 
 	def rankSelection(this, S):
 		r'''
@@ -1519,16 +1520,19 @@ class Poset:
 		'''
 		#makes coranks list and then reverses
 		if zeta.size==0: return []
-		left = list(range(zeta.size+1))
+		left = list(range(zeta.size))
 		preranks = {} #keys are indices values are ranks
 		while len(left)>0:
 			for l in left:
 				zetal = zeta.row(l)
 				uoi = [l+i for i in range(1,len(zetal)) if zetal[i]!=0]
-				if all([i in preranks.keys() for i in uoi]): 
+				if all(i in preranks.keys() for i in uoi): 
 					preranks[l] = 1+max([-1]+[preranks[i] for i in uoi])
 					left.remove(l)
-		return [[j for j in range(zeta.size+1) if preranks[j]==i] for i in range(1+max(preranks.values()))][::-1]
+		ranks = [[] for _ in range(1+max(preranks.values()))]
+		for k,v in preranks.items():
+			ranks[v].append(k)
+		return ranks[::-1]
 	def isoClass(this):
 		r'''
 		@section@Miscellaneous@

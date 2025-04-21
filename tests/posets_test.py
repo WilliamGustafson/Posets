@@ -36,6 +36,50 @@ def P(*args,**kwargs):
 #	def __repr__(this):
 #		return "P("+','.join(('zeta='+repr(this.zeta),'elements='+repr(this.elements),'ranks='+repr(this.ranks)))+")"
 ##########################################
+#test triangular array
+##########################################
+class TestTriangularArray:
+	def test_setitem(this):
+		T = TriangularArray(range(10))
+		Z = TriangularArray((0 for _ in range(10)))
+		k = 0
+		for i in range(T.size):
+			for j in range(i,T.size):
+				Z[i,j] = k
+				k+=1
+		assert(Z==T)
+	
+	def test_getitem(this):
+		T = TriangularArray(range(10))
+		k=0
+		for i in range(T.size):
+			for j in range(i,T.size):
+				assert(k==T[i,j])
+				k+=1
+		assert(k==10)
+	
+	def test_row(this):
+		T = TriangularArray(range(10))
+		x = list(range(10))
+		j = 0
+		for i in range(T.size):
+			assert(x[j:j+(T.size-i)]==T.row(i))
+			j+=T.size - i
+	
+	def test_revtranspose(this):
+		assert(TriangularArray(range(10)).revtranspose() == TriangularArray([9,8,6,3,7,5,2,4,1,0]))
+	
+	def test_subarray(this):
+		T = TriangularArray(range(10))
+		assert(T.subarray((0,1))==TriangularArray([0,1,4]))
+		assert(T.subarray([0,2,3])==TriangularArray([0,2,3,7,8,9]))
+		assert(T.subarray([2])==TriangularArray([7]))
+		assert(T.subarray([0,1,2,3])==T)
+			
+			
+			
+
+##########################################
 #test constructor options
 ##########################################
 
