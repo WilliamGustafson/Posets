@@ -419,7 +419,6 @@ class Poset:
 		P = Poset()
 		P.elements = this.elements[::-1]
 		P.ranks = this.ranks[::-1]
-		n = len(P.elements)-1
 		P.zeta = this.zeta.revtranspose()
 		P.hasseDiagram = copy.copy(this.hasseDiagram)
 		P.hasseDiagram.P = P
@@ -670,7 +669,7 @@ class Poset:
 		Returns a list of the minimal elements of the poset.
 		'''
 		z = this.zeta.data
-		ret_indices = [j for j in range(this.zeta.size) if all(z[j+i*(this.zeta.size-i)]==0 for i in range(j))]
+		ret_indices = [j for j in range(this.zeta.size) if all(x==0 for x in list(this.zeta.col(j))[:-1])]
 		return ret_indices if indices else [this.elements[i] for i in ret_indices]
 	@cached_method
 	def max(this, indices=False):
@@ -744,12 +743,10 @@ class Poset:
 		r'''
 		@section@Subposet Selection@
 		Returns the subposet of elements less than or equal to any element of \verb|x|.
-
-		Wrapper for \verb|this.dual().filter|.
 		'''
 		if not indices: x = [this.elements.index(p) for p in x]
 		m = max(x)
-		elements = [i for i in range(m+1) if any(this.zeta[i,y]!=0 for y in x)]
+		elements = [i for i in range(m+1) if any(this.zeta[i,y]!=0 for y in x if i<=y)]
 		if strict:
 			for y in x: elements.remove(y)
 		ret = this.subposet(elements,True)
