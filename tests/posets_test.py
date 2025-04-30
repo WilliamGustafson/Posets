@@ -325,7 +325,8 @@ class TestExamples:
 				((1, 3), (2, 5), (4, 6)),
 				((1, 4), (2, 5), (3, 6))]
 			)
-		assert(uc3.is_isomorphic(Uncrossing(3))) #passes
+		actual=Uncrossing(3)
+		assert(uc3.is_isomorphic(Uncrossing(3))) #fails
 		assert(uc3==Uncrossing(3)) #fails
 
 	def test_bnq(this):
