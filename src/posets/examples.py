@@ -146,8 +146,7 @@ def Chain(n):
 	'''
 	elements = list(range(n+1))
 	ranks = [[i] for i in elements]
-	import operator
-	P = Poset(zeta = TriangularArray([1 for _ in TriangleRange(len(elements)-1)]), elements=elements, ranks=ranks, name = "Length "+str(n)+" chain", trans_close=False)
+	P = Poset(zeta = TriangularArray(1 for _ in TriangleRange(len(elements))), elements=elements, ranks=ranks, name = "Length "+str(n)+" chain", trans_close=False)
 	#cach some values for queries
 	P.cache['isRanked()']=True
 	P.cache['isEulerian()']=False
@@ -731,7 +730,7 @@ def Uncrossing(t, upper=False, weak=False, E_only=False, zerohat=True):
 			newRank = []
 
 		ranks = ranks[::-1]
-		breakpoint()
+		#breakpoint()
 		M = TriangularArray([m[i:] for i,m in enumerate(M)],flat=False)
 		Poset.transClose(M)
 		return P,ranks,M
@@ -976,12 +975,13 @@ def DistributiveLattice(P, indices=False):
 	make_fig(DistributiveLattice(Root(3)),'DL',height=10,width=6,irr_height=0.75,irr_width=1,irr_scale='1',irr_labels=False)
 	'''
 	#make principal ideals
-	M = P.incMat
+	Z = P.zeta
 	irr=[]
-	for i in range(0,len(M)):
+	for i in range(0,len(P)):
 		x=1<<i
-		for j in range(0,len(M[i])):
-			if M[i][j]==-1: x|=1<<j
+		coli=list(Z.col(i))
+		for j in range(len(coli)):
+			if coli[j]!=0: x|=1<<j
 		irr.append(x)
 	#add all unions to make distr lattice
 	ideals=[0]+[i for i in irr]
@@ -995,7 +995,7 @@ def DistributiveLattice(P, indices=False):
 				if x not in ideals:
 					ideals.append(x)
 					new.append(x)
-	ranks=[[] for i in range(0,len(M)+1)]
+	ranks=[[] for i in range(0,len(P)+1)]
 	if indices:
 		elements = ideals
 		def less(I, J):

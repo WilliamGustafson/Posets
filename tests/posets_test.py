@@ -166,16 +166,14 @@ class TestConstructorOptions:
 ##########################################
 #test example posets
 ##########################################
-@pytest.mark.skip(reason="Most examples are broken, fix them...")
+#@pytest.mark.skip(reason="Most examples are broken, fix them...")
 class TestExamples:
 	def test_Bool(this):
 		Bool3 = make_Bool3()
 		assert(Bool3==Boolean(3))
 	def test_chain(this):
-		chain3 = P([[0,1,1,1],[-1,0,1,1],[-1,-1,0,1],[-1,-1,-1,0]], list(range(4)), [[i] for i in range(4)])
+		chain3 = P([1,1,1,1,1,1,1,1,1,1], list(range(4)), [[i] for i in range(4)],flat_zeta=True)
 		assert(chain3==Chain(3))
-#
-#		assert(Bool3==Boolean(3))
 	def test_polygon(this):
 		square = P(Poset(relations={1:[(1,2),(1,4)],2:[(1,2),(2,3)],3:[(2,3),(3,4)],4:[(3,4),(1,4)]}).adjoin_zerohat().adjoin_onehat().sort(key=str))
 		assert(square==Polygon(4).sort(key=str))
@@ -395,6 +393,7 @@ class TestExamples:
 		assert(NC==NoncrossingPartitionLattice(4))
 
 	def test_distributiveLattice(this):
+		V = Poset(relations={'*':['0','1']},elements=['0','1','*'])
 		Videals = P(Poset(
 			relations={
 				0:[1],
@@ -403,9 +402,9 @@ class TestExamples:
 				3:[4]
 				},
 			indices=True,
-			elements=[tuple(), ('*',), ('0','*'), ('1','*'), ('0','1','*')]
+			elements=[tuple(sorted(x,key=lambda y:V.elements.index(y))) for x in [tuple(), ('*',), ('0','*'), ('1','*'), ('0','1','*')]]
 			).sort(key=str))
-		V = Poset(relations={'*':['0','1']},elements=['0','1','*'])
+		actual = DistributiveLattice(V).sort(key=str)
 		assert(Videals==DistributiveLattice(V).sort(key=str))
 
 	def test_minorPoset(this):
