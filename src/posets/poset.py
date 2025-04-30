@@ -419,8 +419,9 @@ class Poset:
 		'''
 		P = Poset()
 		P.elements = this.elements[::-1]
-		P.ranks = this.ranks[::-1]
 		P.zeta = this.zeta.revtranspose()
+		n = len(this.elements)-1
+		P.ranks = [[n-i for i in rk] for rk in this.ranks[::-1]]
 		P.hasseDiagram = copy.copy(this.hasseDiagram)
 		P.hasseDiagram.P = P
 		if 'isRanked()' in this.cache:
@@ -619,7 +620,7 @@ class Poset:
 		@section@Queries@
 		Returns the list of covers of the poset.
 
-		We say $q$ covers $p$ when $p<q$ and $p<r<q$ implies $r=p$ or $r=q$.
+		An element $q$ covers $p$ when $p<q$ and $p<r<q$ implies $r=p$ or $r=q$.
 		'''
 		#isRanked calls covers so we can't call isRanked,
 		#but if its cached calling it doesn't really call it
@@ -1438,14 +1439,15 @@ class Poset:
 		for i in range(len(elements)):
 			ranks[len(elements[i])].append(i)
 
+#		zeta = TriangularArray(1 if i==i or all(x in elements[j] for x in elements[i]) else 0 for i in range(len(elements)) for j in range(i,len(elements)))
 		zeta = TriangularArray(([0]*(i+1) for i in range(len(elements))),flat=False)
 		for i in range(len(elements)):
 			zeta[i,i] = 1
 			for j in range(i+1, len(elements)):
 				if all([x in elements[j] for x in elements[i]]):
 					zeta[i, j] = 1
-				elif all([x in elements[i] for x in elements[j]]):
-					zeta[j, i] = 1
+#				elif all([x in elements[i] for x in elements[j]]):
+#					zeta[j, i] = 1
 
 		args = {'elements': elements, 'ranks': ranks, 'zeta': zeta, 'trans_close': False}
 		if hasattr(this,'name'): args['name'] = 'Order complex of '+this.name
