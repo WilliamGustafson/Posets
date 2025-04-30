@@ -675,9 +675,7 @@ class TestInvariants:
 		for _ in range(2): #do it twice to test cache
 			phi = Q.buildIsomorphism(P,indices=True)
 			phi_inv = {v:k for k,v in phi.items()}
-			assert(all(set(Q.filter([i],indices=True)) == set(phi_inv[j] for j in P.filter([phi[i]],indices=True)) for i in range(len(Q))))
-		print(phi)
-		print(phi_inv)
+			assert(all(set(Q.elements.index(x) for x in Q.filter([i],indices=True)) == set(phi_inv[P.elements.index(j)] for j in P.filter([phi[i]],indices=True)) for i in range(len(Q))))
 		assert(None==Q.buildIsomorphism(Bruhat(3).union(Bruhat(3))))
 		#example of non-isomorphic posets with the same hash sets?
 #		B3=Boolean(3)
@@ -723,7 +721,13 @@ class TestMisc:
 		assert(this.B_chains==sorted(this.B.chains()))
 	def test_orderComplex(this):
 #		assert(P(Poset(relations={0:[1,2,3,4],1:[5,6],2:[5,7],3:[7,8],4:[3,8]},indices=True,elements=this.B_chains
-		assert(P(Poset(relations={0:[1,4,5,8],1:[2,3],4:[2,6],5:[6,7],8:[7,3]},indices=True,elements=this.B_chains).sort())==this.B.orderComplex().relabel().sort())
+		expected = Poset(relations={0:[1,4,5,8],1:[2,3],4:[2,6],5:[6,7],8:[7,3]},indices=True,elements=this.B_chains).sort()
+		actual = this.B.orderComplex().sort()
+		print('expected')
+		print(expected)
+		print('actual')
+		print(actual)
+		assert(expected==actual)
 	def test_relations(this):
 		assert([('a0','a1'),('a0','b1'),('b0','a1'),('b0','b1')]==sorted(this.B.relations()))
 		assert([(0,2),(0,3),(1,2),(1,3)]==sorted(this.B.sort().relations(indices=True)))
