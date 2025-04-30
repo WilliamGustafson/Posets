@@ -159,6 +159,8 @@ class Poset:
 				relations = {this.elements.index(e) : [this.elements.index(f) for f in relations[e]] for e in relations}
 			this.zeta,new_order = Poset.zeta_from_relations(relations, this.elements)
 			this.elements = [this.elements[i] for i in new_order]
+			if ranks is not None:
+				ranks = [[new_order.index(i) for i in rk] for rk in ranks]
 		elif less is not None:
 			assert elements is not None,'`elements` must be provided if specifying a poset via `less`'
 			relations = {}
@@ -186,7 +188,6 @@ class Poset:
 			elements = list(elements)
 			this.zeta,new_order = Poset.zeta_from_relations(relations,elements)
 			this.elements = [elements[i] for i in new_order]
-#			if ranks == [[0],[1,2]]: breakpoint()
 			if ranks is not None:
 				ranks = [[new_order.index(i) for i in rk] for rk in ranks]
 
@@ -1489,9 +1490,10 @@ class Poset:
 		linear extension by placing elements of lower rank before those
 		of higher rank while preserving the given ordering otherwise.
 		'''
-		print('reorder perm:',perm)
 		if not indices:
 			perm = [this.elements.index(p) for p in perm]
+		print('reorder elements:',this.elements)
+		print('reorder perm:',perm)
 		#########################################################
 		zeta = this.zeta
 		linear_perm = []
@@ -1503,26 +1505,9 @@ class Poset:
 					del perm[ip]
 					break
 		perm = linear_perm
+		print('reorder linear_perm:',linear_perm)
 		#########################################################
-
-			
-#		if any(any(this.less(perm[i],perm[j],True) for j in range(i)) for i in range(1,len(perm))):
-#			print('coercing reordering to a linear extension')
-#			#coerce new ordering into a linear extension
-#			elements = list(itertools.chain(*([p for p in perm if p in this.ranks[i]] for i in range(len(this.ranks)))))
-#			print('new ordering',elements)
-##			raise ValueError("`perm` must be a linear extension of the poset.")
-#		linear_elements = []
-#		#find linear extension
-#		E = perm
-#		while len(E)>0:
-#			#infinite loop because the whole zeta is here only gets minimals in whole poset not reduction
-#			minimal = set(e for e in E if all(x==0 for x in list(this.zeta.col(e))[:-1]))
-##			minimal = E.difference(itertools.chain(*(relations[e] for e in E.intersection(relations))))
-#			linear_elements.extend(minimal)
-#			E = [e for e in E if e not in minimal]
-##			E = E.difference(minimal)
-		zeta = TriangularArray((this.zeta[i,j] for i in perm for j in perm[i:]))
+		zeta = TriangularArray((this.zeta[i,j] if i<j else this.zeta[j,i] for ii,i in enumerate(perm) for j in perm[ii:]))
 		ranks = [sorted([perm.index(i) for i in rk]) for rk in this.ranks]
 
 		P = Poset(elements = [this.elements[i] for i in perm], zeta = zeta, ranks = ranks, trans_close = False)

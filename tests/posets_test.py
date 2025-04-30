@@ -542,6 +542,9 @@ class TestOperations:
 	def test_starProduct(this):
 		assert(P(Poset(relations={'x':['b'],'y':['b']}).sort(key=str))==this.V.dual().starProduct(this.AB).sort(key=str))
 	def test_cartesianProduct(this):
+		expected = Poset(relations={('*','a'):[('x','a'),('y','a'),('*','b')], ('x','a'):[('x','b')], ('y','a'):[('y','b')], ('*','b'):[('x','b'),('y','b')]})
+		print(expected)
+		print(this.V.cartesianProduct(this.AB).sort(key=str))
 		assert(P(Poset(relations={('*','a'):[('x','a'),('y','a'),('*','b')], ('x','a'):[('x','b')], ('y','a'):[('y','b')], ('*','b'):[('x','b'),('y','b')]}).sort(key=str))==this.V.cartesianProduct(this.AB).sort(key=str))
 	def test_diamondProduct(this):
 		assert(P(Poset(relations={0:[('b','x'),('b','y')],('b','x'):[('c','x')],('b','y'):[('c','y')]}).sort(key=str))==this.ABC.diamondProduct(this.V).sort(key=str))
@@ -720,7 +723,7 @@ class TestMisc:
 		assert(this.B_chains==sorted(this.B.chains()))
 	def test_orderComplex(this):
 #		assert(P(Poset(relations={0:[1,2,3,4],1:[5,6],2:[5,7],3:[7,8],4:[3,8]},indices=True,elements=this.B_chains
-		assert(P(Poset(relations={0:[1,4,5,8],1:[2,3],4:[2,6],5:[6,7],8:[7,3]},indices=True,elements=this.B_chains).sort())==this.B.orderComplex().sort())
+		assert(P(Poset(relations={0:[1,4,5,8],1:[2,3],4:[2,6],5:[6,7],8:[7,3]},indices=True,elements=this.B_chains).sort())==this.B.orderComplex().relabel().sort())
 	def test_relations(this):
 		assert([('a0','a1'),('a0','b1'),('b0','a1'),('b0','b1')]==sorted(this.B.relations()))
 		assert([(0,2),(0,3),(1,2),(1,3)]==sorted(this.B.sort().relations(indices=True)))
