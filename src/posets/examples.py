@@ -709,6 +709,7 @@ def Uncrossing(t, upper=False, weak=False, E_only=False, zerohat=True):
 						if c_temp != c(level[k])+epsilon: continue
 						if temp in P:
 							M[P.index(temp)][leveli[k]]=1
+							M[leveli[k]][P.index(temp)]=-1
 							continue
 						P.append(temp)
 						newRank.append(num)
@@ -720,6 +721,7 @@ def Uncrossing(t, upper=False, weak=False, E_only=False, zerohat=True):
 						for x in M: x.append(0)
 						M.append([0 for x in range(0,len(M[0]))])
 						M[-1][leveli[k]]=1
+						M[leveli[k]][-1]=-1
 
 			level = newLevel
 			newLevel = []
@@ -729,6 +731,7 @@ def Uncrossing(t, upper=False, weak=False, E_only=False, zerohat=True):
 			newRank = []
 
 		ranks = ranks[::-1]
+		breakpoint()
 		M = TriangularArray([m[i:] for i,m in enumerate(M)],flat=False)
 		Poset.transClose(M)
 		return P,ranks,M

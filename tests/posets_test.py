@@ -86,7 +86,15 @@ class TestTriangularArray:
 		assert(T.subarray([2])==TriangularArray([7]))
 		assert(T.subarray([0,1,2,3])==T)
 			
-			
+class TestZetaBuilder:
+	def test_append(this):
+		P=Boolean(2)
+		row=[-1,0,0,1]
+		label=(1.5,)
+		Z=ZetaBuilder(P.zeta.data)
+		Z.append(row,label)
+		print(Z)
+		assert(Z==TriangularArray([1,1,1,1,1, 1,0,0,1, 1,0,1, 1,1, 1]))
 			
 
 ##########################################

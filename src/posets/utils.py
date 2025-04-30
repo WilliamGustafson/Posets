@@ -159,6 +159,55 @@ class TriangularArray:
 ##############
 #End TriangularArray class
 ##############
+class ZetaBuilder(TriangularArray):
+	def __init__(this, *args,elements=None,**kwargs):
+		super().__init__(*args,**kwargs)
+		this.elements = list(range(this.size)) if elements is None else elements
+		assert(len(this.elements)==this.size)
+	def append(this,row,label=None):
+		'''
+		Adds a new element and reorders the new set of elements into a linear extension and extends the zeta matrix.
+
+		`label` - label for the new element, defaults to an integer
+		`row` - list of length `this.size` with values in 0,-1,* that indicate the new element is incomparable to, greater than, or less than the element at that index (* is any value except 0 or -1).
+
+		Returns the index of the new element, note other elements
+		may be rearranged as well.
+		'''
+		label=this.size+1
+		while label in this.elements: label+=1
+		#find new linear extension
+		#take ideal gen. by new elem.
+		ideal = sorted([i for i in range(len(this.elements)) if row[i]==-1])
+		complIdeal = [i for i in range(len(this.elements)) if i not in ideal]
+		#order it by the current lin. ext.
+		elements = [this.elements[i] for i in ideal]
+		#place the new element
+		index = len(ideal)
+		elements.append(label)
+		#order the remaining elements by old order
+		elements.extend(this.elements[i] for i in complIdeal)
+		#make new zeta values
+		data = []
+		for ii,i in enumerate(ideal):
+			rowi = this.row(i)
+			data.append(1)
+			data.extend(rowi[j-i] for j in ideal[ii+1:])
+			data.extend(rowi[j-i] if i<j else 0 for j in complIdeal)
+			data.append(1)
+		data.append(1)
+		data.extend(row[i] for i in complIdeal)
+		for ii,i in enumerate(complIdeal):
+			rowi = this.row(i)
+			data.append(1)
+			data.extend(rowi[j-i] for j in complIdeal[ii+1:])
+		this.data=data
+		this.size+=1
+		print('this.size',this.size)
+		print('this.data',len(this.data),this.data)
+		return index
+
+
 class MockSet:
 	def add(this,x):
 		pass
