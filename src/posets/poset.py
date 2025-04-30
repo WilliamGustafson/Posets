@@ -1433,21 +1433,13 @@ class Poset:
 		Returns the poset of all chains ordered by inclusion.
 		'''
 
-		elements = this.chains(indices)
+		elements = sorted(this.chains(indices),key=len)
 
 		ranks = [[] for i in range(max([len(c) for c in elements])+1)]
 		for i in range(len(elements)):
 			ranks[len(elements[i])].append(i)
 
-#		zeta = TriangularArray(1 if i==i or all(x in elements[j] for x in elements[i]) else 0 for i in range(len(elements)) for j in range(i,len(elements)))
-		zeta = TriangularArray(([0]*(i+1) for i in range(len(elements))),flat=False)
-		for i in range(len(elements)):
-			zeta[i,i] = 1
-			for j in range(i+1, len(elements)):
-				if all([x in elements[j] for x in elements[i]]):
-					zeta[i, j] = 1
-#				elif all([x in elements[i] for x in elements[j]]):
-#					zeta[j, i] = 1
+		zeta = TriangularArray(1 if (i==j or all(x in elements[j] for x in elements[i])) else 0 for i in range(len(elements)) for j in range(i,len(elements)))
 
 		args = {'elements': elements, 'ranks': ranks, 'zeta': zeta, 'trans_close': False}
 		if hasattr(this,'name'): args['name'] = 'Order complex of '+this.name
