@@ -153,6 +153,28 @@ class TriangularArray:
 		'''
 		S = sorted(S)
 		return TriangularArray([this.data[t+s*(this.size)-triangle_num(s+1)] for i,s in enumerate(S) for t in S[i:]])
+	
+	def inverse(this):
+		r'''
+		Returns the inverse of the triangular array considered as an upper triangular matrix.
+
+		Raises \verb|ZeroDivisionError| if a diagonal entry of the array is zero.
+		'''
+		#\alpha(x,y) = -1/\beta(y,y)\sum_{x< z\le y}\alpha(x,z)\beta(z,y)
+		data = []
+		idx = 0
+		for i in range(this.size):
+			data.append(1/this[i,i])
+			idx+=1
+			for j in range(i+1,this.size):
+				col = list(this.col(j))
+				data.append(-1/this[j,j] * sum(data[idx-k]*col[j-k] for k in range(1,j-i+1)))
+				idx+=1
+		return TriangularArray(data)
+				
+				
+				
+				
 
 			
 #		return TriangularArray([this.data[s + S[i]*(this.size)-triangle_num(S[i])] for i in range(len(S)) for s in S[i+1:]])

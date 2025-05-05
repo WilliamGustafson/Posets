@@ -85,6 +85,15 @@ class TestTriangularArray:
 		assert(T.subarray([0,2,3])==TriangularArray([0,2,3,7,8,9]))
 		assert(T.subarray([2])==TriangularArray([7]))
 		assert(T.subarray([0,1,2,3])==T)
+	
+	def test_inverse(this):
+		T = Boolean(4).zeta.inverse()
+		assert(T[i,j]==(-1)**(sum(c=='1' for c in bin(i))+sum(c=='1' for c in bin(j))) for i in range(T.size) for j in range(T.size))
+		T = TriangularArray([1,2,3, 4,5, 6])
+		actual = T.inverse()
+		expected = TriangularArray([1, -1/2, -1/12, 1/4, -5/24, 1/6])
+		epsilon = 1/(1<<16)
+		assert(x-y < epsilon for x,y in zip(actual.data,expected.data))
 			
 class TestZetaBuilder:
 	def test_append(this):
