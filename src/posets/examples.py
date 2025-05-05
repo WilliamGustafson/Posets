@@ -283,10 +283,8 @@ def Cube(n):
 	elements = ['']
 	for i in range(n): elements = expand(elements)
 	elements.sort(key=sort_key)
-#	P.incMat = [[1 if less(x,y) else -1 if less(y,x) else 0 for y in P.elements] for x in P.elements]
 	ranks = [[] for _ in range(n+1)]
 	for p in elements:
-		print('p',p,'rank',len([c for c in p if c=='*']))
 		ranks[len([c for c in p if c=='*'])].append(elements.index(p))
 	name = str(n)+"-cube face lattice"
 
@@ -1052,7 +1050,8 @@ def Intervals(P):
 	@exec@
 	make_fig(Intervals(Boolean(2)),'interval',height=10,width=6,int_height=1,int_width=1,int_scale='1',int_labels=False)
 	'''
-	elements = [tuple()]+[(P[i],P[j]) for i in range(len(P)) for j in range(len(P)) if i==j or P.incMat[i][j]==1]
+	Z=P.zeta
+	elements = [tuple()]+[(P[i],P[j]) for i in range(len(P)) for j in range(i,len(P)) if Z[i,j]!=0]
 	ranks = [[0]]+[[] for _ in range(len(P.ranks))]
 	for i in range(len(elements))[1:]:
 		ranks[1+P.rank(elements[i][1])-P.rank(elements[i][0])].append(i)

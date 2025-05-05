@@ -24,7 +24,7 @@ docs/bib.tex :
 
 docs : docs/posets.pdf
 docs/posets.pdf : $(SRCFILES) docs/posets.sty docs/doc_funcs.py docs/bib.tex $(PYDOX)
-	cd docs; pydox --module ../src/posets --compile bibtex --impall doc_funcs --date today --author William\ Gustafson --title Posets --post bib.tex
+	cd docs; $(PYDOX) --module ../src/posets --compile bibtex --impall doc_funcs --date today --author William\ Gustafson --title Posets --post bib.tex
 
 clean :
 	rm -rf docs/figures/*

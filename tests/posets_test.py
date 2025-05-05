@@ -93,7 +93,6 @@ class TestZetaBuilder:
 		label=(1.5,)
 		Z=ZetaBuilder(P.zeta.data)
 		Z.append(row,label)
-		print(Z)
 		assert(Z==TriangularArray([1,1,1,1,1, 1,0,0,1, 1,0,1, 1,1, 1]))
 			
 
@@ -530,6 +529,10 @@ class TestExamples:
 			'b1':[1]
 			}).sort(key=str))
 		assert(bf==Butterfly(2).sort(key=str))
+
+	@pytest.mark.skip(reason="TODO")
+	def test_intervals(this):
+		raise NotImplementedError
 ##########################################
 #Container tests
 ##########################################
@@ -573,8 +576,6 @@ class TestOperations:
 		assert(P(Poset(relations={'x':['b'],'y':['b']}).sort(key=str))==this.V.dual().starProduct(this.AB).sort(key=str))
 	def test_cartesianProduct(this):
 		expected = Poset(relations={('*','a'):[('x','a'),('y','a'),('*','b')], ('x','a'):[('x','b')], ('y','a'):[('y','b')], ('*','b'):[('x','b'),('y','b')]})
-		print(expected)
-		print(this.V.cartesianProduct(this.AB).sort(key=str))
 		assert(P(Poset(relations={('*','a'):[('x','a'),('y','a'),('*','b')], ('x','a'):[('x','b')], ('y','a'):[('y','b')], ('*','b'):[('x','b'),('y','b')]}).sort(key=str))==this.V.cartesianProduct(this.AB).sort(key=str))
 	def test_diamondProduct(this):
 		assert(P(Poset(relations={0:[('b','x'),('b','y')],('b','x'):[('c','x')],('b','y'):[('c','y')]}).sort(key=str))==this.ABC.diamondProduct(this.V).sort(key=str))
@@ -700,8 +701,6 @@ class TestInvariants:
 		Q=Bruhat(3,True).union(Bruhat(3))
 		Q=Q.reorder(Q.elements[::-1])
 		assert(len(Q)==Q.zeta.size)
-		print(Q.elements)
-		print(P.elements)
 		for _ in range(2): #do it twice to test cache
 			phi = Q.buildIsomorphism(P,indices=True)
 			phi_inv = {v:k for k,v in phi.items()}
@@ -753,10 +752,6 @@ class TestMisc:
 #		assert(P(Poset(relations={0:[1,2,3,4],1:[5,6],2:[5,7],3:[7,8],4:[3,8]},indices=True,elements=this.B_chains
 		expected = Poset(relations={0:[1,4,5,8],1:[2,3],4:[2,6],5:[6,7],8:[7,3]},indices=True,elements=this.B_chains).sort()
 		actual = this.B.orderComplex().sort()
-		print('expected')
-		print(expected)
-		print('actual')
-		print(actual)
 		assert(expected==actual)
 	def test_relations(this):
 		assert([('a0','a1'),('a0','b1'),('b0','a1'),('b0','b1')]==sorted(this.B.relations()))
@@ -852,7 +847,6 @@ def test_M2():
 	result = subprocess.Popen(['M2','--script',tmpfile],stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	if result!=None:
 		txt, err = result.communicate()
-		print('txt',txt,'err',err)
 		assert(result.returncode != 1) #posetToPython test
 		assert(result.returncode != 2) #pythonToPoset test
 	os.remove(tmpfile)

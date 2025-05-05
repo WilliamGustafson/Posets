@@ -5,7 +5,9 @@ r'''
 
 This module provides a class \verb|Poset| that encodes a finite
 partially ordered set (poset). Most notably, this module can efficiently
-compute flag vectors, the \av\bv-index and the \cv\dv-index. Latex code
+compute flag vectors, the \av\bv-index and the \cv\dv-index.
+Qausigraded posets, in the sense of \cite{ehrenborg-goresky-readdy-15}, can be encoded and the \av\bv-index and \cv\dv-index of quasigraded
+psoets can be computed. Latex code
 for Hasse diagrams can be produced with a very flexible interface.
 There are
 methods for common operations and constructions such as Cartesian products,

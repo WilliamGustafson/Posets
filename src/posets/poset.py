@@ -28,14 +28,12 @@ class Poset:
 	r'''
 	@is_section@section_key@0@
 	@sections_order@Operations@Subposet Selection@Internal Computations@Queries@Invariants@Maps@Miscellaneous@PosetIsoClass@@
-	A class representing a finite partially ordered set.
+	A class representing a finite partially ordered set (possible quasigraded).
 
-	Posets are encoded by a list \verb|elements|, an incidence
-	matrix \verb|zeta| describing the relations and a
+	Posets are encoded by a list \verb|elements|, a zeta
+	function \verb|zeta| describing the relations and a
 	list \verb|ranks| that specifies the length of each element.
-	This last attribute is not strictly needed to encode a poset
-	but many calculations use the length of elements so it is
-	computed on construction. Instances of \verb|Poset| also
+	Instances of \verb|Poset| also
 	have an attribute \verb|hasseDiagram| which is an instance
 	of the \verb|HasseDiagram| class used for plotting the poset.
 
@@ -47,37 +45,55 @@ class Poset:
 	the \verb|relations| argument. The full list of constructor
 	arguments are listed below.
 
+	Usually, the values of the zeta function are all 0 or 1,
+	with 1 indicating a relation. The given zeta function may
+	take other values, with 0 always indicating no relation
+	and any other value indicating a relation with the
+	specified weight. Additionally, if you provide value
+	for \verb|ranks| you can specify any whole number for
+	the ranks of elements.
+
 	\begin{itemize}
 		\item[]{
 		\verb|zeta| -- A triangular array indexed by $i,j$ such
 		that $i<j$ whose entries are 0 if $i$ and $j$ are
 		incomparable and otherwise an arbitrary weight. This
-		argument may be an instance of \verb|posets.TriangularArray|,
-		a nested iterable or a flat iterable in the latter case
+		argument may be an instance of \verb|TriangularArray|,
+		a nested iterable or a flat iterable; in the latter case
 		\verb|flat_zeta| should be \verb|True|. Elements are
 		read row-wise when \verb|zeta| is an iterable.
+
+		Note, unless \verb|trans_close| is \verb|False|
+		it is only necessary to specify cover relations in the
+		zeta matrix as the transitive closure will be computed.
 		}
 		\item[]{
 		\verb|elements| -- A list specifying the elements of the poset.
 
 			The default value is \verb|[0,...,len(zeta)-1]|
+			Note, the list will be reordered into a linear extension as this is necessary to store the zeta function as a triangular array.
 		}
 		\item[]{
 		\verb|ranks| -- A list of lists. The $i$th list is a list of indices of element of
 			length $i$. This argument is inessential, if not provided it will be computed by the constructor.
 			If constructing a large poset with an easily computed
 			rank function you may wish to compute and pass the
-			rank function to the constructor.
+			rank function to the constructor. This
+			option is also useful if you are constructing
+			a quasigraded poset, the provided rank list
+			does not necessarily have to match up with
+			the usual length function.
 		}
 		\item[]{
 		\verb|relations| -- Either a list of pairs $(x,y)$ such that $x<y$ or a dictionary
 			whose values are lists of elements greater than the associated key.
 			This is used to construct zeta if it is not provided.
+			Note, it is only necessary to specify cover relations.
 		}
 		\item[]{
 		\verb|less| -- A function that given two elements $p,q$ returns \verb|True| when
 			$p < q$. This is used to construct zeta if neither \verb|zeta|
-			nor \verb|relations| are provided.
+			nor \verb|relations| are provided. It is only necessary to specify cover relations.
 		}
 		\item[]{
 		\verb|indices| -- A boolean indicating indices instead of elements are used in
@@ -107,16 +123,19 @@ class Poset:
 						0 & \text{otherwise}.
 					\end{cases}
 				\]
+			Similarly, if providing \verb|relations| or \verb|less| the argument \verb|trans_close| should be \verb|False|
+			only if all relations were specified by the
+			given data.
 		}
 	\end{itemize}
-	The keyword arguments are passed to \verb|HasseDiagram| (or \verb|hasse_class|
+	Any extra keyword arguments are passed to \verb|HasseDiagram| (or \verb|hasse_class|
 	if specified).
 
 
 	Function calls to several of the more costly computations are cached. Generally,
 	functions in this class do not change the poset but instead return a new poset.
-	\verb|Poset| objects may be considered immutable (this is not enforced in any way),
-	or if you alter a poset you should clear the cache via: \verb|this.cache = {}|.
+	\verb|Poset| objects may be considered immutable (this is not enforced in any way).
+	If you alter a poset you should clear the cache via: \verb|this.cache = {}|.
 	'''
 	__slots__ = ('cache','hasseDiagram','zeta','elements','ranks','name')
 	def __init__(this, zeta=None, elements=None, ranks=None, less=None, name='',\
@@ -212,8 +231,9 @@ class Poset:
 		@section@Miscellaneous@
 		Given a dictionary of relations and a list of elements returns the zeta matrix and the elements reordered in a linear extension.
 
-		\verb|relations| should have keys indices into \verb|elements| and values lists of indices 
-		into \verb|elements|. If \verb|i| is in contained in \verb|relations[j]| then $j<i$ in the poset.
+		The dictionary \verb|relations| should have keys indices into the list \verb|elements| and values lists of indices 
+		into \verb|elements|. If an index \verb|i| is in contained in the list \verb|relations[j]| then  the $j$th elements is
+		less than the $i$th element in the poset.
 		'''
 		E = list(range(len(elements)))
 		linear_elements = []
@@ -226,13 +246,7 @@ class Poset:
 					E.remove(e)
 					linear_elements.append(e)
 					break
-		print('linear_elements',linear_elements)
 		#find linear extension
-#		while len(E)>0:
-#			minimal = E.difference(itertools.chain(*(relations[e] for e in E.intersection(relations))))
-#			if len(minimal)==0: raise ValueError("Relations do not specify a poset because the anti-symmetry axiom is violated")
-#			linear_elements.extend(minimal)
-#			E = E.difference(minimal)
 		zeta = []
 		for i,e in enumerate(linear_elements):
 			if e not in relations:
@@ -247,9 +261,12 @@ class Poset:
 	def transClose(T):
 		r'''
 		@section@Miscellaneous@
-		Given an instance of \verb|TriangularArray| encoding a (possibly weighted) relation, via $x~y$ when the $x,y$ entry is positive and $y~x$ when negative, computes the transitive closure (any induced relations are weighted 1).
+		Given an instance of \verb|TriangularArray| encoding a (possibly weighted) relation, via $x~y$ when the $x,y$ entry is nonzero and, computes the transitive closure.
 
-		TODO: doc string
+		Note, an induced relation $i<j$ is weighted
+		by \verb|T[i,k]*T[k,j]| where $j$ and $k$ are
+		the minimal indices greater than $i$ satisfying
+		the conditions \verb|T[i,k]!=0| and \verb|T[k,j]!=0|.
 		'''
 		if len(T.data)==0: return
 		for i in range(T.size-1,-1,-1):
@@ -257,7 +274,8 @@ class Poset:
 			for j in range(i+1,T.size):
 				if T[i, j]==0: continue
 				for k in range(j+1,T.size):
-					if T[j, k]!=0: T[i, k] = T[i,j]*T[j,k]
+					if T[j, k]!=0:
+						T[i, k] = T[i,j]*T[j,k]
 		T.data[-1] = 1
 				
 		return
@@ -279,7 +297,7 @@ class Poset:
 		@section@Miscellaneous@
 		Gives a string that can be evaluated to recreate the poset.
 
-		To \verb|eval| the returned string \verb|Poset| must be in the namespace and \verb|repr(this.elements)|
+		To use the returned string with \verb|eval| the claass \verb|Poset| must be in the namespace and \verb|repr(this.elements)|
 		must return a suitable string for evaluation.
 		'''
 		return 'Poset(zeta='+repr(this.zeta)+', elements='+repr(this.elements)+', ranks='+repr(this.ranks)+',name='+repr(this.name)+')'
@@ -333,7 +351,6 @@ class Poset:
 		the first positive integer that is not an element.
 		'''
 		zeta = TriangularArray([1 for _ in range(len(this.elements)+1)]+this.zeta.data)
-		#zeta = [[0]+[1 for p in this.elements]]+[[-1]+this.zeta.row(i) for i in range(len(this.elements))]
 		if label==None:
 			label=0
 			while label in this.elements:
@@ -373,17 +390,15 @@ class Poset:
 		if 'isEulerian()' in this.cache and this.cache['isEulerian()']:
 			P.cache['isEulerian()'] = False
 		return P
-#		return this.dual().adjoin_zerohat(label).dual()
 
 	def identify(this, X, indices=False):
 		r'''
 		@section@Operations@
-		Returns a new poset after making identifications indicated by \verb|X|.
+		Returns a new poset after making identifications indicated by the argument \verb|X|.
 
-		The new relation is $p\le q$ when there exists any representatives $p'$ and $q'$ such that $p'\le q'$. The result may not
-		truly be a poset as it may not satisfy the antisymmetry axiom ($p<q<p$ implies $p = q$).
+		The new relation is defined by $p\le q$ when there exists any representatives $p'$ and $q'$ such that $p'\le q'$ in the original poset.
 
-		\verb|X| should either be a dictionary where keys are the representatives and the value is a list of elements
+		The argument \verb|X| should either be a dictionary where keys are the representatives and the value is a list of elements
 		to identify with the key, or a list of lists where the first element of each list is the representative.
 		Trivial equivalence classes need not be specified.
 		'''
@@ -393,7 +408,6 @@ class Poset:
 			X = [[this.elements[X[i][j]] for j in range(len(X[i]))] for i in range(len(X))]
 		X = [[x[0]]+[y for y in x[1:] if y!=x[0]] for x in X]
 		removed = list(itertools.chain(*[X[i][1:] for i in range(len(X))]))
-#		removed = sum([X[i][1:] for i in range(len(X))], start=[])
 		reprs = [X[i][0] for i in range(len(X))]
 		elements = [e for e in this.elements if e not in removed]
 
@@ -415,7 +429,7 @@ class Poset:
 	def dual(this):
 		r'''
 		@section@Operations@
-		Returns the dual poset which has the same elements and relation $p\le q$ when $q\le p$ in the original poset.
+		Returns the dual poset, this has the same elements and has relation $p\le q$ when $q\le p$ in the original poset.
 		'''
 		P = Poset()
 		P.elements = this.elements[::-1]
@@ -476,7 +490,7 @@ class Poset:
 	def bddUnion(this, that):
 		r'''
 		@section@Operations@
-		Computes the disjoint union of two posets with maximum and minimums adjoined, that is, the poset \[\big( (P\wout\{\max P,\min P\})\sqcup(Q\wout\{\max Q,\min Q\})\big).\]
+		Computes the disjoint union of two posets with maximum and minimums identified, that is, the poset \[\big( (P\wout\{\max P,\min P\})\sqcup(Q\wout\{\max Q,\min Q\})\big).\]
 
 		The labels in the returned poset are the same as in \verb|element_union|.
 		'''
@@ -495,7 +509,7 @@ class Poset:
 		Computes the star product of two posets.
 
 		This is the union of \verb|this| with the maximum removed and \verb|that| with the minimum
-		removed and all relations $p < q$ for $p$ in \verb|this| and $q$ in \verb|that|.
+		removed and all relations $p<q$ for $p$ in \verb|this| and $q$ in \verb|that|.
 		'''
 		that_part = that.complSubposet(that.min())
 		this_part = this.complSubposet(this.max())
@@ -508,7 +522,7 @@ class Poset:
 	def cartesianProduct(this, that):
 		r'''
 		@section@Operations@
-		Computes the cartesian product.
+		Computes the Cartesian product.
 		'''
 		elements = list(itertools.product(this.elements,that.elements))# in this.elements for q in that.elements]
 		ranks = [[] for i in range(len(this.ranks)+len(that.ranks)-1)]
@@ -563,7 +577,6 @@ class Poset:
 		@section@Queries@
 		Checks whether the given poset is Eulerian (every interval with at least 2 elements has an equal number of odd and even rank elements).
 		'''
-		#TODO fix
 		if 'isRanked()' in this.cache and this.cache['isRanked()']==False: return False
 		bottom = this.min()
 		top = this.max()
@@ -588,8 +601,7 @@ class Poset:
 		\begin{center}
 			\verb|this.interval(p,q).properPart().bettiNumbers()|
 		\end{center}
-		is either \verb|[2]| or \verb|[1,0,...,0,1]| for all $p<=q$ such that
-		\verb|this.rank(q) - this.rank(p) >= 2|.
+		is either \verb|[2]| or \verb|[1,0,...,0,1]| for all $p\le q$ such that $\abs{\text{rk}(q)-\text{rk}(p)}\ge2$.
 		'''
 		if len(this.ranks)==1: return len(this.elements)==1
 		if len(this.ranks)==2: return len(this.elements)==2
@@ -605,7 +617,7 @@ class Poset:
 		@section@Queries@
 		Checks if the poset is a lattice.
 
-		Returns \verb|True| if \verb|this| is an empty poset.
+		Note, returns \verb|True| if \verb|this| is an empty poset.
 		'''
 		if len(this.min()) > 1: return False
 		if len(this.max()) > 1: return False
@@ -727,10 +739,10 @@ class Poset:
 		@section@Subposet Selection@
 		Returns the subposet of elements greater than or equal to any element of \verb|x|.
 
-		If \verb|strict| is \verb|True| then \verb|x| is not included in the returned poset and
-		if it is \verb|False| \verb|x| is included.
+		If \verb|strict| is \verb|True| then the element \verb|x| is not included in the returned poset and
+		if it is \verb|False| the element \verb|x| is included.
 
-		If \verb|indices| is \verb|True| then \verb|x| is interpreted as indices into the poset,
+		If \verb|indices| is \verb|True| then the element \verb|x| is interpreted as indices into the poset,
 		either way the return value is a subposet of the original poset.
 		'''
 		if not indices: x = [this.elements.index(p) for p in x]
@@ -761,17 +773,13 @@ class Poset:
 		Returns the subposet of all elements that are neither maximal nor minimal.
 		'''
 		return this.complSubposet(this.max()+this.min())
-#		P = this
-#		P_min = P.min()
-#		P_max = P.max()
-#		return P.complSubposet((P_min if len(P_min)==1 else [])+(P_max if len(P_max)==1 else []))
 
 	def rankSelection(this, S):
 		r'''
 		@section@Subposet Selection@
 		Returns the subposet of elements whose rank is contained in \verb|S|.
 
-		Does not automatically include the minimum or maximum.
+		Note, this does not automatically include the minimum or maximum.
 		'''
 		ret = this.subposet([x for x in itertools.chain(*[this.ranks[s] for s in S])], indices=True)
 		if 'isRanked()' in this.cache and this.isRanked():
@@ -898,10 +906,12 @@ class Poset:
 		@section@Invariants@
 		Returns flag $\overline{f}$-vector as a dictionary with keys $S\subseteq[n]$.
 
-		This method is intended for use with a poset, possibly quasi-graded, that has a unique minimum and maximum. On a general poset this counts chains that contain the first
+		This method is intended for use with a poset, possibly quasi-graded, that has a unique minimum and maximum. On a classical poset this counts chains that contain the first
 		minimal element, \verb|this[this.ranks[0][0]]| and ignores the
-		final rank. For a quasigraded poset, the rank function $\rho$ must be the same as the classical i.e. $\text{rk}$.
-		And \verb|this.zeta| should encode the $\overline{\zeta}$ function.
+		final rank. 
+		
+		Chains are weighted by the product of the zeta
+		values along the chain.
 		'''
 		n = len(this.ranks)-2
 		def fVectorCalc(ranks,S,M, i, count, weight):
@@ -979,8 +989,6 @@ class Poset:
 			S = tuple(S)
 			if S in fVector: break
 			fVector[S] = fVectorCalc(this.ranks,S,this.zeta,this.ranks[-1][0],0,fVector,tuple())
-		print('fVector',fVector)
-		print('fVector()',this.fVector())
 
 		kVector = {}
 		for S in fVector:
@@ -999,7 +1007,7 @@ class Poset:
 		@section@Invariants@
 		Returns a string of latex code representing the table of flag vectors of the poset.
 
-		Requires the package longtable to compile.
+		Note, the package longtable is required to compile the output.
 		'''
 		table = this.flagVectors()
 		ret = []
@@ -1019,11 +1027,11 @@ class Poset:
 	def abIndex(this):
 		r'''
 		@section@Invariants@
-		Returns the \text{ab}-index of the poset.
+		Returns the \text{ab}-index of the poset as an instnace of \verb|Polynomial|.
 
 		If the poset has a unique minimum and maximum but isn't ranked
 		this computes the \text{ab}-index considering the poset to be
-		quasigraded (in the sense of \cite{ehrenborg-goresky-readdy-15}) with $\overline{\zeta}=\zeta$ and $\rho$ the length function.
+		quasigraded (in the sense of \cite{ehrenborg-goresky-readdy-15}) with $\overline{\zeta}=\zeta$ and $\rho$ the rank function $x\mapsto$\verb|P.rank(x)|. 
 
 		For more information on the \text{ab}-index see \cite{bayer-21}
 		'''
@@ -1040,9 +1048,9 @@ class Poset:
 	def cdIndex(this):
 		r'''
 		@section@Invariants@
-		Returns the \textbf{cd}-index.
+		Returns the \textbf{cd}-index as an instance of \verb|Polynomial|.
 
-		The \textbf{cd}-index is encoded as an instance of the class \verb|Polynomial|. If the given poset
+		If the given poset
 		does not have a \textbf{cd}-index then a \textbf{cd}-polynomial is still
 		returned, but this is not meaningful. If you wish to check whether a poset has
 		a \textbf{cd}-index then check the Boolean below:
@@ -1052,6 +1060,10 @@ class Poset:
 
 		If the given poset is semi-Eulerian then the \textbf{cd}-index
 		as defined in \cite{juhnke-kubitzke-24} is computed.
+
+		This function correctly computes the \cv\dv-index
+		of a quasigraded Eulerian poset (see \cite{ehrenborg-goresky-readdy-15}).
+
 
 		For computation we use the sparse $k$-vector formula see \cite[Proposition 7.1]{billera-ehrenborg-00}. For more info on the \textbf{cd}-index see \cite{bayer-21}.
 		'''
@@ -1139,8 +1151,6 @@ class Poset:
 		that_ranks = [0 for i in that]
 		for r in range(len(that.ranks)):
 			for i in that.ranks[r]: that_ranks[i] = r
-#		def get_lengths(l):
-#			return tuple([len(x) for x in l])
 		def set_comp_rks(P,d,ranks):
 			for i in range(len(P)):
 				row = P.zeta.row(i)
@@ -1331,7 +1341,7 @@ class Poset:
 		By default \verb|tmpdir| is \verb|tempfile.gettempdir()|.
 
 		This function converts the compiled pdf to an image using imagemagick, this may fail due to imagemagick's default security policies.
-		For more info and how to fix the issue see \cite{askubuntu-imagemagick}.
+		For more info and how to fix the issue see \url{https://askubuntu.com/questions/1127260/imagemagick-convert-not-allowed}
 
 		Keyword arguments are passed to \verb|latex()| but \verb|standalone| is alwasy set
 		to \verb|True| (otherwise the pdf would not compile).
@@ -1470,7 +1480,6 @@ class Poset:
 			elements = list(range(len(this)))
 		ret = Poset(this)
 		ret.elements = elements
-#		ret.cache = {}
 		return ret
 
 	def reorder(this, perm, indices=False):
@@ -1478,16 +1487,20 @@ class Poset:
 		@section@Miscellaneous@
 		Returns a new \verb|Poset| object (representing the same poset) with the elements reordered.
 
-		\verb|perm| should be a list of elements if \verb|indices| is \verb|False| or a list of indices if \verb|True|. The returned poset has elements in the given order, i.e. \verb|perm[i]| is the $i$th element.
+		\verb|perm| should be a list of elements if \verb|indices| is \verb|False| or a list of indices if \verb|True|.
+		The returned poset has elements in order of linear
+		extension created from the given permutation.
+		If the list \verb|perm| defines a linear
+		extension then \verb|perm[i]| is the $i$th element.
 
 		If \verb|perm| is not a linear extension it is coerced into a
-		linear extension by placing elements of lower rank before those
-		of higher rank while preserving the given ordering otherwise.
+		linear extension by repeatedly removing the first
+		element whose ideal has already been removed.
 		'''
 		if not indices:
 			perm = [this.elements.index(p) for p in perm]
-		print('reorder elements:',this.elements)
-		print('reorder perm:',perm)
+		else:
+			perm = list(perm)
 		#########################################################
 		zeta = this.zeta
 		linear_perm = []
@@ -1499,7 +1512,6 @@ class Poset:
 					del perm[ip]
 					break
 		perm = linear_perm
-		print('reorder linear_perm:',linear_perm)
 		#########################################################
 		zeta = TriangularArray((this.zeta[i,j] if i<j else this.zeta[j,i] for ii,i in enumerate(perm) for j in perm[ii:]))
 		ranks = [sorted([perm.index(i) for i in rk]) for rk in this.ranks]
@@ -1515,10 +1527,11 @@ class Poset:
 		r'''
 		@section@Miscellaneous@
 		Returns a new \verb|Poset| object (representing the same poset) with the elements sorted.
-
-		Raises \verb|ValueError| if \verb|key| is not a linear extension of the poset.
+		
+		If the given key does not deifine a linear
+		extension then the ordering is coerced
+		to one in the same way as \verb|reorder|.
 		'''
-		#TODO find nearest linear extension
 		if indices:
 			perm = sorted(this.elements, key = lambda p: key(this.elements.index(p)) )
 		else:
@@ -1537,7 +1550,7 @@ class Poset:
 	def toSage(this):
 		r'''
 		@section@Miscellaneous@
-		Converts this to an instance of \verb|sage.combinat.posets.posets.FinitePoset|.
+		Converts the poset to an instance of \verb|sage.combinat.posets.posets.FinitePoset|.
 		'''
 		import sage
 		return sage.combinat.posets.posets.Poset((this.elements,[[p,q] for i,p in enumerate(this.elements) for j,q in enumerate(this.elements[i+1:]) if this.zeta[i,j]!=0]), facade=False)

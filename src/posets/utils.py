@@ -85,10 +85,9 @@ class TriangleRange:
 class TriangularArray:
 	r'''
 	@is_section@
-	A class encoding an element of the incidence algebra of a poset.
+	A class encoding a triangular array.
 
-	This class is mainly provided for the zeta element of a poset, but
-	is essentially just a triangular array.
+	This class is used to encode the zeta function of a poset.
 
 	Constructor arguments:
 	\begin{itemize}
@@ -123,7 +122,9 @@ class TriangularArray:
 
 	def __getitem__(this, x):
 		r'''
-		Zero based indexing \verb|(i,j)| gives the element in row $i$ and column $j$.
+		Zero based indexing $(i,j)$  gives the element in row $i$ and column $j$.
+
+		The argument \verb|x| must be a tuple of integers such that $0\le x_0\le x_1< n$ where $n$ is the size of the triangular array.
 		'''
 		return this.data[x[1] - x[0] + this.size*x[0] - triangle_num(x[0])]
 		#if isinstance(x,tuple): return this.data[this.size*(x[0]-1)-triangle_num(x[0]+1)+x[1]-1]
@@ -142,13 +143,13 @@ class TriangularArray:
 
 	def revtranspose(this):
 		r'''
-		Returns a new instance of \verb|TriangularArray| by reversing columns and then transposing.
+		Returns a new instance of \verb|TriangularArray| obtained by transposing and reversing all columns and rows.
 		'''
 		return TriangularArray([this.data[len(this.data) - i - triangle_num(j) - j - 1] for i in range(this.size) for j in range(i,this.size)])
 
 	def subarray(this, S):
-		'''
-		Returns a sub-triangular array with rows indexed by \verb|S[:-1]| and columns by \verb|S[1:]+1|.
+		r'''
+		Returns a sub-triangular array by selecting the rows and columns indexed by \verb|S|.
 		'''
 		S = sorted(S)
 		return TriangularArray([this.data[t+s*(this.size)-triangle_num(s+1)] for i,s in enumerate(S) for t in S[i:]])
@@ -160,6 +161,13 @@ class TriangularArray:
 #End TriangularArray class
 ##############
 class ZetaBuilder(TriangularArray):
+	r'''
+	This is an extension of the class \verb|TriangularArray| to provide a method to extend a zeta matrix by a new row and automatically reorder the elements into a linear extension.
+
+	Note, this was created for an anticipated usage that never
+	panned out. Using a relations dictionary is probably
+	more convenient. TODO: should we remove this?
+	'''
 	def __init__(this, *args,elements=None,**kwargs):
 		super().__init__(*args,**kwargs)
 		this.elements = list(range(this.size)) if elements is None else elements
@@ -203,8 +211,6 @@ class ZetaBuilder(TriangularArray):
 			data.extend(rowi[j-i] for j in complIdeal[ii+1:])
 		this.data=data
 		this.size+=1
-		print('this.size',this.size)
-		print('this.data',len(this.data),this.data)
 		return index
 
 
