@@ -3,10 +3,13 @@ needsPackage "Posets"
 
 macPosetToPython = (P) -> (
 	posets = import "posets";
-	posets@@Poset(toPython entries (P.RelationMatrix - transpose P.RelationMatrix) , toPython Q.GroundSet)
+	M=entries P.RelationMatrix;
+	zetamat={};
+	for i from 0 to #M-1 do zetamat = append(zetamat,M_i_{i..#M-1});
+	return posets@@Poset(toPython zetamat, toPython P.GroundSet);
 	);
 
 pythonPosetToMac = (P) -> (
-	poset(value P@@elements, value P@@relations(), matrix value P@@zeta())
+	return poset(value P@@elements, value P@@relations())
 	);
 	
