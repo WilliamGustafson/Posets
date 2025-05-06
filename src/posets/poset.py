@@ -875,18 +875,6 @@ class Poset:
 			j = this.elements.index(j)
 		if 'mobius(None, None, False)' in this.cache:
 			return this.cache['mobius(None, None, False)'][i,j]
-		if i==None or j==None:
-			bottom = this.min()
-			top = this.max()
-			if len(bottom)!=1 or len(top)!=1:
-				raise ValueError("To compute the Mobius value for the whole poset the poset must be bounded.")
-			i = this.elements.index(bottom[0])
-			j = this.elements.index(top[0])
-			indices = True
-		if not indices:
-			i = this.elements.index(i)
-			j = this.elements.index(j)
-
 		if i == j: return 1
 		if not this.less(i,j,True) and not this.less(j,i,True): return 0
 

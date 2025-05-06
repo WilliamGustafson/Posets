@@ -174,7 +174,6 @@ class TestConstructorOptions:
 ##########################################
 #test example posets
 ##########################################
-#@pytest.mark.skip(reason="Most examples are broken, fix them...")
 class TestExamples:
 	def test_Bool(this):
 		Bool3 = make_Bool3()
@@ -539,9 +538,12 @@ class TestExamples:
 			}).sort(key=str))
 		assert(bf==Butterfly(2).sort(key=str))
 
-	@pytest.mark.skip(reason="TODO")
 	def test_intervals(this):
-		raise NotImplementedError
+		B = Boolean(2)
+		I = Intervals(B)
+		expected = Poset(relations={tuple():[(x,x) for x in B],(tuple(),tuple()):[(tuple(),(1,)),(tuple(),(2,))],((1,),(1,)):[(tuple(),(1,)),((1,),(1,2))],((2,),(2,)):[(tuple(),(2,)),((2,),(1,2))],((1,2),(1,2)):[((1,),(1,2)),((2,),(1,2))],(tuple(),(1,)):[(tuple(),(1,2))],(tuple(),(2,)):[(tuple(),(1,2))],((1,),(1,2)):[(tuple(),(1,2))],((2,),(1,2)):[(tuple(),(1,2))]})
+		assert(I==expected)
+
 ##########################################
 #Container tests
 ##########################################
@@ -683,7 +685,7 @@ class TestInternalComputations:
 		P = Butterfly(2).properPart()
 		assert(None==P.join(0,1,True))
 	def test_mobius(this):
-		assert(1==this.pent.mobius())
+		assert(1==this.pent.mobius(0,len(this.pent)-1,indices=True))
 		assert(0==this.pent.mobius(tuple(),(1,2)))
 	def test_rank(this):
 		assert((0,1,2,3,1)==tuple(this.pent.rank(p) for p in sorted(this.pent.elements)))
@@ -701,6 +703,16 @@ class TestInvariants:
 		assert(Polynomial([[1,'ccc'],[2,'cd'],[2,'dc']])==this.B4.cdIndex())
 		assert(Polynomial([[1,'cc'],[1,'d']])==this.B3.complSubposet([(1,2)]).cdIndex())
 		assert(Polynomial({'c'*4:1,'ccd':3,'cdc':5,'dcc':3,'dd':4})==Boolean(5).cdIndex())
+
+		#Example 6.14 with $M$ the 3-dimensional solid torus
+		#Euler flag enumeration of Whitney stratified spaces
+		#by Ehrenborg, Richard and Goresky, Mark and Readdy, Margaret
+		P = Chain(2)
+		P.zeta[0,1] = -1 #Euler char of torus bounday
+		P.zeta[0,2] = 1 #Euler char of solid torus
+		P.ranks = [[0],[],[1],[2]] #0, 2-dimensional torus, 3-dimensional solid torus
+		assert(P.cdIndex() == Polynomial({'cc':1,'d':-2}))
+
 	def test_bettiNumbers(this):
 		assert([1,2,1]==Torus().properPart().bettiNumbers())
 	def test_buildIsomorphism(this):
@@ -786,18 +798,6 @@ class TestMisc:
 		P = Boolean(2)
 		LG = Genlatt(P,G=P.max())
 		assert(P.covers()!=LG.covers())
-##########################################
-#Genlatt test
-##########################################
-#class TestGenlatt:
-#	LG = Genlatt(LatticeOfFlats([0,1,2,2,1,3,3,3]))
-#	KH = Genlatt(Boolean(2),G=((1,2),))
-#	def test_cartesianProduct(this):
-#		assert(this.LG.cartesianProduct(this.KH)=='todo')
-#	def test_diamondProduct(this):
-#		assert(this.LG.diamondProduct(this.KH)=='todo')
-#	def test_adjoin_onehat(this):
-#		assert(this.LG.adjoin_onehat()=='todo')
 ##########################################
 #Test toSage and fromSage
 ##########################################
