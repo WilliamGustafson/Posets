@@ -1,5 +1,5 @@
 '''
-@no_doc@
+@no_doc@no_children@
 '''
 import decorator
 import time
@@ -184,6 +184,7 @@ class TriangularArray:
 ##############
 class ZetaBuilder(TriangularArray):
 	r'''
+	@is_section@
 	This is an extension of the class \verb|TriangularArray| to provide a method to extend a zeta matrix by a new row and automatically reorder the elements into a linear extension.
 
 	Note, this was created for an anticipated usage that never
