@@ -159,7 +159,6 @@ from .hasseDiagram import *
 from .examples import *
 from .polynomial import *
 
-del poset
-del hasseDiagram
-del examples
-del polynomial
+for x in ('poset','hasseDiagram','examples','polynomial'):
+	if x in globals():
+		del x
