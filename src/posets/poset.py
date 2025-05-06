@@ -845,14 +845,36 @@ class Poset:
 			return this.elements[ret]
 		return _join(i, j, this.zeta)
 
+	@cached_method
 	def mobius(this, i=None, j=None, indices=False):
 		r'''
 		@section@Internal Computations@
 		Computes the value of the M\"obius function from $i$ to $j$.
 
-		If $i$ or $j$ is not provided computes the mobius from the minimum to the maximum
-		and throws an exception of type \verb|ValueError| if there is no minimum or maximum.
+		If neither $i$ nor $j$ are provided returns all values
+		of the M\"obius function as an instance of
+		\verb|TriangularArray|.
+
+		If $i$ (respectively $j$) is not provided then it
+		is assumed to be the minimum (maximum) and raises 
+		an exception of type \verb|ValueError| if the poset
+		does not have a unique minimum (maximum).
 		'''
+		if i is None and j is None:
+			return this.zeta.inverse()
+		if i is None:
+			mins = this.min(indices)
+			if len(mins)>1: raise ValueError("No unique minimum and argument j was provided, argument i must be provided")
+			i=mins[0]
+		if j is None:
+			maxes = this.max(indices)
+			if len(maxes)>1: raise ValueError("No unique maximum and argument i was provided, argument j must be provided")
+			j=maxes[0]
+		if not indices:
+			i = this.elements.index(i)
+			j = this.elements.index(j)
+		if 'mobius(None, None, False)' in this.cache:
+			return this.cache['mobius(None, None, False)'][i,j]
 		if i==None or j==None:
 			bottom = this.min()
 			top = this.max()
