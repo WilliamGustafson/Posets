@@ -639,7 +639,7 @@ class SubposetsHasseDiagram(HasseDiagram):
 	the width of each subposet to 5 and the width of the
 	entire diagram to 40.
 	'''
-	def __init__(this, P, Q, is_in=lambda x,X:x in X, prefix='Q', draw_min=True, **kwargs):
+	def __init__(this, P, Q, is_in=lambda x,X:x in X, prefix='Q', draw_min=True, func_args=None, **kwargs):
 		r'''
 		Constructor arguments:
 		\begin{itemize}
@@ -664,6 +664,14 @@ class SubposetsHasseDiagram(HasseDiagram):
 				drawn but instead labeled by the return
 				value of \verb|this.minNodeLabel|.
 				}
+			\item[]{\verb|func_args| -- A dictionary whose keys are names of keyword arguments
+				to \verb|HasseDiagram.latex| and whose values are functions that take
+				this instance of \verb|SubposetsHasseDiagram| and an index into the
+				poset \verb|P|. When the subposet for an element \verb|p| at index
+				\verb|i| in \verb|P| is drawn both \verb|this| and \verb|i| are passed
+				to each function and the corresponding option is set to the return
+				value when drawing the subposet.
+				}
 		\end{itemize}
 
 		All keyword arguments not beginning with the string
@@ -678,11 +686,12 @@ class SubposetsHasseDiagram(HasseDiagram):
 		this.prefix=prefix+'_'
 		this.prefix_len = len(this.prefix)
 		this.minNodeLabel = type(this).minNodeLabel
-		super().__init__(P, **{k:v for k,v in kwargs.items() if k[:len(this.prefix)]==this.prefix})
+		super().__init__(P,**kwargs)
 		this.P = P
 		this.Q = Q
 		this.is_in = is_in
 		this.Q.hasseDiagram.__dict__.update({k[len(this.prefix):] : v for k,v in kwargs.items() if k[:len(this.prefix)]==this.prefix})
+		this.func_args = {} if func_args is None else func_args
 		this.draw_min = draw_min
 
 	def latex(this, **kwargs):
@@ -728,6 +737,9 @@ class SubposetsHasseDiagram(HasseDiagram):
 			'line_options' : SubposetsHasseDiagram.make_line_options(this.P[i]),
 			}
 		args.update({k[len(this.prefix):] : v for (k,v) in this.__dict__.items() if k[:len(this.prefix)]==this.prefix})
+		func_arg_values = {k:v(this,i) for k,v in this.func_args.items()}
+		args.update(func_arg_values)
+		
 		args['parent']=this
 		args[this.prefix[:-1]] = this.P[i]
 		Q_Latex = this.Q.latex(**args)
