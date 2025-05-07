@@ -274,7 +274,7 @@ class Poset:
 			for j in range(i+1,T.size):
 				if T[i, j]==0: continue
 				for k in range(j+1,T.size):
-					if T[j, k]!=0:
+					if T[j, k]!=0 and T[i,k]==0:
 						T[i, k] = T[i,j]*T[j,k]
 		T.data[-1] = 1
 				
@@ -715,7 +715,7 @@ class Poset:
 		S = sorted(S)
 		elements = [this.elements[s] for s in S]
 		zeta = this.zeta.subarray(S)
-		P = Poset(zeta, elements)
+		P = Poset(zeta, elements,trans_close=False)
 		if keep_hasseDiagram:
 			P.hasseDiagram = copy.copy(this.hasseDiagram)
 			P.hasseDiagram.P = P
