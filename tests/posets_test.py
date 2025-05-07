@@ -712,6 +712,9 @@ class TestInvariants:
 		P.zeta[0,2] = 1 #Euler char of solid torus
 		P.ranks = [[0],[],[1],[2]] #0, 2-dimensional torus, 3-dimensional solid torus
 		assert(P.cdIndex() == Polynomial({'cc':1,'d':-2}))
+		P.hasseDiagram = ZetaHasseDiagram(P,keep_ranks=True)
+		with open('/tmp/a.tex','w') as file: file.write(P.latex(standalone=True))
+
 
 	def test_bettiNumbers(this):
 		assert([1,2,1]==Torus().properPart().bettiNumbers())

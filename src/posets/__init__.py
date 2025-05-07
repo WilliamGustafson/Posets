@@ -83,7 +83,7 @@ to further automate this is planned.}.
 
 
 Two posets compare equal when they have the same
-set of elements and the same order relation on them:
+set of elements and the same zeta values (i.e. the same order relation with the same weights):
 \begin{verbatim}P == Q and Q == R and R == S #True
 P == Poset(relations={'':['a','b']}) #False
 P == Poset(relations={'':['ab'],'a':['ab'],'b':['ab']}) #False
@@ -148,11 +148,38 @@ Converting to and from Macaulay2:
 -- In M2
 load "convertPosets.m2" --Also loads Python and Posets packages
 import "posets" --This module must be installed to system version of python
-P = posets@@Boolean(3) --Calling python functions
+P = posets\@\@Boolean(3) --Calling python functions
 pythonPosetToMac(P) --Returns an instance of the M2 class Posets
 macPosetToPython(Q) --Take a poset made with M2 and return an
 --instance of the python class Poset
 \end{verbatim}
+
+Quasigraded posets:
+To properly construct a quasigraded poset you must supply the zeta and rank functions explicitly.
+For example, the line below constructs a 2-chain in which the top two elements are rank 2 and 3 and the zeta
+value between the minimum and the element covering it is $-1$:
+\begin{verbatim}
+T = Poset([[1,-1,1],[1,1],[1]], ranks=[[0],[],[1],[2]])
+\end{verbatim}
+The poset \verb|T| above is from \cite[Example 6.14]{ehrenborg-goresky-readdy-15} with $M$ taken to
+be the 3-dimensional solid torus.
+
+You can calculate the flag vectors and the \cv\dv-index just as you would for a classical poset,
+for example, \verb|T.cdIndex()| returns the polynomial $\cv^2-2\dv$.
+
+When plotting a quasigraded poset by default only the underlying poset is shown with element heights
+based on rank, the zeta values are not shown. If you wish to display the zeta values you can use
+the class \verb|ZetaHasseDiagram| to draw a Hasse diagram of your poset with an element $p$ depicted as
+the associated filter, namely the subposet $\{q:q>p\}$, and with elements of the filters labeled by the
+corresponding zeta value. To do so, either construct the poset with \verb|hasse_class=ZetaHasseDiagram|
+such as in \verb|Poset([[1,-1,1],[1,1],[1]], ranks=[[0],[],[1],[2]],hasse_class=ZetaHasseDiagram)| or
+set the Hasse diagram attribute on the poset as below:
+\begin{verbatim}
+T = Poset([[1,-1,1],[1,1],[1]], ranks=[[0],[],[1],[2]])
+T.hasseDiagram = ZetaHasseDiagram(T)
+\end{verbatim}
+You can also represent elements with ideals instead of filters by passing \verb|filters=False|.
+See \verb|ZetaHasseDiagram| and \verb|SubposetsHasseDiagram| for a thorough explanation of the options.
 '''
 from .poset import *
 from .hasseDiagram import *

@@ -799,23 +799,42 @@ class ZetaHasseDiagram(SubposetsHasseDiagram):
 
 	This class is intended for representing quasigraded posets, those with a zeta function taking values
 	other than 0 and 1.
+
+	@is_section@subclass@
 	'''
-	def __init__(this, P, filters=True, prefix='V', func_args=None, **kwargs):
+	def __init__(this, P, filters=True, prefix='V', keep_ranks=True, func_args=None, **kwargs):
 		r'''
-		Constructs an instance of \verb|ZetaHasseDiagram| which can draw the given poset with elements represented as filters, if \verb|filters| is \verb|True| otherwise as ideals, labeled by values of the zeta function.
+		Constructs an instance of \verb|ZetaHasseDiagram| which can draw the given poset with elements represented as filters or ideals.
+		, if \verb|filters| is \verb|True| otherwise as ideals, labeled by values of the zeta function.
+
+		Arguments:
+		\begin{itemize}
+			\item[]{\verb|filters| -- Whether to represent elements by the associated principal
+				filter or alternatively as ideals. The default value is \verb|True| which
+				will use filters.
+				}
+			\item[]{\verb|keep_ranks| -- Whether to use the same rank values for elements in
+				the filters/ideals drawn as in the given poset. If this argument is \verb|False|
+				then a new poset is created with rank function the standard length function
+				as returned by \verb|Poset.make_ranks|.
+				}
+		\end{itemize}
+
 
 		See \verb|SubposetsHasseDiagram| for details on other arguments.
 
 		Note, if \verb|V_width| (or \verb|V_height|) is not provided (assuming
 		the default value \verb|'V'| for \verb|prefix|) it is set to one fifth
 		of \verb|width| (or \verb|height|).
-		If \verb|V_nodescale
+		If \verb|V_nodescale| is not provided it is set to \verb|0.5|.
 		'''
 		if func_args is None: func_args = {'nodeLabel' : lambda Hd,i:lambda hd,j:'0' if i>j else str(hd.P.zeta[i,j])}
 		#option for ideals instead of filters but use filters for terminology below
 		subposet = P.filter if filters else P.ideal
-		P_filters = poset.Poset(P.zeta,elements=[subposet((i,),True) for i in range(len(P.elements))])
-		super().__init__(P=P_filters, Q=P, prefix=prefix, func_args=func_args, **kwargs)
+		P_filters = poset.Poset(P.zeta,ranks=P.ranks,elements=[subposet((i,),True) for i in range(len(P.elements))])
+		if keep_ranks: Q=poset.Poset(zeta=P.zeta,elements=P.elements,name=P.name,ranks=P.ranks)
+		else: Q=poset.Poset(zeta=P.zeta,elements=P.elements)
+		super().__init__(P=P_filters, Q=Q, prefix=prefix, func_args=func_args, **kwargs)
 		if f'{this.prefix}height' not in kwargs:
 			this.__dict__[f'{this.prefix}height'] = float(this.height) / 5
 		if f'{this.prefix}width' not in kwargs:

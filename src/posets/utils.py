@@ -60,7 +60,7 @@ def triangle_num(n):
 	return n*(n-1) // 2
 
 class TriangleRange:
-	r'''@no_doc@
+	r'''@no_doc@no_children@
 	Iterator for a triangle of numbers $n,n-1,\dots,1,n-1,\dots,1,n-2,\dots,1,\dots,2,1,1$.
 	'''
 	def __init__(this, n):
@@ -184,7 +184,7 @@ class TriangularArray:
 ##############
 class ZetaBuilder(TriangularArray):
 	r'''
-	@is_section@
+	@is_section@subclass@
 	This is an extension of the class \verb|TriangularArray| to provide a method to extend a zeta matrix by a new row and automatically reorder the elements into a linear extension.
 
 	Note, this was created for an anticipated usage that never
@@ -238,5 +238,8 @@ class ZetaBuilder(TriangularArray):
 
 
 class MockSet:
+	'''
+	@no_doc@no_children@
+	'''
 	def add(this,x):
 		pass
