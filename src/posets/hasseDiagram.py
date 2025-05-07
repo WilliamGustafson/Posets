@@ -2,6 +2,7 @@
 import random
 import math
 from .utils import *
+from . import poset
 import tkinter as tk
 
 class HasseDiagram:
@@ -787,3 +788,37 @@ class SubposetsHasseDiagram(HasseDiagram):
 ##############
 #end SubposetsHasseDiagram class
 ##############
+class ZetaHasseDiagram(SubposetsHasseDiagram):
+	r'''
+	Class to draw the Hasse diagram of a poset as principal filters (or ideals) labeled by the zeta function values.
+
+	This is a convenience class that merely passes appropriate options to \verb|SubposetsHasseDiagram|.
+	When \verb|latex| is called this class produces latex code for the Hasse diagram of the given
+	poset $P$ with each element $p$ as the principal filter $\{q\in P:q\ge p\}$ (or optionally the principal
+	ideal) with each element $q$ in the filter labeled by $\zeta(p,q)$.
+
+	This class is intended for representing quasigraded posets, those with a zeta function taking values
+	other than 0 and 1.
+	'''
+	def __init__(this, P, filters=True, prefix='V', func_args=None, **kwargs):
+		r'''
+		Constructs an instance of \verb|ZetaHasseDiagram| which can draw the given poset with elements represented as filters, if \verb|filters| is \verb|True| otherwise as ideals, labeled by values of the zeta function.
+
+		See \verb|SubposetsHasseDiagram| for details on other arguments.
+
+		Note, if \verb|V_width| (or \verb|V_height|) is not provided (assuming
+		the default value \verb|'V'| for \verb|prefix|) it is set to one fifth
+		of \verb|width| (or \verb|height|).
+		If \verb|V_nodescale
+		'''
+		if func_args is None: func_args = {'nodeLabel' : lambda Hd,i:lambda hd,j:'0' if i>j else str(hd.P.zeta[i,j])}
+		#option for ideals instead of filters but use filters for terminology below
+		subposet = P.filter if filters else P.ideal
+		P_filters = poset.Poset(P.zeta,elements=[subposet((i,),True) for i in range(len(P.elements))])
+		super().__init__(P=P_filters, Q=P, prefix=prefix, func_args=func_args, **kwargs)
+		if f'{this.prefix}height' not in kwargs:
+			this.__dict__[f'{this.prefix}height'] = float(this.height) / 5
+		if f'{this.prefix}width' not in kwargs:
+			this.__dict__[f'{this.prefix}width'] = float(this.width) / 5
+		if f'{this.prefix}nodescale' not in kwargs:
+			this.__dict__[f'{this.prefix}nodescale'] = 0.5
