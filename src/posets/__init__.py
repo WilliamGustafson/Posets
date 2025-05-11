@@ -60,7 +60,7 @@ Constructing a poset:
 \begin{verbatim}P = Poset(relations={'':['a','b'],'a':['ab'],'b':['ab']})
 Q = Poset(relations=[['','a','b'],['a','ab'],['b','ab']])
 R = Poset(elements=['ab','a','b',''], less=lambda x,y: return x in y)
-S = Poset(incMat = [[0,1,1,1],[0,0,0,1],[0,0,0,1],[0,0,0,0]], elements=['','a','b','ab'])
+S = Poset(zeta = [[0,1,1,1],[0,0,0,1],[0,0,0,1],[0,0,0,0]], elements=['','a','b','ab'])
 \end{verbatim}
 
 Built in examples (see page~\pageref{Built in posets}):
@@ -70,7 +70,7 @@ Cube(3) #Face lattice of the 3-dimensional cube
 Bruhat(3) #Bruhat order on symmetric group of order 3!
 Bnq(n=3,q=2) #Lattice of subspaces of F_2^3
 DistributiveLattice(P) #lattice of ideals of P
-Intervals(P) #lattice of intervals of P (including the empty interval)
+Intervals(P) #meet semilattice of intervals of P
 \end{verbatim}
 These examples come with default drawing methods, for example,
 when making latex code by calling \verb|DistributiveLattice(P).latex()|
