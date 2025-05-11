@@ -217,37 +217,98 @@ class Polynomial:
 		this.strip()
 		data = list(this.data.items())
 		data.sort(key=lambda x:x[0])
-		s = ""
-		for i in range(0,len(data)):
-			if not data[i][1]: continue
-			if data[i][1] == -1 or data[i][1] == Polynomial({'':-1}): s+= '-'
-			if isinstance(data[i][1],Polynomial) and data[i][1]!=Polynomial({'':1}): s+='('+str(data[i][1])+')'
-			elif data[i][1]-1: s += str(data[i][1])
-			current = ''
-			power = 0
-			for c in data[i][0]:
-				if current == '':
-					current = c
-					power = 1
-					continue
-				if c == current:
-					power += 1
-					continue
-				s += current
-				if power != 1: s += '^{' + str(power) + '}'
+		m,c = data[0]
+		ret=[Polynomial._coeff_str(c), Polynomial._monom_str(m)]
+		for m,c in data[1:]:
+			try:
+				if c>0: ret.append('+')
+			except:
+				ret.append('+')
+			ret.append(Polynomial._coeff_str(c))
+			ret.append(Polynomial._monom_str(m))
+		return ''.join(ret)
+			
+	def _monom_str(m):
+		current = ''
+		power = 0
+		ret = []
+		for c in m:
+			if current == '':
 				current = c
 				power = 1
-			s += current
-			if power != 1 and power != 0: s += '^{' + str(power) + '}'
-			if power == 0 and current == "": s += '1'
+				continue
+			if c == current:
+				power += 1
+				continue
+			ret.append(current)
+			if power != 1:
+				ret.append('^{')
+				ret.append(str(power))
+				ret.append('}')
+			current = c
+			power = 1
+		ret.append(current)
+		if power != 1 and power != 0:
+			ret.append('^{')
+			ret.append(str(power))
+			ret.append('}')
+		if power == 0 and current == "":
+			ret.append('1')
+		return ''.join(ret)
 
-			if i != len(data)-1:
-				if data[i+1][1] >= 0: s += "+"
-		if s == '': return '0'
-		return s
+	def _coeff_str(c):
+		ret = []
+		try:
+			if c<0:
+				c=-c
+				ret.append('-')
+		except:
+			pass
+		if c==1: return ''
+		sc=str(c)
+		if any(x in sc for x in ('+','-',' ')):
+			ret.append('(')
+			ret.append(sc)
+			ret.append(')')
+		else:
+			ret.append(sc)
+		return ''.join(ret)
 
+#	def __str__(this):
+#		this.strip()
+#		data = list(this.data.items())
+#		data.sort(key=lambda x:x[0])
+#		s = ""
+#		for i in range(0,len(data)):
+#			if not data[i][1]==0: continue
+#			if data[i][1] == -1 or data[i][1] == Polynomial({'':-1}): s+= '-'
+#			if isinstance(data[i][1],Polynomial) and data[i][1]!=Polynomial({'':1}): s+='('+str(data[i][1])+')'
+#			elif data[i][1]-1: s += str(data[i][1])
+#			current = ''
+#			power = 0
+#			for c in data[i][0]:
+#				if current == '':
+#					current = c
+#					power = 1
+#					continue
+#				if c == current:
+#					power += 1
+#					continue
+#				s += current
+#				if power != 1: s += '^{' + str(power) + '}'
+#				current = c
+#				power = 1
+#			s += current
+#			if power != 1 and power != 0: s += '^{' + str(power) + '}'
+#			if power == 0 and current == "": s += '1'
+#
+#			if i != len(data)-1:
+#				if data[i+1][1] >= 0: s += "+"
+#		if s == '': return '0'
+#		return s
+#
 	def __repr__(this):
 		return 'Polynomial('+repr(this.data)+')'
 
 	def __eq__(this,that):
-		return isinstance(that,type(this)) and this.strip().data == that.strip().data
+		return (isinstance(that,type(this)) and this.strip().data == that.strip().data) or this.data == {'':that}

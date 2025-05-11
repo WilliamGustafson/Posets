@@ -135,7 +135,8 @@ class TriangularArray:
 		ret = []
 		for i in range(this.size):
 			row = this.row(i)
-			ret.append(' '*i*(space_len+1)+ ' '.join(('{x:'+str(space_len)+'}').format(x=x) for x in row))
+			ret.append(' '*i*(space_len+1)+' '.join(' '*(space_len-len(str(x)))+str(x) for x in row))
+#			ret.append(' '*i*(space_len+1)+ ' '.join(('{x:'+str(space_len)+'}').format(x=x) for x in row))
 		return '\n'.join(ret)
 	
 	def __repr__(this):
