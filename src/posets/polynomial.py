@@ -216,6 +216,7 @@ class Polynomial:
 	def __str__(this):
 		this.strip()
 		data = list(this.data.items())
+		if len(data)==0: return '0'
 		data.sort(key=lambda x:x[0])
 		m,c = data[0]
 		ret=[Polynomial._coeff_str(c), Polynomial._monom_str(m)]
