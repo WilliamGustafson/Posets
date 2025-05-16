@@ -1563,7 +1563,7 @@ class Poset:
 		Converts the poset to an instance of \verb|sage.combinat.posets.posets.FinitePoset|.
 		'''
 		import sage
-		return sage.combinat.posets.posets.Poset((this.elements,[[p,q] for i,p in enumerate(this.elements) for j,q in enumerate(this.elements[i+1:]) if this.zeta[i,j]!=0]), facade=False)
+		return sage.combinat.posets.posets.Poset((this.elements,this.relations()),facade=False)
 	def fromSage(P):
 		r'''
 		@section@Miscellaneous@

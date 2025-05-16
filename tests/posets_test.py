@@ -807,25 +807,18 @@ class TestMisc:
 @pytest.mark.skipif(shutil.which('sage')==None, reason='sage is not in the PATH')
 def test_sage():
 	sage_str = '''
-from posets_test import *
 from posets import *
-B = Butterfly(2).properPart().sort()
-B.elements = [0,2,1,3]
-SB = sage.combinat.posets.poset_examples.Posets.Crown(2)
+B = Butterfly(2).properPart().relabel([0,1,2,3])
+SB = Posets.Crown(2)
 BS = B.toSage()
-testeq_exit(SB.lequal_matrix(), BS.lequal_matrix(), "toSage")
-testeq_exit(Poset.fromSage(SB).sort(), P(B.sort()), "fromSage")
-	'''
-	tmpfile = tempfile.mktemp(suffix='.sage')
-	with open(tmpfile,'w') as file:
-		file.write(sage_str)
+assert SB.lequal_matrix()==BS.lequal_matrix(), "Poset.toSage"
+assert Poset.fromSage(SB)==B, "Poset.fromSage"
+'''
 	result = None
-	result = subprocess.Popen(['sage',tmpfile],stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	result = subprocess.Popen(['sage','-c',sage_str],stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	if result!=None:
 		txt, err = result.communicate()
 		assert(result.returncode==0)
-	os.remove(tmpfile)
-	os.remove(tmpfile+'.py')
 ##########################################
 #Test pythonPosetToMac and macPosetToPython
 #from ../convertPosets.m2
