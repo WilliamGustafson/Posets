@@ -932,7 +932,7 @@ class Poset:
 				if i<j and M[i, j]!=0:
 					newCount += fVectorCalc(ranks, S[1:], M, j, count, weight*M[i, j])
 			return newCount
-		f = {tuple():1}
+		f = {tuple():this.zeta[this.ranks[0][0],this.ranks[-1][0]]}
 
 		if n<=0: return f
 
