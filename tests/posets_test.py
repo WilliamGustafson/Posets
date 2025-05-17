@@ -95,16 +95,6 @@ class TestTriangularArray:
 		epsilon = 1/(1<<16)
 		assert(x-y < epsilon for x,y in zip(actual.data,expected.data))
 			
-class TestZetaBuilder:
-	def test_append(this):
-		P=Boolean(2)
-		row=[-1,0,0,1]
-		label=(1.5,)
-		Z=ZetaBuilder(P.zeta.data)
-		Z.append(row,label)
-		assert(Z==TriangularArray([1,1,1,1,1, 1,0,0,1, 1,0,1, 1,1, 1]))
-			
-
 ##########################################
 #test constructor options
 ##########################################

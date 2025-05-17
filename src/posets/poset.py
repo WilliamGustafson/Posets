@@ -274,7 +274,6 @@ class Poset:
 				for k in range(j+1,T.size):
 					if T[j, k]!=0 and T[i,k]==0:
 						T[i, k] = T[i,j]*T[j,k]
-						break
 		T.data[-1] = 1
 				
 		return
