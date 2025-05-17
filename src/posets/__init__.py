@@ -61,9 +61,9 @@ If you have an unencrypted api token from PyPi named \verb|pypi.token|
 you can encrypt it via:
 \begin{verbatim}gpg --encrypt --symmetric --output pypi.token.gpg pypi.token\end{verbatim}
 
-\subsection{Quick start}
+\subsection{Usage}
 
-Here we give a quick introduction to using the posets module.
+Here we give an introduction to using the posets module.
 
 In the code snippets below we assume the module is imported via
 

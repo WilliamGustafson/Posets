@@ -75,9 +75,9 @@ encrypt it via:
 
     gpg --encrypt --symmetric --output pypi.token.gpg pypi.token
 
-## Quick start
+## Usage
 
-Here we give a quick introduction to using the posets module.
+Here we give an introduction to using the posets module.
 
 In the code snippets below we assume the module is imported via
 
