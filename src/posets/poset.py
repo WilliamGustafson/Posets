@@ -1311,11 +1311,7 @@ class Poset:
 
 		@section@Miscellaneous@
 		'''
-		X=set()
-		for r in range(len(this.ranks)-1):
-			for p in this.ranks[r]:
-				X.add((r,len([q for q in this.ranks[r+1] if this.zeta[p, q]==1])))
-		return hash((frozenset(this.elements),frozenset(X)))
+		return hash(frozenset((e,f,0 if i>j else this.zeta[i,j]) for i,e in enumerate(this.elements) for j,f in enumerate(this.elements)))
 
 	def copy(this):
 		r'''
