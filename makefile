@@ -1,10 +1,14 @@
 .SUFFIXES:
+#command line flag, if nonemtpy disables timestamping in the version
+RELEASE=
 SRCFILES=$(shell git ls-files src/posets/*.py)
-DATE:=$(shell date +".%y.%m.%d" | sed -e s/\.0/\./g)
+DATE:=$(if $(RELEASE),,$(shell date +".%y.%m.%d.%H.%M.%S" | sed -e 's/\.0/\./g'))
 WHL=dist/posets-$(VERSION)$(DATE)-py3-none-any.whl
 PYDOX:=$(realpath $(shell which pydox))
 VERSION:=$(shell grep -o 'version = "[^"]*' pyproject.toml | sed -e 's/version = "\([^"*]\)/\1/g')
 TIMESTAMP:=$(shell date +"%y%m%d%H%M.%S")
+#stem for publishing to test.pypi / pypi
+TEST:=$(if $(RELEASE),,test.)
 
 #builds whl file for distribution using version from pyproject.toml or commandline if set and appending the current date
 #set DATE= on commandline to build without the date in the version
@@ -18,14 +22,21 @@ $(WHL) : pyproject.toml $(SRCFILES)
 	#fix timestamp for future make calls
 	touch -t $(TIMESTAMP) $<
 
+#publish to pypi
+publish : $(TEST)pypi.token.gpg $(WHL)
+	python -m twine upload --verbose --repository-url "https://$(if $(TEST),test,upload).pypi.org/legacy/" -u __token__ -p "$$(gpg -q --decrypt $<)" dist/posets-$(VERSION)$(DATE).tar.gz $(WHL)
+
 #documention recipes
 docs : docs/posets.pdf
+
+README.md : src/posets/__init__.py
+	cd src;python -c 'import posets;print(posets.__doc__,end="")' | head -n -1 | sed -e 's/\\av/\\textbf{a}/g' | sed -e 's/\\bv/\\textbf{b}/g' | sed -e 's/\\cv/\\textbf{c}/g' | sed -e 's/\\dv/\\textbf{d}/g' | pandoc -f latex -t gfm -o ../$@
 
 docs/bib.tex :
 	printf '\\bibliography{bib}{}\n\\bibliographystyle{plain}' > $@
 
 docs/posets.pdf : $(SRCFILES) docs/posets.sty docs/doc_funcs.py docs/bib.tex $(PYDOX)
-	cd docs; $(PYDOX) --module ../src/posets --compile bibtex --impall doc_funcs --date today --author William\ Gustafson --title Posets --post bib.tex
+	cd docs; $(PYDOX) --module ../src/posets --compile bibtex --impall doc_funcs --date today --author William\ Gustafson --title Posets --post bib.tex --subtitle v$(VERSION)$(DATE)
 
 #test recipes
 test :
