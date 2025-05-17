@@ -30,7 +30,7 @@ publish : $(TEST)pypi.token.gpg $(WHL)
 docs : docs/posets.pdf
 
 README.md : src/posets/__init__.py
-	cd src;python -c 'import posets;print(posets.__doc__,end="")' | head -n -1 | sed -e 's/\\av/\\textbf{a}/g' | sed -e 's/\\bv/\\textbf{b}/g' | sed -e 's/\\cv/\\textbf{c}/g' | sed -e 's/\\dv/\\textbf{d}/g' | pandoc -f latex -t gfm -o ../$@
+	cd docs;python -c 'import sys;sys.path.append("../src");import posets;print(posets.__doc__,end="")' | head -n -1 | cat posets.sty - bib.tex | pandoc --csl acm-sigchi-proceedings.csl --bibliography bib.bib -C -f latex -t gfm | tail -n +2 | sed -e 's/\(<div id="refs"\)/# References\n\1/' | sed -e 's/\\\[\([0-9]\)\\\]/[\\[\1\\]](#references)/g' > ../$@
 
 docs/bib.tex :
 	printf '\\bibliography{bib}{}\n\\bibliographystyle{plain}' > $@

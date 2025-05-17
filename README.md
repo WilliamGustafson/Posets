@@ -1,9 +1,16 @@
+
 # Introduction
 
 This module provides a class `Poset` that encodes a finite partially
 ordered set (poset). Most notably, this module can efficiently compute
-flag vectors, the **ab**-index and the **cd**-index. Qausigraded posets,
-in the sense of , can be encoded and the **ab**-index and **cd**-index
+flag vectors, the
+<span class="upright">**a**</span><span class="upright">**b**</span>-index
+and the
+<span class="upright">**c**</span><span class="upright">**d**</span>-index.
+Quasigraded posets, in the sense of [\[2\]](#references), can be encoded and the
+<span class="upright">**a**</span><span class="upright">**b**</span>-index
+and
+<span class="upright">**c**</span><span class="upright">**d**</span>-index
 of quasigraded posets can be computed. Latex code for Hasse diagrams can
 be produced with a very flexible interface. There are methods for common
 operations and constructions such as Cartesian products, disjoint
@@ -16,7 +23,7 @@ rank selections. Posets from this module can also be converted to and
 from posets from [sagemath](https://www.sagemath.org) and
 [Macaulay2](https://www.macaulay2.com/).
 
-Terminology and notation on posets generally follows and .
+Terminology and notation on posets generally follows [\[3\]](#references) and [\[1\]](#references).
 
 ## Installation
 
@@ -185,12 +192,13 @@ Quasigraded posets:
     #and with zeta value -1 between minimum and the element covering it:
     T = Poset([[1,-1,1],[1,1],[1]], ranks=[[0],[],[1],[2]])
 
-The poset `T` above is from with $M$ taken to be the 3-dimensional solid
-torus.
+The poset `T` above is from \[2, Example 6.14\] with $M$ taken to be the
+3-dimensional solid torus.
 
-You can calculate the flag vectors and the **cd**-index just as you
-would for a classical poset, for example, `T.cdIndex()` returns the
-polynomial $\textbf{c}^2-2\textbf{d}$.
+You can calculate the flag vectors and the
+<span class="upright">**c**</span><span class="upright">**d**</span>-index
+just as you would for a classical poset, for example, `T.cdIndex()`
+returns the polynomial $\textup{\textbf{c}}^2-2\textup{\textbf{d}}$.
 
 When plotting a quasigraded poset by default only the underlying poset
 is shown with element heights based on rank, the zeta values are not
@@ -209,3 +217,34 @@ or set the Hasse diagram attribute on the poset as below:
 You can also represent elements with ideals instead of filters by
 passing `filters=False`. See `ZetaHasseDiagram` and
 `SubposetsHasseDiagram` for a thorough explanation of the options.
+
+# References
+<div id="refs" class="references csl-bib-body">
+
+<div id="ref-birkhoff-67" class="csl-entry">
+
+<span class="csl-left-margin">1.
+</span><span class="csl-right-inline">Garrett Birkhoff. 1967. *Lattice
+theory*. American Mathematical Society, Providence, R.I.</span>
+
+</div>
+
+<div id="ref-ehrenborg-goresky-readdy-15" class="csl-entry">
+
+<span class="csl-left-margin">2.
+</span><span class="csl-right-inline">Richard Ehrenborg, Mark Goresky,
+and Margaret Readdy. 2015. Euler flag enumeration of whitney stratified
+spaces. *Adv. Math. (N. Y.)* 268: 85–128.</span>
+
+</div>
+
+<div id="ref-stanley-12" class="csl-entry">
+
+<span class="csl-left-margin">3.
+</span><span class="csl-right-inline">Richard P Stanley. 2012.
+*Enumerative combinatorics. Volume 1*. Cambridge University Press,
+Cambridge.</span>
+
+</div>
+
+</div>
