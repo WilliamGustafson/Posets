@@ -1,59 +1,77 @@
 # Introduction
 
-This module provides a class called Poset that encodes a finite
-partially ordered set (poset). Most notably, this module can efficiently
-compute flag vectors, the **ab**-index and
-the **cd**-index. Latex code for Hasse
-diagrams can be produced with a very flexible interface. There are
-methods for common operations and constructions such as Cartesian
-products, disjoint unions, interval lattices, lattice of ideals, etc.
-Various examples of posets are provided such as Boolean algebras, the
-face lattice of the $n$-dimensional cube, (noncrossing) partition
-lattices, the type $A_n$ Bruhat and weak orders, uncrossing orders etc.
-General subposets can be selected as well as particular ones of interest
-such as intervals and rank selections. Posets from this module can also
-be converted to and from posets from
-[sagemath](https://www.sagemath.org) and
+This module provides a class `Poset` that encodes a finite partially
+ordered set (poset). Most notably, this module can efficiently compute
+flag vectors, the **ab**-index and the **cd**-index. Qausigraded posets,
+in the sense of , can be encoded and the **ab**-index and **cd**-index
+of quasigraded posets can be computed. Latex code for Hasse diagrams can
+be produced with a very flexible interface. There are methods for common
+operations and constructions such as Cartesian products, disjoint
+unions, interval lattices, lattice of ideals, etc. Various examples of
+posets are provided such as Boolean algebras, the face lattice of the
+$n$-dimensional cube, (noncrossing) partition lattices, the type $A_n$
+Bruhat and weak orders, uncrossing orders etc. General subposets can be
+selected as well as particular ones of interest such as intervals and
+rank selections. Posets from this module can also be converted to and
+from posets from [sagemath](https://www.sagemath.org) and
 [Macaulay2](https://www.macaulay2.com/).
+
+Terminology and notation on posets generally follows and .
 
 ## Installation
 
-Download the wheel file
+Download the whl file
 [here](https://www.github.com/WilliamGustafson/posets/releases) and
 install it with pip via `python -m pip posets-*-py3-none-any.whl`.
 
 ## Building
 
-Building requires [hatch](https://hatch.pypa.io) to be installed. After
-cloning the repository from the base directory of the repository run
-`hatch build` to build distribution files and then run
-
-    python -m pip install dist/posets-*-py3-none-any.whl
-
-to install the wheel file.
+Building the package requires [hatch](https://hatch.pypa.io) to be
+installed. Running `make` will build the package with a timestamp in the
+version, to build without the timestamp in the version run
+`make RELEASE=0` (the value of 0 is arbitrary, you just need to set
+`RELEASE` to any nonemtpy value). This will make a whl file at
+`dist/posets-<version>-py3-none-any.whl` that you can install with pip.
 
 The documentation can be built in pdf form by running `make docs` from
-the base directory. Compilation requires LaTeXto be installed with the
+the base directory, this will also use a timestamp in the version unless
+you use `RELEASE=0`. Compilation requires LaTeXto be installed with the
 packages pgf/tikz, graphicx, fancyvrb, amsmath, amsssymb, scrextend,
 mdframed and hyperref as well as the python module `pydox`. `pydox` can
-be obtained from
-[github.com/WilliamGustafson/pydox.git](github.com/WilliamGustafson/pydox.git).
-If `pydox` is not on your path either make a symlink to it or call make
-with `make PYDOX=[path to pydox] docs`.
+be obtained from <a href="github.com/WilliamGustafson/pydox.git"
+class="uri">github.com/WilliamGustafson/pydox.git</a>. You must either
+place the script `pydox.py` somewhere in your path named `pydox` or call
+make with `make PYDOX=[path to pydox] docs`.
 
-You can run the tests via `make test`, this requires `pytest` to be
-installed. You can output an html coverage report, located at
-`tests/htmlcov/index.html`, with `make coverage`. Making the coverage
-report requires [pytest](https://pytest.org),
+## Testing
+
+You can run the tests via `make test`, this requires
+[pytest](https://pytest.org) to be installed. You can create an html
+coverage report, output to `tests/htmlcov/index.html`, with
+`make coverage`. Making the coverage report requires
+[pytest](https://pytest.org),
 [coverage](https://coverage.readthedocs.io) and the
 [pytest-cov](https://pytest-cov.readthedocs.io) plugin. Note, coverage
 on `hasseDiagram.py` is very low because testing drawing functions
 cannot be easily automated.
 
+## Publishing
+
+After building the package it can be published to PyPi by running
+`make publish RELEASE=0`, running `make publish` will publish to
+TestPyPi. This requires `twine` and `gpg` to be installed. Additionally,
+the publishing command expects there to be an encrypted api token named
+`pypi.token.gpg` (or `test.pypi.token.gpg` for TestPyPi) at the project
+root. This will also build the package if it is not built already. If
+you have an unencrypted api token from PyPi named `pypi.token` you can
+encrypt it via:
+
+    gpg --encrypt --symmetric --output pypi.token.gpg pypi.token
+
 ## Quick start
 
 Here we give a quick introduction to using the posets module.
-See the [documentation](https://www.github.com/WilliamGustafson/posets/releases/documentation.pdf) for more info.
+
 In the code snippets below we assume the module is imported via
 
 `from posets import *`
@@ -63,33 +81,34 @@ Constructing a poset:
     P = Poset(relations={'':['a','b'],'a':['ab'],'b':['ab']})
     Q = Poset(relations=[['','a','b'],['a','ab'],['b','ab']])
     R = Poset(elements=['ab','a','b',''], less=lambda x,y: return x in y)
-    S = Poset(incMat = [[0,1,1,1],[0,0,0,1],[0,0,0,1],[0,0,0,0]], elements=['','a','b','ab'])
+    S = Poset(zeta = [[0,1,1,1],[0,0,0,1],[0,0,0,1],[0,0,0,0]], elements=['','a','b','ab'])
 
-Built in examples:
+Built in examples (see page ):
 
     Boolean(3) #Boolean algebra of rank 3
     Cube(3) #Face lattice of the 3-dimensional cube
     Bruhat(3) #Bruhat order on symmetric group of order 3!
     Bnq(n=3,q=2) #Lattice of subspaces of F_2^3
     DistributiveLattice(P) #lattice of ideals of P
-    Intervals(P) #lattice of intervals of P (including the empty interval)
+    Intervals(P) #meet semilattice of intervals of P
 
 These examples come with default drawing methods, for example, when
 making latex code by calling `DistributiveLattice(P).latex()` the
 resulting figure depicts elements of the lattice as Hasse diagrams of
-$P$ with elements of the ideal highlighted. Note, you
+$P$ with elements of the ideal highlighted (again, see page ). Note, you
 will have to set the `height`, `width` and possibly `nodescale`
-parameters in order to get sensible output[^1].
+parameters in order to get sensible output.
 
 Two posets compare equal when they have the same set of elements and the
-same order relation on them:
+same zeta values (i.e. the same order relation with the same weights):
 
     P == Q and Q == R and R == S #True
     P == Poset(relations={'':['a','b']}) #False
     P == Poset(relations={'':['ab'],'a':['ab'],'b':['ab']}) #False
+    P == Poset(zeta=[[0,1,1,2],[0,0,0,3],[0,0,0,4],[0,0,0,0]],
+        elements=['','a','b','ab']) #False
 
-Use `is_isomorphic` or
-`PosetIsoClass` to check whether posets are
+Use `is_isomorphic` or `PosetIsoClass` to check whether posets are
 isomorphic:
 
     P.is_isomorphic(Boolean(2)) #True
@@ -100,7 +119,8 @@ Viewing and creating Hasse diagrams:
 
     P.show() #displays a Hasse diagram in a new window
     P.latex() #returns latex code: \begin{tikzpicture}...
-    P.latex(standalone=True) #latex code for a standalone document: \documentclass{preview}...
+    P.latex(standalone=True) #latex code for a
+    #standalone document: \documentclass{preview}...
     display(P.img()) #Display a poset when in a Jupyter notebook
     #this uses the output of latex()
 
@@ -114,39 +134,78 @@ Computing invariants:
 
 Polynomial operations:
 
-    #Create polynomials from dictionaries, keys are monomials, values are coefficients
+    #Create noncommutative polynomials from dictionaries,
+    #keys are monomials, values are coefficients
     p=Polynomial({'ab':1})
     q=Polynomial({'a':1,'b':1})
+
     #get and set coefficients like a dictionary
     q['a'] #1
     q['x'] #0
     p['ba'] = 1
-    str(p) #ab+ba string method returns latex
+
+    #print latex
+    str(p) #ab+ba
+
+    #basic arithmetic, polynomials form a real algebra
     p+q #ab+ba+a+b
-    #multiplication is non-commutative
     p*q #aba+ab^{2}+ba^{2}+bab
     q*p #a^{2}b+aba+bab+b^{2}a
     2*p #2ab+2ba
-    p**2 #abab+ab^{2}a+ba^{2}b+baba non-negative integer exponentation only
+    p**2 #abab+ab^{2}a+ba^{2}b+baba
     p**(-1) #raises NotImplementedError
     p**q #raises NotImplementedError
+
+    #substitutions and conversions
     p.sub(q,'a') #ab+ba+2b^{2} substitute q for a in p
-    p.abToCd() #d rewrite a's and b's in terms of c=a+b and d=ab+ba when possible
-    Polynomial({'c':1,'d':1}).cdToAb() #a+b+ab+ba rewrite c's and d's in terms of a's and b's
+    p.abToCd() #d rewrite a's and b's
+    #in terms of c=a+b and d=ab+ba when possible
+    Polynomial({'c':1,'d':1}).cdToAb() #a+b+ab+ba rewrite c's and d's
+    #in terms of a's and b's
 
 Converting posets to and from SageMath:
 
     P.toSage() #Returns a SageMath class, must be run under sage
-    fromSage(Q) #Take a poset Q made with SageMath and return an instance of Poset
+    Poset.fromSage(Q) #Take a poset Q made with SageMath and return an instance of Poset
 
 Converting to and from Macaulay2:
 
     -- In M2
     load "convertPosets.m2" --Also loads Python and Posets packages
     import "posets" --This module must be installed to system version of python
-    P = posetsBoolean(3) --Calling python functions
+    P = posets\@\@Boolean(3) --Calling python functions
     pythonPosetToMac(P) --Returns an instance of the M2 class Posets
     macPosetToPython(Q) --Take a poset made with M2 and return an
     --instance of the python class Poset
 
-[^1]: A future update to further automate this is planned.
+Quasigraded posets:
+
+    #Provide the zeta and rank functions explicitly
+    #To construct a 2-chain with top two elements rank 2 and 3
+    #and with zeta value -1 between minimum and the element covering it:
+    T = Poset([[1,-1,1],[1,1],[1]], ranks=[[0],[],[1],[2]])
+
+The poset `T` above is from with $M$ taken to be the 3-dimensional solid
+torus.
+
+You can calculate the flag vectors and the **cd**-index just as you
+would for a classical poset, for example, `T.cdIndex()` returns the
+polynomial $\textbf{c}^2-2\textbf{d}$.
+
+When plotting a quasigraded poset by default only the underlying poset
+is shown with element heights based on rank, the zeta values are not
+shown. If you wish to display the zeta values you can use the class
+`ZetaHasseDiagram` to draw a Hasse diagram of your poset with an element
+$p$ depicted as the associated filter, namely the subposet
+$\{q:q\ge p\}$, and with elements of the filters labeled by the
+corresponding zeta value. To do so, either construct the poset with
+`hasse_class=ZetaHasseDiagram` such as in
+`Poset([[1,-1,1],[1,1],[1]], ranks=[[0],[],[1],[2]],hasse_class=ZetaHasseDiagram)`
+or set the Hasse diagram attribute on the poset as below:
+
+    T = Poset([[1,-1,1],[1,1],[1]], ranks=[[0],[],[1],[2]])
+    T.hasseDiagram = ZetaHasseDiagram(T)
+
+You can also represent elements with ideals instead of filters by
+passing `filters=False`. See `ZetaHasseDiagram` and
+`SubposetsHasseDiagram` for a thorough explanation of the options.
