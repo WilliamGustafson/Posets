@@ -4,7 +4,6 @@ build-backend = "hatchling.build"
 
 [project]
 name = "posets"
-#date portion is managed by make
 version = "0"
 authors = [{name="William Gustafson", email="williamlgustafson@gmail.com"}]
 description="A package for working with finite partial orders"
@@ -15,7 +14,7 @@ classifiers = [
 	"License :: OSI Approved :: MIT License",
 	"Operating System :: OS Independent",
 	]
-keywords = ["posets", "partial orders", "flag vectors", "cd-index", "ab-index", "partially ordered", "lattices", "partially ordered sets", "order complex", "Hasse", "Hasse diagram"]
+keywords = ["posets", "partial orders", "flag vectors", "cd-index", "ab-index", "partially ordered", "lattices", "partially ordered sets", "order complex", "Hasse diagram"]
 dependencies =[
 	"decorator",
 	"numpy",

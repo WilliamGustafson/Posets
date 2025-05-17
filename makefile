@@ -9,12 +9,12 @@ VERSION:=$(shell grep -o 'version = "[^"]*' pyproject.toml | sed -e 's/version =
 TIMESTAMP:=$(shell date +"%y%m%d%H%M.%S")
 #stem for publishing to test.pypi / pypi
 TEST:=$(if $(RELEASE),,test.)
-
+$(info DATE=$(DATE))
 #builds whl file for distribution using version from pyproject.toml or commandline if set and appending the current date
 #set DATE= on commandline to build without the date in the version
 $(WHL) : pyproject.toml $(SRCFILES)
 	#set version
-	sed -e 's/version = "\([^"*]\)/version = "\1$(DATE)/g' $< > $<. && mv $<. $<
+	sed -e 's/version = "\([^"]*\)"/version = "\1$(DATE)"/g' $< > $<. && mv $<. $<
 	#build
 	hatch build
 	#unset version
@@ -33,7 +33,7 @@ docs/csl.csl :
 	wget -O $@ https://www.zotero.org/styles/acm-sigchi-proceedings
 
 README.md : src/posets/__init__.py docs/csl.csl
-	cd docs;python -c 'import sys;sys.path.append("../src");import posets;print(posets.__doc__,end="")' | head -n -1 | cat posets.sty - bib.tex | pandoc --csl csl.csl --bibliography bib.bib -C -f latex -t gfm | tail -n +2 | sed -e 's/\(<div id="refs"\)/# References\n\1/' | sed -e 's/\\\[\([0-9]\)\\\]/[\\[\1\\]](#references)/g' | sed -e 's/\\\([{}]\)/\\\\\1/g' > ../$@
+	cd docs;python -c 'import sys;sys.path.append("../src");import posets;print(posets.__doc__,end="")' | head -n -1 | tail -n +3 | cat posets.sty - bib.tex | pandoc --csl csl.csl --bibliography bib.bib -C -f latex -t gfm | tail -n +2 | sed -e 's/\(<div id="refs"\)/# References\n\1/' | sed -e 's/\\\[\([0-9]\)\\\]/[\\[\1\\]](#references)/g' | sed -e 's/\\\([{}]\)/\\\\\1/g' > ../$@
 
 docs/bib.tex :
 	printf '\\bibliography{bib}{}\n\\bibliographystyle{plain}' > $@

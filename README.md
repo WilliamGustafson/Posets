@@ -1,6 +1,4 @@
 
-# Introduction
-
 This module provides a class `Poset` that encodes a finite partially
 ordered set (poset). Most notably, this module can efficiently compute
 flag vectors, the
