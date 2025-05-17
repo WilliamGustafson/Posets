@@ -205,7 +205,7 @@ is shown with element heights based on rank, the zeta values are not
 shown. If you wish to display the zeta values you can use the class
 `ZetaHasseDiagram` to draw a Hasse diagram of your poset with an element
 $p$ depicted as the associated filter, namely the subposet
-$\{q:q\ge p\}$, and with elements of the filters labeled by the
+$\\{q:q\ge p\\}$, and with elements of the filters labeled by the
 corresponding zeta value. To do so, either construct the poset with
 `hasse_class=ZetaHasseDiagram` such as in
 `Poset([[1,-1,1],[1,1],[1]], ranks=[[0],[],[1],[2]],hasse_class=ZetaHasseDiagram)`

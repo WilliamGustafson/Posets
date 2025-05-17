@@ -30,7 +30,7 @@ publish : $(TEST)pypi.token.gpg $(WHL)
 docs : docs/posets.pdf
 
 README.md : src/posets/__init__.py
-	cd docs;python -c 'import sys;sys.path.append("../src");import posets;print(posets.__doc__,end="")' | head -n -1 | cat posets.sty - bib.tex | pandoc --csl acm-sigchi-proceedings.csl --bibliography bib.bib -C -f latex -t gfm | tail -n +2 | sed -e 's/\(<div id="refs"\)/# References\n\1/' | sed -e 's/\\\[\([0-9]\)\\\]/[\\[\1\\]](#references)/g' > ../$@
+	cd docs;python -c 'import sys;sys.path.append("../src");import posets;print(posets.__doc__,end="")' | head -n -1 | cat posets.sty - bib.tex | pandoc --csl acm-sigchi-proceedings.csl --bibliography bib.bib -C -f latex -t gfm | tail -n +2 | sed -e 's/\(<div id="refs"\)/# References\n\1/' | sed -e 's/\\\[\([0-9]\)\\\]/[\\[\1\\]](#references)/g' | sed -e 's/\\\([{}]\)/\\\\\1/g' > ../$@
 
 docs/bib.tex :
 	printf '\\bibliography{bib}{}\n\\bibliographystyle{plain}' > $@
