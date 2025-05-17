@@ -828,13 +828,15 @@ class ZetaHasseDiagram(SubposetsHasseDiagram):
 		of \verb|width| (or \verb|height|).
 		If \verb|V_nodescale| is not provided it is set to \verb|0.5|.
 		'''
-		if func_args is None: func_args = {'nodeLabel' : lambda Hd,i:lambda hd,j:'0' if i>j else str(hd.P.zeta[i,j])}
+		if func_args is None:
+			if filters:
+				func_args = {'nodeLabel' : lambda Hd,i:lambda hd,j:'0' if i>j else str(hd.P.zeta[i,j])}
+			else:
+				func_args = {'nodeLabel' : lambda Hd,i:lambda hd,j:'0' if j>i else str(hd.P.zeta[j,i])}
 		#option for ideals instead of filters but use filters for terminology below
-		subposet = P.filter if filters else P.ideal
-		P_filters = poset.Poset(P.zeta,ranks=P.ranks,elements=[subposet((i,),True) for i in range(len(P.elements))])
 		if keep_ranks: Q=poset.Poset(zeta=P.zeta,elements=P.elements,name=P.name,ranks=P.ranks)
 		else: Q=poset.Poset(zeta=P.zeta,elements=P.elements)
-		super().__init__(P=P_filters, Q=Q, prefix=prefix, func_args=func_args, **kwargs)
+		super().__init__(P=P,Q=Q, prefix=prefix, func_args=func_args, is_in=(lambda x,y:P.lesseq(y,x)) if filters else P.lesseq)
 		if f'{this.prefix}height' not in kwargs:
 			this.__dict__[f'{this.prefix}height'] = float(this.height) / 5
 		if f'{this.prefix}width' not in kwargs:
