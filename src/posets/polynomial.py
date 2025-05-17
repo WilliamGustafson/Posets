@@ -3,13 +3,14 @@ import math
 import itertools
 
 class Polynomial:
-	r'''@is_section@
+	r'''
 	A class encoding polynomials in noncommutative variables (used by the \verb|Poset| class to compute the \cv\dv-index).
 
 	This class is basically a wrapper around a dictionary representation for polynomials (e.g. $3\av\bv+2\bv\bv$ is encoded as \verb|{'ab':3, 'bb':2}|).
 	The class provides methods for basic arithmetic with polynomials, to substitute a polynomial
 	for a variable in another polynomial and to convert \av\bv-polynomials to \cv\dv-polynomials (when possible) and vice versa. You can also get and set
 	coefficients as if a polynomial were a dictionary.
+	@is_section@
 	'''
 	def __init__(this, data=None):
 		r'''

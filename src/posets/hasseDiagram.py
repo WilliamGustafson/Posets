@@ -7,7 +7,6 @@ import tkinter as tk
 
 class HasseDiagram:
 	r'''
-	@is_section@
 	A class that can produce latex/tikz code for the Hasse diagram of a poset or display the diagram in a window using tkinter.
 
 
@@ -320,6 +319,7 @@ class HasseDiagram:
 
 	Note you can pass a class to the \verb|Poset| constructor to construct a poset with
 	a \verb|hasseDiagram| of that class.
+	@is_section@
 	'''
 	def __init__(this, P=None, that=None,**kwargs):
 		'''
@@ -616,7 +616,6 @@ class HasseDiagram:
 
 class SubposetsHasseDiagram(HasseDiagram):
 	r'''
-	@is_section@subclass@
 	This is a class used to draw posets whose elements are themselves subposets of some global poset, such as interval posets or lattices of ideals.
 
 	The elements of the poset $P$ to be drawn are subposets
@@ -637,6 +636,8 @@ class SubposetsHasseDiagram(HasseDiagram):
 	is used. For example, \verb|latex(Q_width=5,width=40)| would set
 	the width of each subposet to 5 and the width of the
 	entire diagram to 40.
+
+	@is_section@subclass@
 	'''
 	def __init__(this, P, Q, is_in=lambda x,X:x in X, prefix='Q', draw_min=True, func_args=None, **kwargs):
 		r'''
@@ -797,35 +798,34 @@ class ZetaHasseDiagram(SubposetsHasseDiagram):
 	This class is intended for representing quasigraded posets, those with a zeta function taking values
 	other than 0 and 1.
 
+	Constructor arguments:
+	\begin{itemize}
+		\item[]{\verb|filters| -- Whether to represent elements by the associated principal
+			filter or alternatively as ideals. The default value is \verb|True| which
+			will use filters.
+			}
+		\item[]{\verb|keep_ranks| -- Whether to use the same rank values for elements in
+			the filters/ideals drawn as in the given poset. If this argument is \verb|False|
+			then a new poset is created with rank function the standard length function
+			as returned by \verb|Poset.make_ranks|.
+			}
+	\end{itemize}
+
+
+	See \verb|SubposetsHasseDiagram| for details on other arguments. Note, the argument \verb|prefix| to
+	\verb|SubposetsHasseDiagram| defaults to \verb|'V'|.
+
+	Note, if \verb|V_width| (or \verb|V_height|) is not provided (assuming
+	the default value \verb|'V'| for \verb|prefix|) it is set to one fifth
+	of \verb|width| (or \verb|height|).
+	If \verb|V_nodescale| is not provided it is set to \verb|0.5|.
+
 	@is_section@subclass@
 	'''
 	def __init__(this, P, filters=True, prefix='V', keep_ranks=True, func_args=None,\
 	**kwargs):
 		r'''
-		Constructs an instance of \verb|ZetaHasseDiagram| which can draw the given poset with elements represented as filters or ideals.
-		, if \verb|filters| is \verb|True| otherwise as ideals, labeled by values of the zeta function.
-
-		Arguments:
-		\begin{itemize}
-			\item[]{\verb|filters| -- Whether to represent elements by the associated principal
-				filter or alternatively as ideals. The default value is \verb|True| which
-				will use filters.
-				}
-			\item[]{\verb|keep_ranks| -- Whether to use the same rank values for elements in
-				the filters/ideals drawn as in the given poset. If this argument is \verb|False|
-				then a new poset is created with rank function the standard length function
-				as returned by \verb|Poset.make_ranks|.
-				}
-		\end{itemize}
-
-
-		See \verb|SubposetsHasseDiagram| for details on other arguments. Note, the argument \verb|prefix| to
-		\verb|SubposetsHasseDiagram| defaults to \verb|'V'|.
-
-		Note, if \verb|V_width| (or \verb|V_height|) is not provided (assuming
-		the default value \verb|'V'| for \verb|prefix|) it is set to one fifth
-		of \verb|width| (or \verb|height|).
-		If \verb|V_nodescale| is not provided it is set to \verb|0.5|.
+		See \verb|ZetaHasseDiagram|.
 		'''
 		if func_args is None:
 			if filters:

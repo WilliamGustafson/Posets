@@ -7,8 +7,9 @@ import itertools
 
 def subsets(S):
 	r'''
-	@no_doc@
 	Iterator for subsets of an iterable.
+
+	@no_doc@
 	'''
 	for T in itertools.chain(*(itertools.combinations(S,k) for k in range(len(S)+1))):
 		yield T
@@ -16,7 +17,6 @@ def subsets(S):
 @decorator.decorator
 def cached_method(f, *args, **kwargs):
 	r'''
-	@no_doc@
 	This is an attribute for class functions that will cache the return result in a cache property on the object.
 
 	When the attribute is placed on a class function e.g.
@@ -41,6 +41,8 @@ def cached_method(f, *args, **kwargs):
 
 	This attribute should not be placed on a function whose return value is not solely
 	dependent on its arguments (including the argument this).
+
+	@no_doc@
 	'''
 	key = f.__name__ + str(args[1:])[:-1] + ((', ' + ', '.join([str(k)+'='+repr(v) for (k,v) in sorted(kwargs.items(),key = lambda x:x[1])])) if len(kwargs)>0 else '')+')'
 	try:
@@ -60,8 +62,10 @@ def triangle_num(n):
 	return n*(n-1) // 2
 
 class TriangleRange:
-	r'''@no_doc@no_children@
+	r'''
 	Iterator for a triangle of numbers $n,n-1,\dots,1,n-1,\dots,1,n-2,\dots,1,\dots,2,1,1$.
+
+	@no_doc@no_children@
 	'''
 	def __init__(this, n):
 		this.n = n-1
@@ -84,7 +88,6 @@ class TriangleRange:
 ##############
 class TriangularArray:
 	r'''
-	@is_section@
 	A class encoding a triangular array.
 
 	This class is used to encode the zeta function of a poset.
@@ -95,6 +98,8 @@ class TriangularArray:
 		\item[]{\verb|flat| -- Whether the data is in flat form or not.}
 		\end{itemize}
 	Constructor raises \verb|ValueError| if the number of entries of \verb|data| is not a triangle number.
+
+	@is_section@
 	'''
 	def __init__(this, data, flat=True):
 		if flat:
