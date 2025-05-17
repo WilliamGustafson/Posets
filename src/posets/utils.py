@@ -92,9 +92,9 @@ class TriangularArray:
 	Constructor arguments:
 	\begin{itemize}
 		\item[]{\verb|data| -- An iterable specifying the entries in the upper diagonal; may be either a flat list or an iterable of iterables.}
-		\item[]{\verb|rows| -- Number of rows of the data, must be provided if the data is in flat form.}
 		\item[]{\verb|flat| -- Whether the data is in flat form or not.}
 		\end{itemize}
+	Constructor raises \verb|ValueError| if the number of entries of \verb|data| is not a triangle number.
 	'''
 	def __init__(this, data, flat=True):
 		if flat:
@@ -109,8 +109,14 @@ class TriangularArray:
 	def __eq__(this,that):
 		return isinstance(that,TriangularArray) and this.data == that.data
 	def row(this, i):
+		r'''
+		Returns the $i$th row as a list.
+		'''
 		return this.data[this.size*i - triangle_num(i) : this.size*(i+1) - i - triangle_num(i)]
 	def col(this, j):
+		r'''
+		Generator for the $i$th column.
+		'''
 		data = this.data
 		n = this.size
 		idx = j
@@ -173,71 +179,9 @@ class TriangularArray:
 				idx+=1
 		return TriangularArray(data)
 				
-				
-				
-				
-
-			
-#		return TriangularArray([this.data[s + S[i]*(this.size)-triangle_num(S[i])] for i in range(len(S)) for s in S[i+1:]])
-		#return TriangularArray([this.data[s + S[i]*(this.size-1)-triangle_num(S[i])-1] for i in range(len(S)) for s in S[i+1:]], size=len(S))
 ##############
 #End TriangularArray class
 ##############
-class ZetaBuilder(TriangularArray):
-	r'''
-	@is_section@subclass@
-	This is an extension of the class \verb|TriangularArray| to provide a method to extend a zeta matrix by a new row and automatically reorder the elements into a linear extension.
-
-	Note, this was created for an anticipated usage that never
-	panned out. Using a relations dictionary is probably
-	more convenient. TODO: should we remove this?
-	'''
-	def __init__(this, *args,elements=None,**kwargs):
-		super().__init__(*args,**kwargs)
-		this.elements = list(range(this.size)) if elements is None else elements
-		assert(len(this.elements)==this.size)
-	def append(this,row,label=None):
-		'''
-		Adds a new element and reorders the new set of elements into a linear extension and extends the zeta matrix.
-
-		`label` - label for the new element, defaults to an integer
-		`row` - list of length `this.size` with values in 0,-1,* that indicate the new element is incomparable to, greater than, or less than the element at that index (* is any value except 0 or -1).
-
-		Returns the index of the new element, note other elements
-		may be rearranged as well.
-		'''
-		label=this.size+1
-		while label in this.elements: label+=1
-		#find new linear extension
-		#take ideal gen. by new elem.
-		ideal = sorted([i for i in range(len(this.elements)) if row[i]==-1])
-		complIdeal = [i for i in range(len(this.elements)) if i not in ideal]
-		#order it by the current lin. ext.
-		elements = [this.elements[i] for i in ideal]
-		#place the new element
-		index = len(ideal)
-		elements.append(label)
-		#order the remaining elements by old order
-		elements.extend(this.elements[i] for i in complIdeal)
-		#make new zeta values
-		data = []
-		for ii,i in enumerate(ideal):
-			rowi = this.row(i)
-			data.append(1)
-			data.extend(rowi[j-i] for j in ideal[ii+1:])
-			data.extend(rowi[j-i] if i<j else 0 for j in complIdeal)
-			data.append(1)
-		data.append(1)
-		data.extend(row[i] for i in complIdeal)
-		for ii,i in enumerate(complIdeal):
-			rowi = this.row(i)
-			data.append(1)
-			data.extend(rowi[j-i] for j in complIdeal[ii+1:])
-		this.data=data
-		this.size+=1
-		return index
-
-
 class MockSet:
 	'''
 	@no_doc@no_children@

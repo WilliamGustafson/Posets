@@ -212,7 +212,7 @@ def Boolean(n):
 def Simplex(n):
 	r'''
 	@section@Built in posets@
-	Returns Boolean(n+1) the face lattice of the $n$-dimensional simplex.
+	Returns \verb|Boolean|\verb|(n+1)| the face lattice of the $n$-dimensional simplex.
 	'''
 	return Boolean(n+1)
 
@@ -561,8 +561,8 @@ def Uncrossing(t, upper=False, weak=False, E_only=False, zerohat=True):
 	Returns either a lower interval $[\widehat{0},t]$ or the upper interval $[t,\widehat{1}]$ in the uncrossing poset.
 
 	The parameter \verb|t| should be either a pairing encoded as a list \verb|[s_1,t_1,...,s_n,t_n]| where
-	\verb|s_i| is paired to \verb|t_i| or \verb|t| can be an integer greater than 1. If t is an integer the entire uncrossing
-	poset of order \verb|t| is returned.
+	\verb|s_i| is paired to \verb|t_i| or an integer greater than 1. If t is an integer the entire uncrossing
+	poset of rank $\binom{t}{2}+1$ is returned.
 
 	Covers in the uncrossing poset are of the form $\sigma<\tau$
 	where $\sigma$ is obtained from $\tau$ by swapping points
@@ -577,7 +577,7 @@ def Uncrossing(t, upper=False, weak=False, E_only=False, zerohat=True):
 	These two flags are provided
 	because this function acts as a backend to \verb|Bruhat|.
 	Calling \verb|Uncrossing(n,E_only=True)| constructs
-	the Bruhat order on $\mathfrak{S_n}$ and passing
+	the Bruhat order on $\mathfrak{S_n}$ and adding
 	\verb|weak=True| constructs the weak order on $\mathfrak{S}_n$.
 
 	If \verb|zerohat| is \verb|False| then no minimum is adjoined.

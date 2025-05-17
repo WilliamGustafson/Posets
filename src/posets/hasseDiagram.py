@@ -101,7 +101,7 @@ class HasseDiagram:
 			overwritten and you want to preserve this behaviour add a line
 			to the end of your implementation of \verb|loc_x| such as
 				\begin{center}
-				\verb|x = x+random.uniform(-jiggle-jiggle_x,jiggle+jiggle_x)|
+				\verb|x = x+random.uniform(-this.jiggle-this.jiggle_x,this.jiggle+this.jiggle_x)|
 				\end{center}
 
 			The default values are 0.
@@ -192,7 +192,7 @@ class HasseDiagram:
 			the latex packages tikz (pgf) and preview. The resulting figure can be
 			incorporated into another latex document with \verb|\includegraphics|.
 
-			When \verb|False| only the code for the figure is returned; the return value
+			When \verb|False| only the code for the figure is returned, which case the return value
 			begins with \verb|\begin{tikzpicture}| and ends with \verb|\end{tikzpicture}|.
 
 			The default is \verb|False|.
@@ -387,7 +387,7 @@ class HasseDiagram:
 		This is the default implementation of \verb|loc_x|.
 
 		This spaces elements along each rank evenly. The length of a rank is the
-		ratio of the natural logarithms of the size of the rank to the size of the largest rank.
+		ratio of the logarithms of the size of the rank to the size of the largest rank.
 
 		The return value is a string.
 		'''
@@ -404,9 +404,7 @@ class HasseDiagram:
 		r'''
 		This is the default value of \verb|loc_y|.
 
-		This evenly spaces ranks.
-
-		The return value is a string.
+		This evenly spaces ranks. The return value is a string.
 		'''
 		rk = this.P.rank(i, True)
 		try: #divide by zero when P is an antichain
@@ -436,7 +434,7 @@ class HasseDiagram:
 		r'''
 		This is the default implementation of \verb|nodeDraw|.
 
-		This draws a filled black circle of radius $\verb|ptsize|/2$.
+		This draws a filled black circle of radius $\verb|ptsize/2|$.
 		'''
 		ptsize = this.ptsize if type(this.ptsize)==int else float(this.ptsize[:-2])
 
@@ -448,7 +446,7 @@ class HasseDiagram:
 
 	def nodeTikz(this,i):
 		r'''
-		This is the default implementation of nodeTikz used to draw nodes when \verb|labels| is \verb|False|.
+		This is the default implementation of \verb|nodeTikz| used to draw nodes when \verb|labels| is \verb|False|.
 		'''
 		return '\\fill['+this.node_options(this,i)+']('+this.nodeName(this,i)+')circle('+this.ptsize+');\n'
 
@@ -755,7 +753,6 @@ class SubposetsHasseDiagram(HasseDiagram):
 		except:
 			end = -1
 		Q_Latex = Q_Latex[:end]
-#		Q_Latex = ''.join(Q_Latex.split('\n')[2:-1])
 		return '\\begin{{tikzpicture}}[scale={}]\\begin{{scope}}\n'.format(this.Q.hasseDiagram.scale)+Q_Latex+'\n\\end{scope}\\end{tikzpicture}'
 
 	def Q_nodeName(this, i):
@@ -802,7 +799,8 @@ class ZetaHasseDiagram(SubposetsHasseDiagram):
 
 	@is_section@subclass@
 	'''
-	def __init__(this, P, filters=True, prefix='V', keep_ranks=True, func_args=None, **kwargs):
+	def __init__(this, P, filters=True, prefix='V', keep_ranks=True, func_args=None,\
+	**kwargs):
 		r'''
 		Constructs an instance of \verb|ZetaHasseDiagram| which can draw the given poset with elements represented as filters or ideals.
 		, if \verb|filters| is \verb|True| otherwise as ideals, labeled by values of the zeta function.
@@ -821,7 +819,8 @@ class ZetaHasseDiagram(SubposetsHasseDiagram):
 		\end{itemize}
 
 
-		See \verb|SubposetsHasseDiagram| for details on other arguments.
+		See \verb|SubposetsHasseDiagram| for details on other arguments. Note, the argument \verb|prefix| to
+		\verb|SubposetsHasseDiagram| defaults to \verb|'V'|.
 
 		Note, if \verb|V_width| (or \verb|V_height|) is not provided (assuming
 		the default value \verb|'V'| for \verb|prefix|) it is set to one fifth

@@ -28,7 +28,7 @@ class Poset:
 	r'''
 	@is_section@section_key@0@
 	@sections_order@Operations@Subposet Selection@Internal Computations@Queries@Invariants@Maps@Miscellaneous@PosetIsoClass@@
-	A class representing a finite partially ordered set (possible quasigraded).
+	A class representing a finite partially ordered set (possibly quasigraded).
 
 	Posets are encoded by a list \verb|elements|, a zeta
 	function \verb|zeta| describing the relations and a
@@ -37,7 +37,7 @@ class Poset:
 	have an attribute \verb|hasseDiagram| which is an instance
 	of the \verb|HasseDiagram| class used for plotting the poset.
 
-	To construct a poset you must pass at least either an incident
+	To construct a poset you must pass one of the zeta matrix
 	matrix \verb|zeta|, a function \verb|less| or a list/dictionary
 	\verb|relations| to describe
 	the relations. Additionally you may wish to specify the
@@ -49,8 +49,8 @@ class Poset:
 	with 1 indicating a relation. The given zeta function may
 	take other values, with 0 always indicating no relation
 	and any other value indicating a relation with the
-	specified weight. Additionally, if you provide value
-	for \verb|ranks| you can specify any whole number for
+	specified weight. Additionally, if you provide a value
+	for \verb|ranks| you can specify any non-negative integer for
 	the ranks of elements.
 
 	\begin{itemize}
@@ -87,12 +87,12 @@ class Poset:
 		\item[]{
 		\verb|relations| -- Either a list of pairs $(x,y)$ such that $x<y$ or a dictionary
 			whose values are lists of elements greater than the associated key.
-			This is used to construct zeta if it is not provided.
+			This is used to construct the zeta function if it is not provided.
 			Note, it is only necessary to specify cover relations.
 		}
 		\item[]{
 		\verb|less| -- A function that given two elements $p,q$ returns \verb|True| when
-			$p < q$. This is used to construct zeta if neither \verb|zeta|
+			$p < q$. This is used to construct the zeta function if neither \verb|zeta|
 			nor \verb|relations| are provided. It is only necessary to specify cover relations.
 		}
 		\item[]{
@@ -116,13 +116,7 @@ class Poset:
 		\item[]{
 		\verb|trans_close| -- If \verb|True| the transitive closure of \verb|zeta| is
 			computed, this should be \verb|False| only if the provided matrix satisfies
-				\[
-				\verb|zeta[i, j] ==|\begin{cases}
-						1 & \text{when } i<j\\
-						-1 & \text{when } i>j\\
-						0 & \text{otherwise}.
-					\end{cases}
-				\]
+			\verb|zeta[i,j]==0| for $i$ and $j$ incomparable and \verb|zeta[i,j]!=0| otherwise.
 			Similarly, if providing \verb|relations| or \verb|less| the argument \verb|trans_close| should be \verb|False|
 			only if all relations were specified by the
 			given data.
@@ -231,8 +225,8 @@ class Poset:
 		@section@Miscellaneous@
 		Given a dictionary of relations and a list of elements returns the zeta matrix and the elements reordered in a linear extension.
 
-		The dictionary \verb|relations| should have keys indices into the list \verb|elements| and values lists of indices 
-		into \verb|elements|. If an index \verb|i| is in contained in the list \verb|relations[j]| then  the $j$th elements is
+		The dictionary \verb|relations| should have keys that are indices into the list \verb|elements| and values that are lists of indices 
+		into \verb|elements|. If an index \verb|i| is contained in the list \verb|relations[j]| then  the $j$th elements is
 		less than the $i$th element in the poset.
 		'''
 		E = list(range(len(elements)))
@@ -261,7 +255,7 @@ class Poset:
 	def transClose(T):
 		r'''
 		@section@Miscellaneous@
-		Given an instance of \verb|TriangularArray| encoding a (possibly weighted) relation, via $x~y$ when the $x,y$ entry is nonzero and, computes the transitive closure.
+		Given an instance of \verb|TriangularArray| encoding a (possibly weighted) relation, via $x\sim y$ when the $x,y$ entry is nonzero computes the transitive closure.
 
 		Note, an induced relation $i<j$ is weighted
 		by \verb|T[i,k]*T[k,j]| where $j$ and $k$ are
@@ -276,6 +270,7 @@ class Poset:
 				for k in range(j+1,T.size):
 					if T[j, k]!=0 and T[i,k]==0:
 						T[i, k] = T[i,j]*T[j,k]
+						break
 		T.data[-1] = 1
 				
 		return
@@ -347,8 +342,7 @@ class Poset:
 		@section@Operations@
 		Returns a new poset with a new minimum adjoined.
 
-		By default the label is 0 and if 0 is already an element the default label is
-		the first positive integer that is not an element.
+		By default the label is the first non-negative integer that is not an element of the poset.
 		'''
 		zeta = TriangularArray([1 for _ in range(len(this.elements)+1)]+this.zeta.data)
 		if label==None:
@@ -372,7 +366,7 @@ class Poset:
 		@section@Operations@
 		Returns a new poset with a new maximum adjoined.
 
-		The label default is the same as \verb|Poset.adjoin_zerohat()|
+		The label default is the same as \verb|Poset.adjoin_zerohat|
 		'''
 		zeta = TriangularArray(itertools.chain(*(this.zeta.row(i)+[1] for i in range(this.zeta.size)),[1]))
 		if label==None:
@@ -401,6 +395,8 @@ class Poset:
 		The argument \verb|X| should either be a dictionary where keys are the representatives and the value is a list of elements
 		to identify with the key, or a list of lists where the first element of each list is the representative.
 		Trivial equivalence classes need not be specified.
+
+		Raises \verb|ValueError| if the identifications do not yield a poset (due to violation of the anti-symmetry axiom).
 		'''
 		if type(X)==dict:
 			X = [[k]+list(v) for (k,v) in X.items()]
@@ -490,7 +486,7 @@ class Poset:
 	def bddUnion(this, that):
 		r'''
 		@section@Operations@
-		Computes the disjoint union of two posets with maximum and minimums identified, that is, the poset \[\big( (P\wout\{\max P,\min P\})\sqcup(Q\wout\{\max Q,\min Q\})\big).\]
+		Computes the disjoint union of two posets with maximum and minimums identified, that is, the poset \[\big( (P\wout\{\max P,\min P\})\sqcup(Q\wout\{\max Q,\min Q\})\big)\cup\{\zerohat,\onehat\}.\]
 
 		The labels in the returned poset are the same as in \verb|element_union|.
 		'''
@@ -744,6 +740,9 @@ class Poset:
 
 		If \verb|indices| is \verb|True| then the element \verb|x| is interpreted as indices into the poset,
 		either way the return value is a subposet of the original poset.
+
+		Note, \verb|x| should not be an element of the poset but an iterable of elements; to construct a principal
+		filter for an element \verb|p| of a poset \verb|P| use \verb|P.filter((p,))|.
 		'''
 		if not indices: x = [this.elements.index(p) for p in x]
 		m = min(x)
@@ -757,6 +756,8 @@ class Poset:
 		r'''
 		@section@Subposet Selection@
 		Returns the subposet of elements less than or equal to any element of \verb|x|.
+
+		See \verb|Poset.filter| for an explanation of the arguments.
 		'''
 		if not indices: x = [this.elements.index(p) for p in x]
 		m = max(x)
@@ -944,7 +945,7 @@ class Poset:
 	def hVector(this):
 		r'''
 		@section@Invariants@
-		Returns the flag $h$-vector of the poset.
+		Returns the flag $\overline{h}$-vector of the poset.
 		'''
 		f = this.fVector()
 		h = {}
@@ -955,7 +956,7 @@ class Poset:
 	def flagVectors(this):
 		r'''
 		@section@Invariants@
-		Returns the table of flag $f$- and $h$-vectors as a dictionary with keys $S\subseteq[n]$ encoded as tuples and with elements \verb|(f_S, h_S)|.
+		Returns the table of flag $\overline{f}$- and $\overline{h}$-vectors as a dictionary with keys $S\subseteq[n]$ encoded as tuples and with elements \verb|(f_S, h_S)|.
 		'''
 		f = this.fVector()
 		h = this.hVector()
@@ -964,7 +965,7 @@ class Poset:
 	def sparseKVector(this):
 		r'''
 		@section@Invariants@
-		Returns the sparse $k$-vector $k_S = \sum_{T\subseteq S}(-1)^{\abs{S\wout T}}h_T$.
+		Returns the sparse $k$-vector $k_S = \sum_{T\subseteq S}(-1)^{\abs{S\wout T}}\overline{h}_T$.
 
 		The sparse $k$-vector only has entries $k_S$ for sparse sets $S$,
 		that is, sets $S\subseteq[\text{rk}(P)-1]$ such that if $i\in S$ then $i+1\not\in S$.
@@ -1017,7 +1018,7 @@ class Poset:
 		@section@Invariants@
 		Returns a string of latex code representing the table of flag vectors of the poset.
 
-		Note, the package longtable is required to compile the output.
+		Note, the package \href{https://ctan.org/pkg/longtable}{longtable} is required to compile the output.
 		'''
 		table = this.flagVectors()
 		ret = []
@@ -1037,7 +1038,7 @@ class Poset:
 	def abIndex(this):
 		r'''
 		@section@Invariants@
-		Returns the \text{ab}-index of the poset as an instnace of \verb|Polynomial|.
+		Returns the \text{ab}-index of the poset as an instance of \verb|Polynomial|.
 
 		If the poset has a unique minimum and maximum but isn't ranked
 		this computes the \text{ab}-index considering the poset to be
@@ -1355,7 +1356,7 @@ class Poset:
 
 		Keyword arguments are passed to \verb|latex()| but \verb|standalone| is alwasy set
 		to \verb|True| (otherwise the pdf would not compile).
-		Note this function will hang if \verb|pdflatex| fails
+		Note this function may hang if \verb|pdflatex| fails
 		to compile.
 		'''
 		from wand.image import Image as WImage
@@ -1364,7 +1365,7 @@ class Poset:
 		if tmpdir==None: tmpdir = tempfile.gettempdir()
 		kwargs['standalone']=True #otherwise it won't compile
 		with open(os.path.join(tmpdir, tmpfile),'w') as f: f.write(this.latex(**kwargs))
-		os.system('pdflatex --output-directory={} {} >/dev/null 2>&1'.format(tmpdir,os.path.join(tmpdir,tmpfile)))
+		os.system('echo "" | pdflatex --output-directory={} {} >/dev/null 2>&1'.format(tmpdir,os.path.join(tmpdir,tmpfile)))
 		return WImage(filename=os.path.join(tmpdir,tmpfile.replace('.tex','.pdf')))
 
 	def show(this, **kwargs):
@@ -1498,7 +1499,7 @@ class Poset:
 		Returns a new \verb|Poset| object (representing the same poset) with the elements reordered.
 
 		\verb|perm| should be a list of elements if \verb|indices| is \verb|False| or a list of indices if \verb|True|.
-		The returned poset has elements in order of linear
+		The returned poset has elements in order of a linear
 		extension created from the given permutation.
 		If the list \verb|perm| defines a linear
 		extension then \verb|perm[i]| is the $i$th element.

@@ -109,7 +109,7 @@ class Polynomial:
 
 	def __le__(this, that):
 		r'''
-		Returns \verb|True| is \verb|this| is coefficientwise less or
+		Returns \verb|True| if \verb|this| is coefficientwise less or
 		equal to \verb|that|.
 		'''
 		if isinstance(that, int):
@@ -166,7 +166,7 @@ class Polynomial:
 		for m,c in q:
 			p[m] = c + (p[m] if m in p else 0)
 	def _prepoly_mul_poly(q, p):
-		r'''Internal backedn for \verb|__mul__|.'''
+		r'''Internal backend for \verb|__mul__|.'''
 		return [[x[0][0]+x[1][0], x[0][1]*x[1][1]] for x in itertools.product(q,p.data.items())]
 
 	def abToCd(this):
