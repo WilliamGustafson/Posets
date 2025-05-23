@@ -19,47 +19,12 @@ module can also be converted to and from posets from \href{https://www.sagemath.
 
 Terminology and notation on posets generally follows \cite{stanley-12} and \cite{birkhoff-67}.
 
+The full documentation for the current version can be \href{https://www.github.com/williamGustafson/posets/releases/latest/download/posets.pdf}{found here}.
+
 \subsection{Installation}
 
-Download the whl file \href{https://www.github.com/WilliamGustafson/posets/releases}{here} and install it with pip via \verb|python -m pip posets-*-py3-none-any.whl|.
-
-\subsection{Building}
-
-Building the package requires \href{https://hatch.pypa.io}{hatch} to be installed.
-Running \verb|make| will build the package with a timestamp in the version,
-to build without the timestamp in the version run \verb|make RELEASE=0| (the value of 0
-is arbitrary, you just need to set \verb|RELEASE| to any nonemtpy value).
-This will make a whl file at \verb|dist/posets-<version>-py3-none-any.whl| that you can install
-with pip.
-
-The documentation can be built in pdf form by running
-\verb|make docs| from the base directory, this will also use a timestamp in the version
-unless you use \verb|RELEASE=0|.
-Compilation requires \LaTeX to be installed with the packages pgf/tikz,
-graphicx, fancyvrb, amsmath, amsssymb, scrextend, mdframed and hyperref
-as well as the python module \verb|pydox|.
-\verb|pydox| can be obtained from \url{github.com/WilliamGustafson/pydox.git}.
-You must either place the script \verb|pydox.py| somewhere in your path named \verb|pydox|
-or call make with
-\verb|make PYDOX=[path to pydox] docs|.
-
-\subsection{Testing}
-
-You can run the tests via \verb|make test|, this requires \href{https://pytest.org}{pytest}
-to be installed. You can create an html coverage report, output to 
-\verb|tests/htmlcov/index.html|, with \verb|make coverage|.
-Making the coverage report requires \href{https://pytest.org}{pytest}, \href{https://coverage.readthedocs.io}{coverage} and the \href{https://pytest-cov.readthedocs.io}{pytest-cov} plugin. Note, coverage on \verb|hasseDiagram.py| is very low because testing
-drawing functions cannot be easily automated.
-
-\subsection{Publishing}
-
-After building the package it can be published to PyPi by running \verb|make publish RELEASE=0|, running \verb|make publish| will
-publish to TestPyPi. This requires \verb|twine| and \verb|gpg| to be installed. Additionally,
-the publishing command expects there to be an
-encrypted api token named \verb|pypi.token.gpg| (or \verb|test.pypi.token.gpg| for TestPyPi) at the project root. This will also build the package if it is not built already.
-If you have an unencrypted api token from PyPi named \verb|pypi.token|
-you can encrypt it via:
-\begin{verbatim}gpg --encrypt --symmetric --output pypi.token.gpg pypi.token\end{verbatim}
+Install with pip via \verb|python -m pip install posets|.
+Alternatively, download the whl file \href{https://www.github.com/WilliamGustafson/posets/releases}{here} and install it with pip via \verb|python -m pip posets-*-py3-none-any.whl|.
 
 \subsection{Usage}
 

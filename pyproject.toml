@@ -22,4 +22,4 @@ dependencies =[
 	]
 [project.urls]
 Homepage = "https://github.com/WilliamGustafson/posets"
-
+Documentation = "https://github.com/WilliamGustafson/posets/releases/latest/download/posets.pdf"

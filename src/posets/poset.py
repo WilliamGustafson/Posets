@@ -1113,7 +1113,7 @@ class Poset:
 		returned, but this is not meaningful. If you wish to check whether a poset has
 		a \textbf{cd}-index then check the Boolean below:
 		\begin{center}
-			\verb|this.cdIndex().cdToAb() == this.abIndex()|
+			\verb|this.abIndex().cdToAb()!=this.abIndex()|
 		\end{center}
 
 		If the given poset is semi-Eulerian then the \textbf{cd}-index
@@ -1121,7 +1121,6 @@ class Poset:
 
 		This function correctly computes the \cv\dv-index
 		of a quasigraded Eulerian poset (see \cite{ehrenborg-goresky-readdy-15}).
-
 
 		For computation we use the sparse $k$-vector formula see \cite[Proposition 7.1]{billera-ehrenborg-00}. For more info on the \textbf{cd}-index see \cite{bayer-21}.
 

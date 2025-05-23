@@ -23,7 +23,7 @@ $(WHL) : pyproject.toml $(SRCFILES)
 	touch -t $(TIMESTAMP) $<
 
 #publish to pypi
-publish : $(TEST)pypi.token.gpg $(WHL)
+publish : $(TEST)pypi.token.gpg $(WHL) README.md
 	python -m twine upload --verbose --repository-url "https://$(if $(TEST),test,upload).pypi.org/legacy/" -u __token__ -p "$$(gpg -q --decrypt $<)" dist/posets-$(VERSION)$(DATE).tar.gz $(WHL)
 
 #documention recipes

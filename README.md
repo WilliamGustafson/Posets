@@ -23,55 +23,15 @@ from posets from [sagemath](https://www.sagemath.org) and
 
 Terminology and notation on posets generally follows [\[3\]](#references) and [\[1\]](#references).
 
+The full documentation for the current version can be [found
+here](https://www.github.com/williamGustafson/posets/releases/latest/download/posets.pdf).
+
 ## Installation
 
-Download the whl file
+Install with pip via `python -m pip install posets`. Alternatively,
+download the whl file
 [here](https://www.github.com/WilliamGustafson/posets/releases) and
 install it with pip via `python -m pip posets-*-py3-none-any.whl`.
-
-## Building
-
-Building the package requires [hatch](https://hatch.pypa.io) to be
-installed. Running `make` will build the package with a timestamp in the
-version, to build without the timestamp in the version run
-`make RELEASE=0` (the value of 0 is arbitrary, you just need to set
-`RELEASE` to any nonemtpy value). This will make a whl file at
-`dist/posets-<version>-py3-none-any.whl` that you can install with pip.
-
-The documentation can be built in pdf form by running `make docs` from
-the base directory, this will also use a timestamp in the version unless
-you use `RELEASE=0`. Compilation requires LaTeXto be installed with the
-packages pgf/tikz, graphicx, fancyvrb, amsmath, amsssymb, scrextend,
-mdframed and hyperref as well as the python module `pydox`. `pydox` can
-be obtained from <a href="github.com/WilliamGustafson/pydox.git"
-class="uri">github.com/WilliamGustafson/pydox.git</a>. You must either
-place the script `pydox.py` somewhere in your path named `pydox` or call
-make with `make PYDOX=[path to pydox] docs`.
-
-## Testing
-
-You can run the tests via `make test`, this requires
-[pytest](https://pytest.org) to be installed. You can create an html
-coverage report, output to `tests/htmlcov/index.html`, with
-`make coverage`. Making the coverage report requires
-[pytest](https://pytest.org),
-[coverage](https://coverage.readthedocs.io) and the
-[pytest-cov](https://pytest-cov.readthedocs.io) plugin. Note, coverage
-on `hasseDiagram.py` is very low because testing drawing functions
-cannot be easily automated.
-
-## Publishing
-
-After building the package it can be published to PyPi by running
-`make publish RELEASE=0`, running `make publish` will publish to
-TestPyPi. This requires `twine` and `gpg` to be installed. Additionally,
-the publishing command expects there to be an encrypted api token named
-`pypi.token.gpg` (or `test.pypi.token.gpg` for TestPyPi) at the project
-root. This will also build the package if it is not built already. If
-you have an unencrypted api token from PyPi named `pypi.token` you can
-encrypt it via:
-
-    gpg --encrypt --symmetric --output pypi.token.gpg pypi.token
 
 ## Usage
 
