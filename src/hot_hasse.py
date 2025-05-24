@@ -85,17 +85,17 @@ class SplayTree:
 		return this.node.root()
 
 	def search(this,data):
-		return None if this.node is None else this.root().search()
+		return this.root().search()
 	
 	def get(this,data):
-		if this.node is None: return None
-		ret = this.root().get(data)
-		return ret
+		return this.root().get(data)
+
 	def add(this,data):
-		this.root().add(data)
+		return this.root().add(data)
 	
 	def join(this,that):
 		this.root().join(that.root())
+		return this
 	
 	def split(this,data):
 		left,right = this.root().split(data)
@@ -114,8 +114,8 @@ class SplayTree:
 		return not this==that
 	
 	def __repr__(this):
-		return f'SplayTree(node={this.root()})'
-	
+		return 'SplayTree(('+','.join(repr(x) for x in this)+')'
+
 	def __len__(this):
 		return this.root().size
 	
@@ -369,9 +369,12 @@ class Segment:
 		return (this.p.id > that.p.id or (this.p.id >= that.p.id and this.q.id > that.q.id)) if type(that) is Segment else this.p.id >= that.id if type(that) is Vertex else NotImplemented
 	def __hash__(this):
 		return hash((this.p.id,this.q.id))
+	
+	def __contains__(this,V):
+		return V==this.p or V==this.q
 
 def cross_sort(P,ranks=None,agg=np.mean):
-	'''
+	r'''
 	Given a poset reorder ranks to reduce crossings in the Hasse diagram.
 
 	If provided \verb|ranks| is used as an initial ordering, otherwise the
@@ -395,10 +398,12 @@ def cross_sort(P,ranks=None,agg=np.mean):
 		crosses=0
 		#upwards pass
 		for L,K,i in zip(ranks[:-1],ranks[1:],range(1,len(L))):
-			ranks[i] = cross_reduction(P,split_verts(L,'q'),K,agg,True)
+			ranks[i] = cross_reduction(P,L,split_verts(K,'q'),agg,True)
+#			ranks[i] = cross_reduction(P,split_verts(L,'q'),K,agg,True)
 		#downwards pass
 		for L,K,i in zip(ranks[-2::-1],ranks[-1:0:-1],range(len(L)-2,-1,-1)):
-			M=split_verts(K,'p')
+#			M=split_verts(K,'p')
+			M=split_verts(K,'q')
 			ranks[i] = cross_reduction(Q,M,L,agg,False)
 			crosses += cross_count_layer(M,L,edges_for_split_layer(Q,M,L))
 			#TODO I'm pretty sure on the downward pass notions of p and q swap
@@ -415,7 +420,7 @@ def edges_for_split_layer(Q,M,L):
 			edges += [(m,l) for l in L if type(l) is Vertex and l.id in Q.covers(True)[m.id]]
 		else:
 			edges.append((m,m))
-	breakpoint()
+#	breakpoint()
 	return edges
 
 def rk_to_layer(L):
@@ -492,7 +497,7 @@ def cross_count(P):
 			if P.rank(j,True)==P.rank(i,True)+1:
 				edges[P.rank(i,True)].append((Vertex(i),Vertex(j)))
 			else:
-				for k in range(P.rank(i,True)+1,P.rank(j,True)):
+				for k in range(P.rank(i,True),P.rank(j,True)):
 					edges[k].append((Segment(p=i,q=j),Segment(p=i,q=j)))
 					long_edges[k].append((i,j))
 	layers = [rk_to_layer(P.ranks[i]+long_edges[i]) for i in range(len(P.ranks))]
@@ -501,13 +506,13 @@ def cross_count(P):
 	print()
 	print('long_edges[2]',long_edges[2])
 	print('layers',layers[2])
-#	input()
-	return sum(cross_count_layer(split_verts(L,'q'),K,edges_for_split_layer(P,split_verts(L,'q'),K)) for L,K,E in zip(layers[:-1],layers[1:],edges))
+#	breakpoint()
+	return sum(cross_count_layer(L,split_verts(K,'q'),edges_for_split_layer(P,L,split_verts(K,'p'))) for L,K,E in zip(layers[:-1],layers[1:],edges))
 def print_layer(x):
 	'''Print a layer in a readable way for debugging'''
 	print([y.id if type(y) is Vertex else [(z.p.id,z.q.id) for z in y] for y in x])
 def cross_count_layer(L,K,edges):
-	'''
+	r'''
 	Given two adjacent ranks of a poset count the number of crossings in the Hasse diagram between those two ranks.
 
 	\verb|covers| is a list of tuples \verb|(l,k)| where either these elements are vertices with a cover between them or are the two eneds of a long edge. This list should be in lexicographic order as induced by the desired order on the ranks in the poset.
@@ -550,8 +555,20 @@ def cross_count_layer(L,K,edges):
 #This line is wrong. Need to go over all covers and long edges and grab indices in the smaller of the two ranks (which is L regardless of \verb|swapped| because we swapped to make that happen)
 	print('L',L,'\n')
 	print('K',K,'\n')
+	def find(L,x):
+		'''
+		Returns minimal index `i` into `L` for which either of the following conditions holds:
+			1) `L[i] == x`
+			2) `L[i]` is an instance of `SplayTree` and one of its elements,
+			which is an instance of `Segment`, contains `x` as an endpoint
+		'''
+		for i,l in enumerate(L):
+			if x==l or (isinstance(l,SplayTree) and any(x in y for y in l)): return i
+		assert False
+
 #	breakpoint()
-	pi = [j for i,j in sorted([(K.index(y if type(y) is SplayTree else y),L.index(x if type(x) is SplayTree else x)) for x,y in edges])]
+#	pi = [j for i,j in sorted([(K.index(y if type(y) is SplayTree else y),L.index(x if type(x) is SplayTree else x)) for x,y in edges])]
+	pi = [j for i,j in sorted([(find(K,y),find(L,x)) for x,y in edges])]
 	del swapped
 	n = len(L)
 #	q is a power of 2, q-1 is the size of the binary tree, q/2 must be at least $\abs{L}$
@@ -572,7 +589,7 @@ def cross_count_layer(L,K,edges):
 			if i%2==1: #if left add to count
 				count+=T[i+1]
 			i = i//2 + i%2 - 1 #get next node
-	print('count_cross_layer returning')
+	print('count_cross_layer returning',count)
 	return count
 
 def split_verts(L,prop):
@@ -581,7 +598,7 @@ def split_verts(L,prop):
 	T = None
 	for x in L:
 		if type(x) is Vertex and getattr(x,prop):
-			if T is None: T = SplayTree(x.S)
+			if T is None: T = SplayTree((x.S,))
 			else: T.add(x.S)
 		elif type(x) is Vertex:
 			if T is not None: new_L.append(T)
@@ -598,7 +615,7 @@ def split_verts(L,prop):
 	return new_L
 
 def cross_reduction(P,L,K,agg=np.mean,upwards=True):
-	'''
+	r'''
 	Given two rank lists \verb|L| and \verb|K| computes a new
 	ordering for \verb|K| to reduce crossings.
 

@@ -4,34 +4,34 @@ from hot_hasse import *
 import pytest
 
 def T():
-	return SplayTree(
+	return SplayTreeNode(
 		data=50,
-		l=SplayTree(
+		l=SplayTreeNode(
 			data=30,
-			r=SplayTree(data=40),
-			l=SplayTree(
+			r=SplayTreeNode(data=40),
+			l=SplayTreeNode(
 				data=10,
-				r=SplayTree(
+				r=SplayTreeNode(
 					data=20,
-					l=SplayTree(data=15)
+					l=SplayTreeNode(data=15)
 					)
 				)
 			),
-		r=SplayTree(
+		r=SplayTreeNode(
 			data=60,
-			r=SplayTree(
+			r=SplayTreeNode(
 				data=90,
-				r=SplayTree(
+				r=SplayTreeNode(
 					data=100
 					),
-				l=SplayTree(
+				l=SplayTreeNode(
 					data=70,
-					r=SplayTree(data=80)
+					r=SplayTreeNode(data=80)
 					)
 				)
 			)
 		)
-class TestSplayTree:
+class TestSplayTreeNode:
 	def show_data(this):
 		'''
 		Plot tree as a poset to make sure we copied it right, looks good.
@@ -63,29 +63,29 @@ class TestSplayTree:
 
 	def test_rotate(this):
 		t=T()
-		t_rot = SplayTree(
+		t_rot = SplayTreeNode(
 		data=50,
-		l=SplayTree(
+		l=SplayTreeNode(
 			data=10,
-			r=SplayTree(
+			r=SplayTreeNode(
 				data=30,
-				l=SplayTree(
+				l=SplayTreeNode(
 					data=20,
-					l=SplayTree(data=15)
+					l=SplayTreeNode(data=15)
 					),
-				r=SplayTree(data=40)
+				r=SplayTreeNode(data=40)
 				)
 			),
-		r=SplayTree(
+		r=SplayTreeNode(
 			data=60,
-			r=SplayTree(
+			r=SplayTreeNode(
 				data=90,
-				r=SplayTree(
+				r=SplayTreeNode(
 					data=100
 					),
-				l=SplayTree(
+				l=SplayTreeNode(
 					data=70,
-					r=SplayTree(data=80)
+					r=SplayTreeNode(data=80)
 					)
 				)
 			)
@@ -95,31 +95,31 @@ class TestSplayTree:
 
 	def test_rotate60(this):
 		t=T()
-		t_rot = SplayTree(
+		t_rot = SplayTreeNode(
 			data=60,
-			l=SplayTree(
+			l=SplayTreeNode(
 				data=50,
-				l=SplayTree(
+				l=SplayTreeNode(
 					data=30,
-					l=SplayTree(
+					l=SplayTreeNode(
 						data=10,
-						r=SplayTree(
+						r=SplayTreeNode(
 							data=20,
-							l=SplayTree(
+							l=SplayTreeNode(
 								data=15
 								)
 							)
 						),
-					r=SplayTree(data=40)
+					r=SplayTreeNode(data=40)
 					),
 				),
-			r=SplayTree(
+			r=SplayTreeNode(
 				data=90,
-				l=SplayTree(
+				l=SplayTreeNode(
 					data=70,
-					r=SplayTree(data=80)
+					r=SplayTreeNode(data=80)
 					),
-				r=SplayTree(data=100)
+				r=SplayTreeNode(data=100)
 				)
 			)
 		s=t.search(60).rotate()
@@ -130,32 +130,32 @@ class TestSplayTree:
 
 	def test_rotate_leaf(this):
 		assert(
-			SplayTree(data=0,r=SplayTree(data=1)).search(1).rotate().root()
+			SplayTreeNode(data=0,r=SplayTreeNode(data=1)).search(1).rotate().root()
 			==
-			SplayTree(data=1,l=SplayTree(data=0))
+			SplayTreeNode(data=1,l=SplayTreeNode(data=0))
 		)
 
 	def test_splay_step(this):
-		t_step = SplayTree(
+		t_step = SplayTreeNode(
 			data=50,
-			l=SplayTree(
+			l=SplayTreeNode(
 				data=30,
-				l=SplayTree(
+				l=SplayTreeNode(
 					data=10,
-					r=SplayTree(
+					r=SplayTreeNode(
 						data=20,
-						l=SplayTree(data=15)
+						l=SplayTreeNode(data=15)
 						)
 					),
-				r=SplayTree(data=40)
+				r=SplayTreeNode(data=40)
 				),
-			r=SplayTree(
+			r=SplayTreeNode(
 				data=60,
-				r=SplayTree(
+				r=SplayTreeNode(
 					data=80,
-					l=SplayTree(data=70),
-					r=SplayTree(data=90,
-						r=SplayTree(data=100)
+					l=SplayTreeNode(data=70),
+					r=SplayTreeNode(data=90,
+						r=SplayTreeNode(data=100)
 						)
 					)
 				)
@@ -165,24 +165,24 @@ class TestSplayTree:
 
 	def test_splay(this):
 		t=T()
-		t_splay = SplayTree(
+		t_splay = SplayTreeNode(
 			data=80,
-			r=SplayTree(
+			r=SplayTreeNode(
 				data=90,
-				r=SplayTree(data=100)
+				r=SplayTreeNode(data=100)
 				),
-			l=SplayTree(data=60,
-				r=SplayTree(data=70),
-				l=SplayTree(
+			l=SplayTreeNode(data=60,
+				r=SplayTreeNode(data=70),
+				l=SplayTreeNode(
 					data=50,
-					l=SplayTree(
+					l=SplayTreeNode(
 						data=30,
-						r=SplayTree(data=40),
-						l=SplayTree(
+						r=SplayTreeNode(data=40),
+						l=SplayTreeNode(
 							data=10,
-							r=SplayTree(
+							r=SplayTreeNode(
 								data=20,
-								l=SplayTree(data=15)
+								l=SplayTreeNode(data=15)
 								)
 							)
 						)
@@ -194,24 +194,24 @@ class TestSplayTree:
 		assert(t.root() == t_splay)
 
 	def test_get(this):
-		t_splay = SplayTree(
+		t_splay = SplayTreeNode(
 			data=80,
-			r=SplayTree(
+			r=SplayTreeNode(
 				data=90,
-				r=SplayTree(data=100)
+				r=SplayTreeNode(data=100)
 				),
-			l=SplayTree(data=60,
-				r=SplayTree(data=70),
-				l=SplayTree(
+			l=SplayTreeNode(data=60,
+				r=SplayTreeNode(data=70),
+				l=SplayTreeNode(
 					data=50,
-					l=SplayTree(
+					l=SplayTreeNode(
 						data=30,
-						r=SplayTree(data=40),
-						l=SplayTree(
+						r=SplayTreeNode(data=40),
+						l=SplayTreeNode(
 							data=10,
-							r=SplayTree(
+							r=SplayTreeNode(
 								data=20,
-								l=SplayTree(data=15)
+								l=SplayTreeNode(data=15)
 								)
 							)
 						)
@@ -223,37 +223,37 @@ class TestSplayTree:
 		assert(t.root() == t_splay)
 
 	def test_add(this):
-		t = SplayTree(
+		t = SplayTreeNode(
 			data=3,
-			l=SplayTree(
+			l=SplayTreeNode(
 				data=1,
-				r=SplayTree(data=2)
+				r=SplayTreeNode(data=2)
 				),
-			r=SplayTree(data=5)
+			r=SplayTreeNode(data=5)
 			)
-		s = SplayTree(
+		s = SplayTreeNode(
 			data=3,
-			l=SplayTree(
+			l=SplayTreeNode(
 				data=1,
-				r=SplayTree(data=2)
+				r=SplayTreeNode(data=2)
 				),
-			r=SplayTree(
+			r=SplayTreeNode(
 				data=5,
-				l=SplayTree(4)
+				l=SplayTreeNode(4)
 				)
 			)
 		assert(t.add(4).root() == s.search(4).splay().root())
 	
 	def test_contains(this):
-		s = SplayTree(
+		s = SplayTreeNode(
 			data=3,
-			l=SplayTree(
+			l=SplayTreeNode(
 				data=1,
-				r=SplayTree(data=2)
+				r=SplayTreeNode(data=2)
 				),
-			r=SplayTree(
+			r=SplayTreeNode(
 				data=5,
-				l=SplayTree(4)
+				l=SplayTreeNode(4)
 				)
 			)
 		T = s.search(4).splay().root()
@@ -262,23 +262,23 @@ class TestSplayTree:
 		assert(T.root().get(2).data == 2)
 
 	def test_join(this):
-		s = SplayTree(
+		s = SplayTreeNode(
 			data=3,
-			l=SplayTree(
+			l=SplayTreeNode(
 				data=1,
-				r=SplayTree(data=2)
+				r=SplayTreeNode(data=2)
 				),
-			r=SplayTree(data=4)
+			r=SplayTreeNode(data=4)
 			)
-		t2 = SplayTree(
+		t2 = SplayTreeNode(
 			data=8,
-			l=SplayTree(
+			l=SplayTreeNode(
 				data=6,
-				r=SplayTree(data=7)
+				r=SplayTreeNode(data=7)
 				),
-			r=SplayTree(
+			r=SplayTreeNode(
 				data=10,
-				l=SplayTree(data=9)
+				l=SplayTreeNode(data=9)
 				)
 			)
 class TestCrossReduction:
@@ -311,7 +311,7 @@ class TestCrossReduction:
 		P = TestCrossReduction.make_P()
 		covers = P.covers(True)
 		long_edges = [[(x,y) for x in covers if P.rank(x,True)<i for y in covers[x] if P.rank(y,True)>i] for i in range(len(P.ranks))]
-		T = SplayTree(Segment(4,3))
+		T = SplayTreeNode(Segment(4,3))
 		T.add(Segment(4,11))
 		print(rk_to_layer(P.ranks[1]+long_edges[1]))
 		print([Vertex(1),Vertex(5),Vertex(9),T])
@@ -346,4 +346,4 @@ class TestCrossReduction:
 		P.incMat[8][7] = 1
 		P = Poset(incMat=P.incMat,elements=P.elements)
 		assert(2 == cross_count(P))
-TestCrossReduction().test_cross_count()
+#TestCrossReduction().test_cross_count()
