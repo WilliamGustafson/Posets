@@ -24,7 +24,7 @@ $(WHL) : pyproject.toml $(SRCFILES)
 
 #publish to pypi
 publish : $(TEST)pypi.token.gpg $(WHL) README.md
-	python -m twine upload --verbose --repository-url "https://$(if $(TEST),test,upload).pypi.org/legacy/" -u __token__ -p "$$(gpg -q --decrypt $<)" dist/posets-$(VERSION)$(DATE).tar.gz $(WHL)
+	python -m twine upload --verbose --repository-url "https://$(if $(TEST),test,upload).pypi.org/legacy/" -u __token__ -p "$$(gpg --pinentry-mode loopback -q --decrypt $<)" dist/posets-$(VERSION)$(DATE).tar.gz $(WHL)
 
 #documention recipes
 docs : docs/posets.pdf
@@ -33,7 +33,7 @@ docs/csl.csl :
 	wget -O $@ https://www.zotero.org/styles/acm-sigchi-proceedings
 
 README.md : src/posets/__init__.py docs/csl.csl
-	cd docs;python -c 'import sys;sys.path.append("../src");import posets;print(posets.__doc__,end="")' | head -n -1 | tail -n +3 | cat posets.sty - bib.tex | pandoc --csl csl.csl --bibliography bib.bib -C -f latex -t gfm | tail -n +2 | sed -e 's/\(<div id="refs"\)/# References\n\1/' | sed -e 's/\\\[\([0-9]\)\\\]/[\\[\1\\]](#references)/g' | sed -e 's/\\\([{}]\)/\\\\\1/g' > ../$@
+	cd docs;python -c 'import sys;sys.path.append("../src");import posets;print(posets.__doc__,end="")' | head -n -1 | tail -n +3 | sed -e 's/\\\([abcd]\)v/\\textbf{\1}/g' | cat posets.sty - bib.tex | pandoc --csl csl.csl --bibliography bib.bib -C -f latex -t gfm | tail -n +2 | sed -e 's/\(<div id="refs"\)/# References\n\1/' | sed -e 's/\\\[\([0-9]\)\\\]/[\\[\1\\]](#references)/g' | sed -e 's/\\\([{}]\)/\\\\\1/g' | sed -e 's/\\@/@/g' > ../$@
 
 docs/bib.tex :
 	printf '\\bibliography{bib}{}\n\\bibliographystyle{plain}' > $@

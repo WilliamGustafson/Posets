@@ -1,24 +1,19 @@
 
 This module provides a class `Poset` that encodes a finite partially
 ordered set (poset). Most notably, this module can efficiently compute
-flag vectors, the
-<span class="upright">**a**</span><span class="upright">**b**</span>-index
-and the
-<span class="upright">**c**</span><span class="upright">**d**</span>-index.
-Quasigraded posets, in the sense of [\[2\]](#references), can be encoded and the
-<span class="upright">**a**</span><span class="upright">**b**</span>-index
-and
-<span class="upright">**c**</span><span class="upright">**d**</span>-index
-of quasigraded posets can be computed. Latex code for Hasse diagrams can
-be produced with a very flexible interface. There are methods for common
-operations and constructions such as Cartesian products, disjoint
-unions, interval lattices, lattice of ideals, etc. Various examples of
-posets are provided such as Boolean algebras, the face lattice of the
-$n$-dimensional cube, (noncrossing) partition lattices, the type $A_n$
-Bruhat and weak orders, uncrossing orders etc. General subposets can be
-selected as well as particular ones of interest such as intervals and
-rank selections. Posets from this module can also be converted to and
-from posets from [sagemath](https://www.sagemath.org) and
+flag vectors, the **ab**-index and the **cd**-index. Quasigraded posets,
+in the sense of [\[2\]](#references), can be encoded and the **ab**-index and
+**cd**-index of quasigraded posets can be computed. Latex code for Hasse
+diagrams can be produced with a very flexible interface. There are
+methods for common operations and constructions such as Cartesian
+products, disjoint unions, interval lattices, lattice of ideals, etc.
+Various examples of posets are provided such as Boolean algebras, the
+face lattice of the $n$-dimensional cube, (noncrossing) partition
+lattices, the type $A_n$ Bruhat and weak orders, uncrossing orders etc.
+General subposets can be selected as well as particular ones of interest
+such as intervals and rank selections. Posets from this module can also
+be converted to and from posets from
+[sagemath](https://www.sagemath.org) and
 [Macaulay2](https://www.macaulay2.com/).
 
 Terminology and notation on posets generally follows [\[3\]](#references) and [\[1\]](#references).
@@ -138,7 +133,7 @@ Converting to and from Macaulay2:
     -- In M2
     load "convertPosets.m2" --Also loads Python and Posets packages
     import "posets" --This module must be installed to system version of python
-    P = posets\@\@Boolean(3) --Calling python functions
+    P = posets@@Boolean(3) --Calling python functions
     pythonPosetToMac(P) --Returns an instance of the M2 class Posets
     macPosetToPython(Q) --Take a poset made with M2 and return an
     --instance of the python class Poset
@@ -153,10 +148,9 @@ Quasigraded posets:
 The poset `T` above is from \[2, Example 6.14\] with $M$ taken to be the
 3-dimensional solid torus.
 
-You can calculate the flag vectors and the
-<span class="upright">**c**</span><span class="upright">**d**</span>-index
-just as you would for a classical poset, for example, `T.cdIndex()`
-returns the polynomial $\textup{\textbf{c}}^2-2\textup{\textbf{d}}$.
+You can calculate the flag vectors and the **cd**-index just as you
+would for a classical poset, for example, `T.cdIndex()` returns the
+polynomial $\textbf{c}^2-2\textbf{d}$.
 
 When plotting a quasigraded poset by default only the underlying poset
 is shown with element heights based on rank, the zeta values are not
