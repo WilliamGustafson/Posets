@@ -190,7 +190,9 @@ def Boolean(n):
 	P.name = "Rank "+str(n)+" Boolean algebra"
 
 	def nodeLabel(hasseDiagram, i):
-		return '\\{'+str(hasseDiagram.P[i])[1:-1]+'\\}'
+		p = hasseDiagram.P[i]
+		if len(p)==1: return '\\{'+str(p[0])+'\\}'
+		return '\\{'+str(p)[1:-1]+'\\}'
 #		S = hasseDiagram.P.elements[i]
 #		s = str(S).replace(',','') if len(S) <= 1 else str(S)
 #		return s.replace('(','\\{' if hasseDiagram.in_latex else '{').replace(')','\\}' if hasseDiagram.in_latex else '}').replace(',',', ')
