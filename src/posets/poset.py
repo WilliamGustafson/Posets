@@ -1094,12 +1094,12 @@ class Poset:
 
 		@section@Invariants@
 		'''
-		ab = []
+		ab = {}
 		fh = this.flagVectors()
 		for x in fh:
 			u = ['a']*(len(this.ranks)-2)
 			for s in x: u[s-1] = 'b'
-			ab.append([fh[x][1],''.join(u)])
+			ab[''.join(u)] = fh[x][1]
 
 		return Polynomial(ab)
 

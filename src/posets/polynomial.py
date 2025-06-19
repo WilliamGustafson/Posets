@@ -1,4 +1,13 @@
 '''@no_doc@no_children@'''
+#TODO: consider the following solution to extend scalar multiplication:
+#deprecate construction from a list, we'll have to change abIndex (trivial)
+#and 4 tests (trivial).
+#remove `_to_poly` and just use the constructor in place
+#constructor now checks if input is a dictionary and if so instantiates as before and returns
+#then checks if it is `None` and if so makes argument `0` and then instantiates a constant polynomial
+#you can make invalid polynomials, for example passing in a numpy array will reak havoc cause we
+#can't strip it. We could check all the coefficients but that's pretty dumb, I think instead if you
+#try to make a polynomial with anything that doesn't compare to `0` and return a Boolean that's your fault.
 import math
 import itertools
 
@@ -20,19 +29,25 @@ class Polynomial:
 		If \verb|data| is a list then all elements should be of the form \verb|[c,m]| where \verb|c| is a coefficient and \verb|m| is a string representing a monomial.
 		If \verb|data| is \verb|None| then the zero polynomial is returned.
 		'''
-		this.data = {} if data==None else data if type(data)==dict else {d[1]:d[0] for d in data}
+		if isinstance(data,Polynomial): this.data = data.data
+		elif isinstance(data,dict): this.data=data
+		elif data is None: this.data = {}
+		else: this.data = {'':data}
 
 	def _to_poly(*args):
 		r'''
-		Iterator that converts elements of a list to instances of \verb|Polynomial|.
+		Iterator that converts arguments to instances of \verb|Polynomial|.
 
 		Internal method used by \verb|__mul__| and \verb|__add__|.
 		'''
 		for x in args:
 			if isinstance(x,Polynomial): yield x
-			elif type(x) in (int,float): yield Polynomial({'':x})
-			elif hasattr(x,'__iter__'): yield Polynomial(x)
-			else: yield Polynomial({})
+			elif isinstance(x,dict) or isinstance(x,list): yield Polynomial(x)
+			elif x is None: yield Polynomial()
+			else: yield Polynomial({'':x})
+#			elif type(x) in (int,float): yield Polynomial({'':x})
+#			elif hasattr(x,'__iter__'): yield Polynomial(x)
+#			else: yield Polynomial({})
 
 	def strip(this):
 		'''
@@ -46,15 +61,18 @@ class Polynomial:
 		'''
 		Noncommutative polynomial multiplication.
 		'''
-		return Polynomial.__add__(
-			*(
-			Polynomial(
-				{''.join(map(lambda y:y[0],x)) :
-				math.prod(map(lambda y:y[1],x))}
+		try:
+			return Polynomial.__add__(
+				*(
+				Polynomial(
+					{''.join(map(lambda y:y[0],x)) :
+					math.prod(map(lambda y:y[1],x))}
+					)
+				for x in itertools.product(*map(lambda y:y.data.items(),(Polynomial(arg) for arg in args)))
 				)
-			for x in itertools.product(*map(lambda y:y.data.items(),Polynomial._to_poly(*args)))
-			)
-			).strip()
+				).strip()
+		except: raise NotImplementedError
+		return
 	__rmul__=__mul__
 
 	def __pow__(this,x):
@@ -64,7 +82,7 @@ class Polynomial:
 		Raises \verb|NotImplementedError| if either \verb|x| is
 		not an integer or \verb|x<0|.
 		'''
-		if type(x)!=int or x<0: raise NotImplementedError
+		if not isinstance(x,int) or x<0: raise NotImplementedError
 		return Polynomial.__mul__(*itertools.repeat(this,x)).strip()
 
 	def __add__(*args):
@@ -72,11 +90,33 @@ class Polynomial:
 		Polynomial addition.
 		'''
 		ret = {}
-		for p in Polynomial._to_poly(*args):
+#		for p in Polynomial._to_poly(*args):
+		for arg in args:
+			p = Polynomial(arg)
 			for m,c in p.data.items():
-				if m in ret: ret[m]+=c
+				if m in ret:
+					try:
+						ret[m]+=c
+					except:
+						raise NotImplementedError
 				else: ret[m]=c
 		return Polynomial(ret).strip()
+#		for arg in args:
+#			if isinstance(arg,dict) or isinstance(arg,list):
+#				arg = Polynomial(arg)
+#			if isinstance(arg,Polynomial):
+#				for m,c in arg.data.items():
+#					if m in ret: ret[m]+=c
+#					else: ret[m]=c
+#			else:
+#				if '' in ret:
+#					try: ret['']+=arg
+#					except:
+#						raise NotImplementedError("Addition not supported between instance of Polynomial with coefficients of type "+str(type(ret['']))+" and scalar of type "+str(type(arg)))
+#				else:
+#					ret['']=arg
+#		return Polynomial(ret).strip()
+				
 	__radd__=__add__
 
 	def __neg__(this):
@@ -276,39 +316,6 @@ class Polynomial:
 			ret.append(sc)
 		return ''.join(ret)
 
-#	def __str__(this):
-#		this.strip()
-#		data = list(this.data.items())
-#		data.sort(key=lambda x:x[0])
-#		s = ""
-#		for i in range(0,len(data)):
-#			if not data[i][1]==0: continue
-#			if data[i][1] == -1 or data[i][1] == Polynomial({'':-1}): s+= '-'
-#			if isinstance(data[i][1],Polynomial) and data[i][1]!=Polynomial({'':1}): s+='('+str(data[i][1])+')'
-#			elif data[i][1]-1: s += str(data[i][1])
-#			current = ''
-#			power = 0
-#			for c in data[i][0]:
-#				if current == '':
-#					current = c
-#					power = 1
-#					continue
-#				if c == current:
-#					power += 1
-#					continue
-#				s += current
-#				if power != 1: s += '^{' + str(power) + '}'
-#				current = c
-#				power = 1
-#			s += current
-#			if power != 1 and power != 0: s += '^{' + str(power) + '}'
-#			if power == 0 and current == "": s += '1'
-#
-#			if i != len(data)-1:
-#				if data[i+1][1] >= 0: s += "+"
-#		if s == '': return '0'
-#		return s
-#
 	def __repr__(this):
 		return 'Polynomial('+repr(this.data)+')'
 

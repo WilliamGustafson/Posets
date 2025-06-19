@@ -625,10 +625,10 @@ class TestInvariants:
 	def test_flagVectors(this):
 		assert({tuple():[1,1],(1,):[4,3],(2,):[6,5],(1,2):[12,3],(3,):[4,3],(1,3):[12,5],(2,3):[12,3],(1,2,3):[24,1]}==this.B4.flagVectors())
 	def test_abIndex(this):
-		assert(Polynomial([[1,'aaa'],[3,'baa'],[5,'aba'],[3,'bba'],[3,'aab'],[5,'bab'],[3,'abb'],[1,'bbb']])==this.B4.abIndex())
+		assert(Polynomial({'aaa':1,'baa':3,'aba':5,'bba':3,'aab':3,'bab':5,'abb':3,'bbb':1})==this.B4.abIndex())
 	def test_cdIndex(this):
-		assert(Polynomial([[1,'ccc'],[2,'cd'],[2,'dc']])==this.B4.cdIndex())
-		assert(Polynomial([[1,'cc'],[1,'d']])==this.B3.complSubposet([(1,2)]).cdIndex())
+		assert(Polynomial({'ccc':1,'cd':2,'dc':2})==this.B4.cdIndex())
+		assert(Polynomial({'cc':1,'d':1})==this.B3.complSubposet([(1,2)]).cdIndex())
 		assert(Polynomial({'c'*4:1,'ccd':3,'cdc':5,'dcc':3,'dd':4})==Boolean(5).cdIndex())
 
 		#Example 6.14 with $M$ the 3-dimensional solid torus
@@ -669,6 +669,7 @@ class TestPolynomial:
 		this.p = Polynomial({'cc':1,'d':1})
 		this.q = Polynomial({'cc':1,'d':2})
 		assert(this.p+this.q==Polynomial({'cc':2,'d':3}))
+		assert(this.p+2==Polynomial({'cc':1,'d':1,'':2}))
 	def test_abToCd(this):
 		assert(Boolean(5).cdIndex()==Boolean(5).abIndex().abToCd())
 		B42=Bnq(n=4,q=2)
@@ -679,6 +680,7 @@ class TestPolynomial:
 		assert(Polynomial({'d':-1})==this.p-this.q)
 	def test_mul(this):
 		assert(this.p*this.q==Polynomial({'cccc':1,'ccd':2,'dcc':1,'dd':2}))
+		assert(this.p*2==Polynomial({'cc':2,'d':2}))
 	def test_pow(this):
 		assert(this.p**2==Polynomial({'cccc':1,'ccd':1,'dcc':1,'dd':1}))
 	
