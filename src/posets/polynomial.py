@@ -1,13 +1,4 @@
 '''@no_doc@no_children@'''
-#TODO: consider the following solution to extend scalar multiplication:
-#deprecate construction from a list, we'll have to change abIndex (trivial)
-#and 4 tests (trivial).
-#remove `_to_poly` and just use the constructor in place
-#constructor now checks if input is a dictionary and if so instantiates as before and returns
-#then checks if it is `None` and if so makes argument `0` and then instantiates a constant polynomial
-#you can make invalid polynomials, for example passing in a numpy array will reak havoc cause we
-#can't strip it. We could check all the coefficients but that's pretty dumb, I think instead if you
-#try to make a polynomial with anything that doesn't compare to `0` and return a Boolean that's your fault.
 import math
 import itertools
 
@@ -23,31 +14,20 @@ class Polynomial:
 	'''
 	def __init__(this, data=None):
 		r'''
-		Returns a \verb|Polynomial| given either a dictionary or a list of pairs.
+		Returns a \verb|Polynomial| given a dictionary.
 
-		If \verb|data| is a dictionary then the keys are the monomials and the values are the coefficients.
-		If \verb|data| is a list then all elements should be of the form \verb|[c,m]| where \verb|c| is a coefficient and \verb|m| is a string representing a monomial.
-		If \verb|data| is \verb|None| then the zero polynomial is returned.
+		The keys in \verb|data| are the monomials, encoded as
+		strings, and the values are the coefficients.
+		Coefficients can be any class that supports addition and
+		multiplication and such that comparing to 0 returns a boolean.
+
+		If \verb|data| is \verb|None| or an empty dictionary then 
+		the zero polynomial is returned.
 		'''
 		if isinstance(data,Polynomial): this.data = data.data
 		elif isinstance(data,dict): this.data=data
 		elif data is None: this.data = {}
 		else: this.data = {'':data}
-
-	def _to_poly(*args):
-		r'''
-		Iterator that converts arguments to instances of \verb|Polynomial|.
-
-		Internal method used by \verb|__mul__| and \verb|__add__|.
-		'''
-		for x in args:
-			if isinstance(x,Polynomial): yield x
-			elif isinstance(x,dict) or isinstance(x,list): yield Polynomial(x)
-			elif x is None: yield Polynomial()
-			else: yield Polynomial({'':x})
-#			elif type(x) in (int,float): yield Polynomial({'':x})
-#			elif hasattr(x,'__iter__'): yield Polynomial(x)
-#			else: yield Polynomial({})
 
 	def strip(this):
 		'''
@@ -71,8 +51,8 @@ class Polynomial:
 				for x in itertools.product(*map(lambda y:y.data.items(),(Polynomial(arg) for arg in args)))
 				)
 				).strip()
-		except: raise NotImplementedError
-		return
+		except (TypeError,NotImplementedError): return NotImplemented
+		return NotImplemented
 	__rmul__=__mul__
 
 	def __pow__(this,x):
@@ -82,40 +62,26 @@ class Polynomial:
 		Raises \verb|NotImplementedError| if either \verb|x| is
 		not an integer or \verb|x<0|.
 		'''
-		if not isinstance(x,int) or x<0: raise NotImplementedError
+		if not isinstance(x,int) or x<0: return NotImplemented
 		return Polynomial.__mul__(*itertools.repeat(this,x)).strip()
 
 	def __add__(*args):
 		'''
 		Polynomial addition.
+
+		Raises \\verb|NotImplementedError| if the coefficients can't be aded.
 		'''
 		ret = {}
-#		for p in Polynomial._to_poly(*args):
 		for arg in args:
 			p = Polynomial(arg)
 			for m,c in p.data.items():
 				if m in ret:
 					try:
 						ret[m]+=c
-					except:
-						raise NotImplementedError
+					except (TypeError, NotImplementedError):
+						return NotImplemented
 				else: ret[m]=c
 		return Polynomial(ret).strip()
-#		for arg in args:
-#			if isinstance(arg,dict) or isinstance(arg,list):
-#				arg = Polynomial(arg)
-#			if isinstance(arg,Polynomial):
-#				for m,c in arg.data.items():
-#					if m in ret: ret[m]+=c
-#					else: ret[m]=c
-#			else:
-#				if '' in ret:
-#					try: ret['']+=arg
-#					except:
-#						raise NotImplementedError("Addition not supported between instance of Polynomial with coefficients of type "+str(type(ret['']))+" and scalar of type "+str(type(arg)))
-#				else:
-#					ret['']=arg
-#		return Polynomial(ret).strip()
 				
 	__radd__=__add__
 
