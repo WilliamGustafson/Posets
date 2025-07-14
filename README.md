@@ -107,14 +107,14 @@ Polynomial operations:
     #print latex
     str(p) #ab+ba
 
-    #basic arithmetic, polynomials form a real algebra
+    #basic arithmetic, polynomials form an algebra
     p+q #ab+ba+a+b
     p*q #aba+ab^{2}+ba^{2}+bab
     q*p #a^{2}b+aba+bab+b^{2}a
     2*p #2ab+2ba
     p**2 #abab+ab^{2}a+ba^{2}b+baba
-    p**(-1) #raises NotImplementedError
-    p**q #raises NotImplementedError
+    p**(-1) #raises TypeError
+    p**q #raises TypeError
 
     #substitutions and conversions
     p.sub(q,'a') #ab+ba+2b^{2} substitute q for a in p

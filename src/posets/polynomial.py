@@ -55,6 +55,21 @@ class Polynomial:
 		return NotImplemented
 	__rmul__=__mul__
 
+	def __truediv__(this,that):
+		try:
+			return Polynomial({m : c/that for m,c in this.data.items()})
+		except (TypeError,NotImplementedError): return NotImplemented
+
+	def __floordiv__(this,that):
+		try:
+			return Polynomial({m : c//that for m,c in this.data.items()})
+		except (TypeError,NotImplementedError): return NotImplemented
+	
+	def __mod__(this,that):
+		try:
+			return Polynomial({m : c%that for m,c in this.data.items()})
+		except (TypeError,NotImplementedError): return NotImplemented
+
 	def __pow__(this,x):
 		r'''
 		Polynomial exponentiation by non-negative integers.
@@ -226,14 +241,14 @@ class Polynomial:
 		if len(data)==0: return '0'
 		data.sort(key=lambda x:x[0])
 		m,c = data[0]
-		ret=[Polynomial._coeff_str(c), Polynomial._monom_str(m)]
+		ret=[Polynomial._coeff_str(c), Polynomial._monom_str(m) if m else '']
 		for m,c in data[1:]:
 			try:
 				if c>0: ret.append('+')
 			except:
 				ret.append('+')
 			ret.append(Polynomial._coeff_str(c))
-			ret.append(Polynomial._monom_str(m))
+			if m: ret.append(Polynomial._monom_str(m))
 		return ''.join(ret)
 			
 	def _monom_str(m):
