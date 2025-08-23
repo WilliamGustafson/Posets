@@ -175,7 +175,7 @@ class Poset:
 			this.zeta,new_order = Poset.zeta_from_relations(relations, this.elements)
 			this.elements = [this.elements[i] for i in new_order]
 			if ranks is not None:
-				ranks = [[new_order.index(i) for i in rk] for rk in ranks]
+				ranks = [sorted(new_order.index(i) for i in rk) for rk in ranks]
 		elif less is not None:
 			assert elements is not None,'`elements` must be provided if specifying a poset via `less`'
 			relations = {}
@@ -204,7 +204,7 @@ class Poset:
 			this.zeta,new_order = Poset.zeta_from_relations(relations,elements)
 			this.elements = [elements[i] for i in new_order]
 			if ranks is not None:
-				ranks = [[new_order.index(i) for i in rk] for rk in ranks]
+				ranks = [sorted(new_order.index(i) for i in rk) for rk in ranks]
 
 		else: #no data provided poset is (possibly empty) antichain
 			if elements == None:
@@ -222,6 +222,7 @@ class Poset:
 		if trans_close: 
 			Poset.transClose(this.zeta)
 
+	@staticmethod
 	def zeta_from_relations(relations,elements):
 		r'''
 		Given a dictionary of relations and a list of elements returns the zeta matrix and the elements reordered in a linear extension.
@@ -255,6 +256,7 @@ class Poset:
 
 
 
+	@staticmethod
 	def transClose(T):
 		r'''
 		Given an instance of \verb|TriangularArray| encoding a (possibly weighted) relation, via $x\sim y$ when the $x,y$ entry is nonzero computes the transitive closure.
@@ -445,7 +447,7 @@ class Poset:
 		P.elements = this.elements[::-1]
 		P.zeta = this.zeta.revtranspose()
 		n = len(this.elements)-1
-		P.ranks = [[n-i for i in rk] for rk in this.ranks[::-1]]
+		P.ranks = [[n-i for i in rk[::-1]] for rk in this.ranks[::-1]]
 		P.hasseDiagram = copy.copy(this.hasseDiagram)
 		P.hasseDiagram.P = P
 		if 'isRanked()' in this.cache:
@@ -458,6 +460,7 @@ class Poset:
 			P.cache['isGorenstein()'] = this.cache['isGorenstein()']
 		return P
 
+	@staticmethod
 	def element_union(E, F):
 		r'''
 		Computes the disjoint union of lists \verb|E| and \verb|F|.
@@ -1625,6 +1628,8 @@ class Poset:
 		'''
 		import sage
 		return sage.combinat.posets.posets.Poset((this.elements,this.relations()),facade=False)
+
+	@staticmethod
 	def fromSage(P):
 		r'''
 		Convert an instance of \verb|sage.combinat.posets.poset.FinitePoset| to an instance of \verb|Poset|.
@@ -1634,6 +1639,7 @@ class Poset:
 		rels = [[x,y] for x,y in P.relations() if x!=y]
 		return Poset(relations=rels)
 
+	@staticmethod
 	def make_ranks(zeta):
 		r'''
 		Used by the constructor to compute the ranks list for a poset when it isn't provided.
