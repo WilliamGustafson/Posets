@@ -175,7 +175,7 @@ class Poset:
 			this.zeta,new_order = Poset.zeta_from_relations(relations, this.elements)
 			this.elements = [this.elements[i] for i in new_order]
 			if ranks is not None:
-				ranks = [sorted(new_order.index(i) for i in rk) for rk in ranks]
+				ranks = [[new_order.index(i) for i in rk] for rk in ranks]
 		elif less is not None:
 			assert elements is not None,'`elements` must be provided if specifying a poset via `less`'
 			relations = {}
@@ -204,7 +204,7 @@ class Poset:
 			this.zeta,new_order = Poset.zeta_from_relations(relations,elements)
 			this.elements = [elements[i] for i in new_order]
 			if ranks is not None:
-				ranks = [sorted(new_order.index(i) for i in rk) for rk in ranks]
+				ranks = [[new_order.index(i) for i in rk] for rk in ranks]
 
 		else: #no data provided poset is (possibly empty) antichain
 			if elements == None:
