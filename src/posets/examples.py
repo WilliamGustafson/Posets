@@ -786,23 +786,26 @@ def Uncrossing(t, upper=False, weak=False, E_only=False, zerohat=True):
 		def nodeLabel(this,i):
 			if this.in_tkinter:
 				return str(this.P[i])
-			if P[i]==0: return "\\scalebox{2}{$\\widehat{0}$}"
-			i = i-1 #zerohat gets added first so shift back
+			if this.P[i]==0: return "\\scalebox{2}{$\\widehat{0}$}"
+#			i = i-1 #zerohat gets added first so shift back
 			ret=["\\begin{tikzpicture}[scale="+this.nodetikzscale+"]\n\\begin{scope}\n\t\\medial\n"]
-			for arc in [[float(i) for i in range(0,this.n<<1) if (1<<i)&x!=0] for x in this.pairings[i]]:
-				ret.append('\t\\draw('+str(int(arc[0]+1))+')..controls+(')
-				ret.append(str((arc[0])*(-360.0)/(this.n<<1)-90))
+			for arc in this.P[i]:
+#			for arc in [[float(i) for i in range(0,this.n<<1) if (1<<i)&x!=0] for x in this.pairings[i]]:
+				ret.append('\t\\draw('+str(int(arc[0]))+')..controls+(')
+				ret.append(str((arc[0]-1)*(-360.0)/(this.n<<1)-90))
 				ret.append(':\\r*'+this.bend+')and+(')
-				ret.append(str((arc[1])*(-360.0)/(this.n<<1)-90))
-				ret.append(':\\r*'+this.bend+')..('+str(int(arc[1]+1))+');\n')
+				ret.append(str((arc[1]-1)*(-360.0)/(this.n<<1)-90))
+				ret.append(':\\r*'+this.bend+')..('+str(int(arc[1]))+');\n')
 			return ''.join(ret+["\\end{scope}\\end{tikzpicture}"])
 
 		def nodeName(this,i):
-			if i == 0: return 'z'
-			i = i-1 #zerohat gets added first so shift back
-			p=this.pairings[i]
-			n=len(p)
-			return '/'.join(['_'.join(str(j+1) for j in range(0,n<<1) if (1<<j)&p[k]!=0) for k in range(0,n)])
+			if this.P[i]==0: return 'z'
+#			if i == 0: return 'z'
+#			i = i-1 #zerohat gets added first so shift back
+			return '/'.join('/'.join(str(y) for y in x) for x in this.P[i])
+#			p=this.pairings[i]
+#			n=len(p)
+#			return '/'.join(['_'.join(str(j+1) for j in range(0,n<<1) if (1<<j)&p[k]!=0) for k in range(0,n)])
 #			return ''.join([str(j+1) for k in range(0,n) for j in range(0,n<<1) if (1<<j)&p[k]!=0])
 
 		def nodeDraw(this, i):
