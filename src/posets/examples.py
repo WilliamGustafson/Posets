@@ -281,8 +281,8 @@ def Cube(n):
 	def less(x,y):
 		return x!=y and all([x[i]==y[i] or y[i]=='*' for i in range(len(x))])
 
-	def sort_key(F): #revlex induced by 0<*<1
-		return ''.join(['1' if f == '*' else '2' if f == '1' else '0' for f in F][::-1])
+	def sort_key(F): #graded revlex induced by 0<*<1
+		return (sum(f=='*' for f in F),''.join(['1' if f == '*' else '2' if f == '1' else '0' for f in F][::-1]))
 
 	elements = ['']
 	for i in range(n): elements = expand(elements)

@@ -52,6 +52,7 @@ install : $(WHL)
 #main pdf documentation
 ##############
 docs : docs/posets.pdf
+	@:
 
 docs/bib.tex :
 	printf '\\bibliography{bib}{}\n\\bibliographystyle{plain}' > $@

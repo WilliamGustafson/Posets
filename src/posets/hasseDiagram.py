@@ -476,6 +476,10 @@ class HasseDiagram:
 		this.validate()
 		this.in_tkinter = True
 
+		#sort ranks so that we use the linear extension for ordering
+		#fixes confusing behavior wrt drawing subposets
+		this.P.ranks = [sorted(rk) for rk in this.P.ranks]
+
 		if len(this.P.ranks)==0:
 			this.maxrksize = 0
 		else:
@@ -519,6 +523,11 @@ class HasseDiagram:
 		this.__dict__.update(kwargs)
 		this.validate()
 		this.in_latex = True
+
+
+		#sort ranks so that we use the linear extension for ordering
+		#fixes confusing behavior wrt drawing subposets
+		this.P.ranks = [sorted(rk) for rk in this.P.ranks]
 
 		#right now landscape option is bugged disable it
 		#until we can be bothered to fix it

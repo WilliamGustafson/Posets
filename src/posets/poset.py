@@ -239,6 +239,7 @@ class Poset:
 			minimal = [e for e in E if e not in itertools.chain(*(relations[e] for e in relations if e in E))]
 			if len(minimal)==0:
 				raise ValueError(f"The given relations do not specify a partial order, they violate the anti-symmetry axiom.")
+
 			for e in E:
 				if e in minimal:
 					E.remove(e)
@@ -741,8 +742,8 @@ class Poset:
 		'''
 		if not indices:
 			S = [this.elements.index(s) for s in S]
-		#TODO don't force sort S but ensure it is a linear extension?
-		S = sorted(S)
+
+		S = this.linearize(S,indices=True)
 		elements = [this.elements[s] for s in S]
 		zeta = this.zeta.subarray(S)
 		P = Poset(zeta, elements,trans_close=False)
@@ -1551,6 +1552,22 @@ class Poset:
 		ret = Poset(this)
 		ret.elements = elements
 		return ret
+	
+	def linearize(this, X, indices=False):
+		r'''
+		Given a list \verb|X| of elements, returns a new list of the elements in a linear extension of the subposet.
+		'''
+		zeta = this.zeta
+		linear_perm = []
+		perm = [x for x in X] if indices else [this.elements.index(x) for x in X]
+		while len(perm)>0:
+			for ip,p in enumerate(perm):
+				col = list(zeta.col(p))[::-1]#[:-1]
+				if all(x in linear_perm for x in X if x<p and col[p-x]==1):
+					linear_perm.append(p)
+					del perm[ip]
+					break
+		return linear_perm if indices else [this.elements[i] for i in linear_perm]
 
 	def reorder(this, perm, indices=False):
 		r'''
