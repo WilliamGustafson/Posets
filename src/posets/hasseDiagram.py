@@ -3,7 +3,10 @@ import random
 import math
 from .utils import *
 from . import poset
-import tkinter as tk
+try:
+	import tkinter as tk
+except:
+	tk = None
 
 class HasseDiagram:
 	r'''
@@ -469,6 +472,8 @@ class HasseDiagram:
 
 		The keyword arguments are described in \verb|HasseDiagram|.
 		'''
+		if tk is None:
+			raise ImportError("Module tkinter could not be imported. You must have tkinter available to use the function HasseDiagram.tkinter. Note, this cannot be used with web assembly in the browser.")
 		#save default parameters to restore aferwards
 		defaults = this.__dict__.copy()
 		#update parameters from kwargs
