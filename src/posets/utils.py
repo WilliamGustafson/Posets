@@ -162,9 +162,13 @@ class TriangularArray:
 	def subarray(this, S):
 		r'''
 		Returns a sub-triangular array by selecting the rows and columns indexed by \verb|S|.
+
+		If the index set \verb|S| is not in order data may be lost.
+		Consider a pair $s,t$ where $s<t$ but $t$ precedes $s$ in the new indexing \verb|S|.
+		The old entry indexed by $s,t$ is lost and the new entry indexed by $t,s$ is replaced with 0.
+		This behavior allows for selecting a subarray of a poset's zeta function where the index set is not in order but is a linear extension of the poset in which case both the entries $s,t$ and the entries $t,s$ are zero.
 		'''
-		S = sorted(S)
-		return TriangularArray([this.data[t+s*(this.size)-triangle_num(s+1)] for i,s in enumerate(S) for t in S[i:]])
+		return TriangularArray([this.data[t+s*(this.size)-triangle_num(s+1)] if s<=t else 0 for i,s in enumerate(S) for t in S[i:]])
 	
 	def inverse(this):
 		r'''

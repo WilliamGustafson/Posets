@@ -14,6 +14,8 @@ TIMESTAMP:=$(shell date +"%y%m%d%H%M.%S")
 TEST:=$(if $(RELEASE),,test.)
 #command to use for installation
 PIP:=python -m pip
+#web browser for testing wasm
+BROWSER=firefox
 ##########################################
 #package recipes
 ##########################################
@@ -75,9 +77,21 @@ docs/csl.csl :
 ##########################################
 #test recipes
 ##########################################
-.PHONY : test
+.PHONY : test wasmtest
+#run pytest
 test :
-	cd tests; pytest posets_test.py -vvv
+	cd tests && pytest posets_test.py -vvv
+
+#make html file to test compatibility under pyodide
+wasm.test.html : tests/wasm.test tests/posets_test.py
+	lineno=$$(grep -n '^#Test pythonPosetToMac' $(lastword $^) | sed -e 's/\(.*\):.*/\1/g') && cat $< | sed -e 's/{WHL}/$(subst /,\/,$(WHL))/g' > $@.tmp && head -n $$lineno $(lastword $^) | cat $@.tmp - tests/bootleg.pytest.py > $@
+	printf "\n</p></body></html>" >> $@
+	rm $@.tmp
+
+#run tests under pyodide (through the browser)
+wasmtest : wasm.test.html $(WHL)
+	$(info Starting a local web server. Navigate to the url below in your favorite web browser.)
+	python -m http.server 
 
 coverage : tests/htmlcov/index.html
 
@@ -93,3 +107,4 @@ clean :
 	rm -rf docs/figures/*
 	rm -rf docs/*.aux docs/*.blg docs/*.log docs/*.toc docs/*.bbl docs/*.out docs/*.toc docs/*.tex
 	rm -rf dist/*
+	rm -rf wasm.test.html

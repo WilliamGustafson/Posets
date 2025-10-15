@@ -312,9 +312,9 @@ class Poset:
 		@section@Miscellaneous@
 		'''
 		if not isinstance(that,Poset): return False
-		if any(e not in that.elements for e in this) or any(f not in this.elements for f in that): return False
+		if len(this.elements)!=len(that.elements) or any(e not in that.elements for e in this): return False
 		inds = [that.elements.index(e) for e in this.elements]
-		return all(this.zeta[i, j] == that.zeta[tuple(sorted((inds[i], inds[j])))] for i in range(this.zeta.size) for j in range(i,this.zeta.size) )
+		return all(this.zeta[i,j] == that.zeta[tuple(sorted((inds[i], inds[j])))] for i in range(this.zeta.size) for j in range(i,this.zeta.size) )
 
 	def __iter__(this):
 		r'''
@@ -1835,6 +1835,8 @@ class Genlatt(Poset):
 		r'''
 		Given an iterable \verb|H| of generators and an element \verb|z| returns the \verb|Genlatt| with minimum \verb|z| and generating
 		set \verb|H| and with the same order as \verb|this|.
+
+		TODO the minor seems to have a nondeterministic linear extension.
 		'''
 		elements = set()
 		for I in subsets(H):

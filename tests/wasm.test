@@ -1,0 +1,57 @@
+<!DOCTYPE HTML>
+<head>
+<title>Test for python module posets</title>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.28.3/full/pyodide.js"></script>
+<script type="text/javascript">
+let pyodide;
+function stdout_handler(s)
+	{
+	p=document.createElement('p');
+	p.innerHTML=s;
+	p.style.background=(s.indexOf('passed')==-1)?'red':'green';
+	p.style.color='white';
+	document.getElementById("result").appendChild(p);
+	}
+async function main()
+	{
+	pyodide = await loadPyodide();
+	//Pyodide is now ready to use...
+	console.log(pyodide.runPython('import sys\nsys.version'));
+	//Install posets package
+	await pyodide.loadPackage('micropip');
+	const micropip = pyodide.pyimport('micropip');
+	//test with locally made wheel makefile fills in path
+	await micropip.install('./{WHL}');
+	await micropip.install('pytest');
+	pyodide.setStdout({batched:stdout_handler});
+	pyodide.runPython(document.getElementById("script").textContent+"\n"+document.getElementById("script-tail").textContent);
+};
+main();
+</script>
+</head>
+<body>
+<p id="result"></p>
+<p id="script-tail" style="display: none;">
+#pytest can't find tests under pyodide
+#the snippet below works well enough
+#gets appended to end of script paragraph
+import inspect
+V = list(locals().keys())
+failed = False
+for Cname in V:
+	if Cname.startswith('Test') and inspect.isclass(locals()[Cname]):
+		C = locals()[Cname]
+		for fname in dir(C):
+			if fname.startswith('test_') and inspect.isfunction(getattr(C,fname)):
+				try:
+					getattr(C(),fname)()
+					print(fname,"passed")
+				except:
+					print(fname,"failed")
+					failed=True
+				
+if not failed:
+	print("All tests passed")
+</p>
+<p id="script" style="display: none;">
+<!--makefile fills in the rest with contents of posets_test.py-->

@@ -61,6 +61,7 @@ class TestTriangularArray:
 		T = TriangularArray(range(10))
 		assert(T.subarray((0,1))==TriangularArray([0,1,4]))
 		assert(T.subarray([0,2,3])==TriangularArray([0,2,3,7,8,9]))
+		assert(T.subarray([0,3,2])==TriangularArray([0,3,2,9,0,7]))
 		assert(T.subarray([2])==TriangularArray([7]))
 		assert(T.subarray([0,1,2,3])==T)
 	
