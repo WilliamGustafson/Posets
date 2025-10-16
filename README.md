@@ -66,7 +66,7 @@ same zeta values (i.e. the same order relation with the same weights):
     P == Poset(relations={'':['a','b']}) #False
     P == Poset(relations={'':['ab'],'a':['ab'],'b':['ab']}) #False
     P == Poset(zeta=[[0,1,1,2],[0,0,0,3],[0,0,0,4],[0,0,0,0]],
-        elements=['','a','b','ab']) #False
+            elements=['','a','b','ab']) #False
 
 Use `is_isomorphic` or `PosetIsoClass` to check whether posets are
 isomorphic:
