@@ -1259,45 +1259,54 @@ def NoncrossingPartitionLattice(n=3):
 						return False
 		return True
 
-	def nodeName(this,i):
-		return '/'.join(''.join(str(b) for b in B) for B in this.P[i])
+	class NoncrossingHasseDiagram(HasseDiagram):
 
-	def nodeLabel(this,i):
-		if this.in_tkinter:
-			return str(this.P[i])
-		ret=["\\begin{tikzpicture}\n\\begin{scope}\n\t\\medial\n"]
-		for block in this.P[i]:
-			if len(block)==1: continue
-			ret.append('%'+str(this.P[i]))
-			ret.append('%'+str(i)+'\n')
-			ret.append('\n%'+str(len(this.P[i]))+'\n')
-			ret.append('\t\\filldraw'+'--'.join('('+str(j)+')' for j in block)+';')
-		return ''.join(ret+["\\end{scope}\\end{tikzpicture}"])
+		def __init__(this, P, **kwargs):
+			super().__init__(P, **kwargs)
+			if 'nodetikzscale' in kwargs: this.nodetikzscale = str(kwargs['nodetikzscale'])
+			else: this.nodetikzscale = '1'
+			if 'preamble' not in kwargs: this.preamble = "\\def\\r{1}\n\\def\\n{"+str(n)+"}\n\\newcommand{\\medial}{\n\\draw circle (\\r);\n\\foreach\\i in{1,...,\\n}\n\t{\n\t\\pgfmathsetmacro{\\j}{-90-360/\\n*(\\i-1)}\n\t\\fill (\\j:-\\r) circle (2pt) node [anchor=\\j] {$\\i$};\n\t\\coordinate (\\i) at (\\j:-\\r);\n\t}\n}"
 
-	def nodeDraw(this, i):
-		size = 10*int(this.nodescale)
-		ptsize = this.ptsize if type(this.ptsize)==int else int(this.ptsize[:-2])
-		x = float(this.loc_x(this, i))*float(this.scale)+float(this.scale)*float(this.width)/2+float(this.padding)
-		y = 2*float(this.padding)+float(this.height)*float(this.scale)-(float(this.loc_y(this, i))*float(this.scale)+float(this.padding))
-		this.canvas.create_oval(x-size, y-size, x+size, y+size)
+		def nodeName(this,i):
+			return '/'.join(''.join(str(b) for b in B) for B in this.P[i])
 
-		def pt(i):
-			px = x + int(this.nodescale)*math.cos(i*2*math.pi/(2*n)+math.pi/2)*10
-			py = y + int(this.nodescale)*math.sin(i*2*math.pi/(2*n)+math.pi/2)*10
-			return px, py
-		for j in range(2*n):
-			px,py = pt(j)
-			this.canvas.create_oval(px-ptsize, py-ptsize, px+ptsize, py+ptsize, fill='black')
+		def nodeLabel(this,i):
+			if this.in_tkinter:
+				return str(this.P[i])
+			ret=["\\begin{tikzpicture}[scale=",this.nodetikzscale,"]\n\\begin{scope}\n\t\\medial\n"]
+			for block in this.P[i]:
+				if len(block)==1: continue
+				ret.append('%'+str(this.P[i]))
+				ret.append('%'+str(i)+'\n')
+				ret.append('\n%'+str(len(this.P[i]))+'\n')
+				ret.append('\t\\filldraw'+'--'.join('('+str(j)+')' for j in block)+';')
+			return ''.join(ret+["\\end{scope}\\end{tikzpicture}"])
 
-		for block in this.P[i]:
-			this.canvas.create_polygon(list(itertools.chain(*[pt(j) for j in block])), outline='black',fill='gray',width=1)
-		return
+		def nodeDraw(this, i):
+			size = 10*int(this.nodescale)
+			ptsize = this.ptsize if type(this.ptsize)==int else int(this.ptsize[:-2])
+			x = float(this.loc_x(this, i))*float(this.scale)+float(this.scale)*float(this.width)/2+float(this.padding)
+			y = 2*float(this.padding)+float(this.height)*float(this.scale)-(float(this.loc_y(this, i))*float(this.scale)+float(this.padding))
+			this.canvas.create_oval(x-size, y-size, x+size, y+size)
+
+			def pt(i):
+				px = x + int(this.nodescale)*math.cos(i*2*math.pi/(2*n)+math.pi/2)*10
+				py = y + int(this.nodescale)*math.sin(i*2*math.pi/(2*n)+math.pi/2)*10
+				return px, py
+			for j in range(2*n):
+				px,py = pt(j)
+				this.canvas.create_oval(px-ptsize, py-ptsize, px+ptsize, py+ptsize, fill='black')
+
+			for block in this.P[i]:
+				this.canvas.create_polygon(list(itertools.chain(*[pt(j) for j in block])), outline='black',fill='gray',width=1)
+			return
 	Pi = PartitionLattice(n)
 	P = Pi.subposet([p for p in Pi if noncrossing(p)])
-	P.hasseDiagram.nodeDraw = nodeDraw
-	P.hasseDiagram.nodeLabel = nodeLabel
-	P.hasseDiagram.nodeName = nodeName
-	P.hasseDiagram.preamble = "\\def\\r{1}\n\\def\\n{"+str(n)+"}\n\\newcommand{\\medial}{\n\\draw circle (\\r);\n\\foreach\\i in{1,...,\\n}\n\t{\n\t\\pgfmathsetmacro{\\j}{-90-360/\\n*(\\i-1)}\n\t\\fill (\\j:-\\r) circle (2pt) node [anchor=\\j] {$\\i$};\n\t\\coordinate (\\i) at (\\j:-\\r);\n\t}\n}"
+	P.hasseDiagram = NoncrossingHasseDiagram(P)
+#	P.hasseDiagram.nodeDraw = nodeDraw
+#	P.hasseDiagram.nodeLabel = nodeLabel
+#	P.hasseDiagram.nodeName = nodeName
+#	P.hasseDiagram.preamble = "\\def\\r{1}\n\\def\\n{"+str(n)+"}\n\\newcommand{\\medial}{\n\\draw circle (\\r);\n\\foreach\\i in{1,...,\\n}\n\t{\n\t\\pgfmathsetmacro{\\j}{-90-360/\\n*(\\i-1)}\n\t\\fill (\\j:-\\r) circle (2pt) node [anchor=\\j] {$\\i$};\n\t\\coordinate (\\i) at (\\j:-\\r);\n\t}\n}"
 	P.cache['isLattice()'] = True
 	P.cache['isRanked()'] = True
 	P.cache['isEulerian()'] = n==1
