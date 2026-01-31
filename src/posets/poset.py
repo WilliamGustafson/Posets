@@ -607,11 +607,11 @@ class Poset:
 		if len(bottom)!=1 or len(top)!=1:
 			return False
 
-		for p in this.elements:
-			for q in this.elements:
-				if this.less(p,q):
-					if this.mobius(p,q)!=(-1)**(this.rank(q)-this.rank(p)):
-						return False
+		zeta = this.zeta
+		mobius = zeta.inverse()
+		for i in range(len(this.elements)):
+			for j in range(i+1,len(this.elements)):
+				if mobius[i,j]!=(-1)**(this.rank(i,True)-this.rank(j,True))*zeta[i,j]: return False
 		return True
 
 	@cached_method
@@ -906,8 +906,6 @@ class Poset:
 
 		@section@Internal Computations@
 		'''
-		if i is None and j is None:
-			return this.zeta.inverse()
 		if i is None:
 			mins = this.min(indices)
 			if len(mins)>1: raise ValueError("No unique minimum and argument j was provided, argument i must be provided")
@@ -919,21 +917,8 @@ class Poset:
 		if not indices:
 			i = this.elements.index(i)
 			j = this.elements.index(j)
-		if 'mobius(None, None, False)' in this.cache:
-			return this.cache['mobius(None, None, False)'][i,j]
-		if i == j: return 1
-		if not this.less(i,j,True) and not this.less(j,i,True): return 0
-
-		@cached_method
-		def calc_mobius(this, i,j):
-			if i == j: return 1
-			ret = 1
-			for k in range(i+1,j):
-				if this.zeta[i,k]!=0 and this.zeta[k,j]!=0:
-					ret += calc_mobius(this, i,k)
-			return -ret
-
-		return calc_mobius(this, i,j)
+		mobius = this.zeta.inverse()
+		return mobius[i,j]
 
 	@cached_method
 	def rank(this, i, indices=False):

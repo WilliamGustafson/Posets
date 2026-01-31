@@ -595,15 +595,10 @@ class HasseDiagram:
 		###############
 			for rk in this.P.ranks:
 				for r in rk:
-					#name=this.nodeName(this, r)
 					ret.append(this.nodeTikz(this,r))
-					#ret.append('\\fill['+this.node_options(this,r)+']('+name+')circle('+this.ptsize+');\n')
-#					ret.append('\\coordinate('+name+')at('+this.loc_x(this, r)+','+this.loc_y(this, r)+');\n')
-#					ret.append('\\fill['+this.node_options(this,r)+']('+name+')circle('+this.ptsize+');\n')
 		else: #this.labels==True
 			for rk in this.P.ranks:
 				for r in rk:
-#					ret.append('\\node['+this.node_options(this,r)+']('+this.nodeName(this, r)+')at('+this.nodeName(this,r)+')\n{')
 					ret.append('\\node['+this.node_options(this,r)+']('+this.nodeName(this, r)+')at('+this.loc_x(this, r)+','+this.loc_y(this, r)+')\n{')
 					ret.append('\\scalebox{'+str(this.nodescale)+"}{")
 					ret.append(str(r) if this.indices_for_nodes else this.nodeLabel(this, r))

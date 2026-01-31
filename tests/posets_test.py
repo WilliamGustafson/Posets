@@ -523,8 +523,15 @@ class TestOperations:
 #Queries
 ##########################################
 class TestQueries:
+	#Example 6.14 with $M$ the "filled in" genus 2 surface
+	#Euler flag enumeration of Whitney stratified spaces
+	#by Ehrenborg, Richard and Goresky, Mark and Readdy, Margaret
+	#The strata are $M$ (3-dimensional) and the boundary of $M$ (2-dimensional).
+	G2 = Poset([1,2,1, 1,1, 1],ranks=[[0],[],[],[1],[2]], flat_zeta=True)
+
 	pent = LatticeOfFlats([0,1,2,2,1,3,3,3])
 	B3 = Boolean(3)
+
 	def test_ranked(this):
 		assert(not this.pent.isRanked())
 		assert(this.B3.isRanked())
@@ -543,6 +550,9 @@ class TestQueries:
 		assert(not this.pent.isEulerian())
 		this.B3.cache={}
 		assert(this.B3.isEulerian())
+
+		assert(this.G2.isEulerian())
+
 	def test_Gorenstein(this):
 		assert(not this.pent.isGorenstein())
 		assert(this.B3.isGorenstein())
@@ -623,6 +633,11 @@ class TestInternalComputations:
 class TestInvariants:
 	B4 = Boolean(4)
 	B3 = Boolean(3)
+	#Example 6.14 with $M$ the "filled in" genus 2 surface
+	#Euler flag enumeration of Whitney stratified spaces
+	#by Ehrenborg, Richard and Goresky, Mark and Readdy, Margaret
+	#The strata are $M$ (3-dimensional) and the boundary of $M$ (2-dimensional).
+	G2 = Poset([1,2,1, 1,1, 1],ranks=[[0],[],[],[1],[2]], flat_zeta=True)
 	def test_flagVectors(this):
 		assert({tuple():[1,1],(1,):[4,3],(2,):[6,5],(1,2):[12,3],(3,):[4,3],(1,3):[12,5],(2,3):[12,3],(1,2,3):[24,1]}==this.B4.flagVectors())
 	def test_abIndex(this):
@@ -631,17 +646,9 @@ class TestInvariants:
 		assert(Polynomial({'ccc':1,'cd':2,'dc':2})==this.B4.cdIndex())
 		assert(Polynomial({'cc':1,'d':1})==this.B3.complSubposet([(1,2)]).cdIndex())
 		assert(Polynomial({'c'*4:1,'ccd':3,'cdc':5,'dcc':3,'dd':4})==Boolean(5).cdIndex())
-
-		#Example 6.14 with $M$ the 3-dimensional solid torus
-		#Euler flag enumeration of Whitney stratified spaces
-		#by Ehrenborg, Richard and Goresky, Mark and Readdy, Margaret
-		P = Chain(2)
-		P.zeta[0,1] = -1 #Euler char of torus bounday
-		P.zeta[0,2] = 1 #Euler char of solid torus
-		P.ranks = [[0],[],[1],[2]] #0, 2-dimensional torus, 3-dimensional solid torus
-		assert(P.cdIndex() == Polynomial({'cc':1,'d':-2}))
-		P.hasseDiagram = ZetaHasseDiagram(P,keep_ranks=True)
-		with open('/tmp/a.tex','w') as file: file.write(P.latex(standalone=True))
+		assert(this.G2.cdIndex() == Polynomial({'ccc':1,'dc':-2}))
+		this.G2.hasseDiagram = ZetaHasseDiagram(this.G2,keep_ranks=True)
+		with open('/tmp/a.tex','w') as file: file.write(this.G2.latex(standalone=True))
 
 
 	def test_bettiNumbers(this):
