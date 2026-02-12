@@ -718,8 +718,10 @@ class SubposetsHasseDiagram(HasseDiagram):
 		Q_args = {k[len(this.prefix):] : v for k,v in kwargs.items() if k[:len(this.prefix)]==this.prefix}
 		Q_defaults = this.Q.hasseDiagram.__dict__.copy()
 		this.Q.hasseDiagram.__dict__.update(Q_args)
+		this.Q.hasseDiagram.__dict__.update({k[len(this.prefix):] : v for k,v in this.__dict__.items() if k.startswith(this.prefix)})
 		this.Q.hasseDiagram.nodeName = SubposetsHasseDiagram.Q_nodeName
 		this.Q.hasseDiagram.prefix = this.prefix
+		this.Q.hasseDiagram.parent = this
 
 		ret = super().latex(**kwargs)
 
@@ -747,17 +749,19 @@ class SubposetsHasseDiagram(HasseDiagram):
 		if not this.in_latex:
 			return ','.join(str(x) for x in this.P[i])
 		if not this.draw_min and i in this.P.min(): return this.minNodeLabel(this)
-		args = {
-			'node_options' : SubposetsHasseDiagram.make_node_options(this.P[i]),
-			'line_options' : SubposetsHasseDiagram.make_line_options(this.P[i]),
-			}
-		args.update({k[len(this.prefix):] : v for (k,v) in this.__dict__.items() if k[:len(this.prefix)]==this.prefix})
-		func_arg_values = {k:v(this,i) for k,v in this.func_args.items()}
-		args.update(func_arg_values)
+#		args = {
+#			'node_options' : SubposetsHasseDiagram.make_node_options(this.P[i]),
+#			'line_options' : SubposetsHasseDiagram.make_line_options(this.P[i]),
+#			}
+#		args.update({k[len(this.prefix):] : v for (k,v) in this.__dict__.items() if k[:len(this.prefix)]==this.prefix})
+#		func_arg_values = {k:v(this,i) for k,v in this.func_args.items()}
+#		args.update(func_arg_values)
 		
-		args['parent']=this
-		args[this.prefix[:-1]] = this.P[i]
-		Q_Latex = this.Q.latex(**args)
+#		args['parent']=this
+#		args[this.prefix[:-1]] = this.P[i]
+#		Q_Latex = this.Q.latex(**args)
+		this.__dict__[this.prefix+'subposet'] = this.P[i]
+		Q_Latex = this.Q.latex()
 		try:
 			start = Q_Latex.index('\\begin{tikzpicture}')+len('\\begin{tikzpicture}')
 			start += Q_Latex[start:].index(']') + 1
@@ -781,23 +785,14 @@ class SubposetsHasseDiagram(HasseDiagram):
 		'''
 		return this.prefix+HasseDiagram.nodeName(this,i)
 
-	def make_node_options(q):
-		r'''
-		Returns a function to be supplied as \verb|node_options| in the \verb|latex()| call to draw a diagram for \verb|q|.
-		'''
-		def node_options(this, i):
-			if this.parent.is_in(this.P.elements[i],q): return 'color=black'
-			return 'color=gray'
-		return node_options
-
-	def make_line_options(q):
-		r'''
-		Returns a function to be supplied as \verb|line_options| in the \verb|latex()| call to draw a diagram for \verb|q|.
-		'''
-		def line_options(this, i, j):
+	def Q_node_options(this, i):
+		if this.parent.is_in(this.P.elements[i],this.parent.__dict__[this.parent.prefix+'subposet']): return 'color=black'
+		return 'color=gray'
+	def Q_line_options(this, i):
+			q = this.parent.__dict__[this.parent.prefix+'subposet']
 			if this.parent.is_in(this.P.elements[i],q) and this.parent.is_in(this.P.elements[j],q): return 'color=black'
 			return 'color=gray'
-		return line_options
+		
 ##############
 #end SubposetsHasseDiagram class
 ##############
