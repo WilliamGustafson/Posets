@@ -144,28 +144,28 @@ macPosetToPython(Q) --Take a poset made with M2 and return an
 \end{verbatim}
 
 Quasigraded posets:
+
 \begin{verbatim}
 #Provide the zeta and rank functions explicitly
 #To construct a 2-chain with top two elements rank 2 and 3
 #and with zeta value -1 between minimum and the element covering it:
-T = Poset([[1,-1,1],[1,1],[1]], ranks=[[0],[],[1],[2]])
+G2 = Poset([1,2,1, 1,1, 1],ranks=[[0],[],[],[1],[2]], flat_zeta=True)
 \end{verbatim}
-The poset \verb|T| above is from \cite[Example 6.14]{ehrenborg-goresky-readdy-15} with $M$ taken to
-be the 3-dimensional solid torus.
+The poset \verb|G2| above is from \cite[Example 6.14]{ehrenborg-goresky-readdy-15} with $M$ taken to be the manifold whose boundary is the genus 2 surface.
 
 You can calculate the flag vectors and the \cv\dv-index just as you would for a classical poset,
-for example, \verb|T.cdIndex()| returns the polynomial $\cv^2-2\dv$.
+for example, \verb|G2.cdIndex()| returns the polynomial $\cv^3-2\dv\cv$.
 
 When plotting a quasigraded poset by default only the underlying poset is shown with element heights
 based on rank, the zeta values are not shown. If you wish to display the zeta values you can use
 the class \verb|ZetaHasseDiagram| to draw a Hasse diagram of your poset with an element $p$ depicted as
 the associated filter, namely the subposet $\{q:q\ge p\}$, and with elements of the filters labeled by the
 corresponding zeta value. To do so, either construct the poset with \verb|hasse_class=ZetaHasseDiagram|
-such as in \verb|Poset([[1,-1,1],[1,1],[1]], ranks=[[0],[],[1],[2]],hasse_class=ZetaHasseDiagram)| or
+such as in \verb|Poset([1,2,1, 1,1, 1],ranks=[[0],[],[],[1],[2]], flat_zeta=True| or
 set the Hasse diagram attribute on the poset as below:
 \begin{verbatim}
-T = Poset([[1,-1,1],[1,1],[1]], ranks=[[0],[],[1],[2]])
-T.hasseDiagram = ZetaHasseDiagram(T)
+G2 = Poset([1,2,1, 1,1, 1],ranks=[[0],[],[],[1],[2]], flat_zeta=True)
+G2.hasseDiagram = ZetaHasseDiagram(G2)
 \end{verbatim}
 You can also represent elements with ideals instead of filters by passing \verb|filters=False|.
 See \verb|ZetaHasseDiagram| and \verb|SubposetsHasseDiagram| for a thorough explanation of the options.
