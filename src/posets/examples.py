@@ -793,9 +793,9 @@ def Uncrossing(t, upper=False, weak=False, E_only=False, zerohat=True):
 #			for arc in [[float(i) for i in range(0,this.n<<1) if (1<<i)&x!=0] for x in this.pairings[i]]:
 				ret.append('\t\\draw('+str(int(arc[0]))+')..controls+(')
 				ret.append(str((arc[0]-1)*(-360.0)/(this.n<<1)-90))
-				ret.append(':\\r*'+this.bend+')and+(')
+				ret.append(':\\r*'+str(this.bend)+')and+(')
 				ret.append(str((arc[1]-1)*(-360.0)/(this.n<<1)-90))
-				ret.append(':\\r*'+this.bend+')..('+str(int(arc[1]))+');\n')
+				ret.append(':\\r*'+str(this.bend)+')..('+str(int(arc[1]))+');\n')
 			return ''.join(ret+["\\end{scope}\\end{tikzpicture}"])
 
 		def nodeName(this,i):
