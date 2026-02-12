@@ -836,11 +836,11 @@ def Uncrossing(t, upper=False, weak=False, E_only=False, zerohat=True):
 
 
 
-	preamble = "\\def\\r{1}\n\\def\\n{"+str(n<<1)+"}\n\\newcommand{\\medial}{\n\\draw circle (\\r);\n\\foreach\\i in{1,...,\\n}\n\t{\n\t\\pgfmathsetmacro{\\j}{-90-360/\\n*(\\i-1)}\n\t\\fill (\\j:-\\r) circle (2pt) node [anchor=\\j] {$\\i$};\n\t\\coordinate (\\i) at (\\j:-\\r);\n\t}\n}"
-	P = Poset(M, P, ranks, name = name, hasse_class = UncrossingHasseDiagram, preamble = preamble)
-	if not upper:
-		P = P.adjoin_zerohat() if zerohat else P
-		P.hasseDiagram = UncrossingHasseDiagram(P, preamble=preamble)
+	pretikz = "\\def\\r{1}\n\\def\\n{"+str(n<<1)+"}\n\\newcommand{\\medial}{\n\\draw circle (\\r);\n\\foreach\\i in{1,...,\\n}\n\t{\n\t\\pgfmathsetmacro{\\j}{-90-360/\\n*(\\i-1)}\n\t\\fill (\\j:-\\r) circle (2pt) node [anchor=\\j] {$\\i$};\n\t\\coordinate (\\i) at (\\j:-\\r);\n\t}\n}"
+	P = Poset(M, P, ranks, name = name, hasse_class = UncrossingHasseDiagram, pretikz=pretikz)
+	if not upper and zerohat:
+		P = P.adjoin_zerohat()
+		P.hasseDiagram = UncrossingHasseDiagram(P, pretikz=pretikz)
 #	lex on (source pts, sink pts) sorts for the 312 decomposition but is a little uglier
 #	P = P.sort(key=lambda x:tuple() if x==0 else (tuple(y[0] for y in eval('('+x.replace(')','),')+')')),tuple(y[1] for y in eval('('+x.replace(')','),')+')'))))
 	P = P.sort(key=lambda x:tuple() if x==0 else x)
@@ -1265,7 +1265,7 @@ def NoncrossingPartitionLattice(n=3):
 			super().__init__(P, **kwargs)
 			if 'nodetikzscale' in kwargs: this.nodetikzscale = str(kwargs['nodetikzscale'])
 			else: this.nodetikzscale = '1'
-			if 'preamble' not in kwargs: this.preamble = "\\def\\r{1}\n\\def\\n{"+str(n)+"}\n\\newcommand{\\medial}{\n\\draw circle (\\r);\n\\foreach\\i in{1,...,\\n}\n\t{\n\t\\pgfmathsetmacro{\\j}{-90-360/\\n*(\\i-1)}\n\t\\fill (\\j:-\\r) circle (2pt) node [anchor=\\j] {$\\i$};\n\t\\coordinate (\\i) at (\\j:-\\r);\n\t}\n}"
+			if 'pretikz' not in kwargs: this.pretikz = "\\def\\r{1}\n\\def\\n{"+str(n)+"}\n\\newcommand{\\medial}{\n\\draw circle (\\r);\n\\foreach\\i in{1,...,\\n}\n\t{\n\t\\pgfmathsetmacro{\\j}{-90-360/\\n*(\\i-1)}\n\t\\fill (\\j:-\\r) circle (2pt) node [anchor=\\j] {$\\i$};\n\t\\coordinate (\\i) at (\\j:-\\r);\n\t}\n}"
 
 		def nodeName(this,i):
 			return '/'.join(''.join(str(b) for b in B) for B in this.P[i])
@@ -1306,7 +1306,7 @@ def NoncrossingPartitionLattice(n=3):
 #	P.hasseDiagram.nodeDraw = nodeDraw
 #	P.hasseDiagram.nodeLabel = nodeLabel
 #	P.hasseDiagram.nodeName = nodeName
-#	P.hasseDiagram.preamble = "\\def\\r{1}\n\\def\\n{"+str(n)+"}\n\\newcommand{\\medial}{\n\\draw circle (\\r);\n\\foreach\\i in{1,...,\\n}\n\t{\n\t\\pgfmathsetmacro{\\j}{-90-360/\\n*(\\i-1)}\n\t\\fill (\\j:-\\r) circle (2pt) node [anchor=\\j] {$\\i$};\n\t\\coordinate (\\i) at (\\j:-\\r);\n\t}\n}"
+#	P.hasseDiagram.pretikz = "\\def\\r{1}\n\\def\\n{"+str(n)+"}\n\\newcommand{\\medial}{\n\\draw circle (\\r);\n\\foreach\\i in{1,...,\\n}\n\t{\n\t\\pgfmathsetmacro{\\j}{-90-360/\\n*(\\i-1)}\n\t\\fill (\\j:-\\r) circle (2pt) node [anchor=\\j] {$\\i$};\n\t\\coordinate (\\i) at (\\j:-\\r);\n\t}\n}"
 	P.cache['isLattice()'] = True
 	P.cache['isRanked()'] = True
 	P.cache['isEulerian()'] = n==1

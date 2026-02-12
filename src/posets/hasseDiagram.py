@@ -126,10 +126,14 @@ class HasseDiagram:
 
 	\begin{itemize}
 		\item[]{\verb|preamble| -- A string that when calling \verb|latex()| is placed in the preamble.
-			It should be used to include any extra packages or define commands
-			needed to produce node labels. This has no effect when standalone is \verb|False|.
+			It should be used to include any extra packages.
+			This option has no effect when standalone is \verb|False|.
 
 			The default value is \verb|''|.
+		}
+
+		\item[]{\verb|pretikz| -- A string that when calling \verb|latex()| is placed before the beginning of the tikz environment.
+			It should be used to define any commands needed to produce node labels.
 		}
 
 		\item[]{\verb|nodescale| -- Each node is wrapped in \verb|'\\scalebox{'+nodescale+'}'|.
@@ -340,6 +344,7 @@ class HasseDiagram:
 
 			this.defaults = {
 				'preamble':'',
+				'pretikz' : '',
 				'nodescale':'1',
 				'scale':'1',
 				'line_options':'',
@@ -573,6 +578,7 @@ class HasseDiagram:
 			ret.append('\n\\usepackage[psfixbb,graphics,tightpage,active]{preview}\n')
 			ret.append('\\PreviewEnvironment{tikzpicture}\n\\usepackage[margin=0in]{geometry}\n')
 			ret.append('\\begin{document}\n\\pagestyle{empty}\n')
+		if this.pretikz: ret.append(this.pretikz)
 		ret.append('\\begin{{tikzpicture}}[scale={}]\n'.format(this.scale))
 
 		if not this.labels:
