@@ -760,7 +760,7 @@ class SubposetsHasseDiagram(HasseDiagram):
 #		args['parent']=this
 #		args[this.prefix[:-1]] = this.P[i]
 #		Q_Latex = this.Q.latex(**args)
-		this.__dict__[this.prefix+'subposet'] = this.P[i]
+		this.element = this.P[i]
 		Q_Latex = this.Q.latex()
 		try:
 			start = Q_Latex.index('\\begin{tikzpicture}')+len('\\begin{tikzpicture}')
@@ -786,10 +786,10 @@ class SubposetsHasseDiagram(HasseDiagram):
 		return this.prefix+HasseDiagram.nodeName(this,i)
 
 	def Q_node_options(this, i):
-		if this.parent.is_in(this.P.elements[i],this.parent.__dict__[this.parent.prefix+'subposet']): return 'color=black'
+		if this.parent.is_in(this.P.elements[i],this.parent.element): return 'color=black'
 		return 'color=gray'
 	def Q_line_options(this, i):
-			q = this.parent.__dict__[this.parent.prefix+'subposet']
+			q = this.parent.element
 			if this.parent.is_in(this.P.elements[i],q) and this.parent.is_in(this.P.elements[j],q): return 'color=black'
 			return 'color=gray'
 		
