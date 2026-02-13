@@ -40,6 +40,11 @@ $(WHL) : pyproject.toml $(SRCFILES)
 publish : $(TEST)pypi.token.gpg $(WHL) README.md
 	python -m twine upload --verbose --repository-url "https://$(if $(TEST),test,upload).pypi.org/legacy/" -u __token__ -p "$$(gpg --pinentry-mode loopback -q --decrypt $<)" dist/posets-$(VERSION)$(DATE).tar.gz $(WHL)
 
+.PHONY : release
+release : publish
+	git tag v$(VERSION)$(DATE)
+	git push origin tag v$(VERSION)$(DATE)
+	gh release create $(if $(RELEASE),,-d) --notes-from-tag v$(VERSION)$(DATE) $(WHL) $(patsubst %-py3-none-any.whl,%.tar.gz,$(WHL)) docs/posets.pdf
 ##############
 #install package
 ##############

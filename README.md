@@ -143,14 +143,14 @@ Quasigraded posets:
     #Provide the zeta and rank functions explicitly
     #To construct a 2-chain with top two elements rank 2 and 3
     #and with zeta value -1 between minimum and the element covering it:
-    T = Poset([[1,-1,1],[1,1],[1]], ranks=[[0],[],[1],[2]])
+    G2 = Poset([1,2,1, 1,1, 1],ranks=[[0],[],[],[1],[2]], flat_zeta=True)
 
-The poset `T` above is from \[2, Example 6.14\] with $M$ taken to be the
-3-dimensional solid torus.
+The poset `G2` above is from \[2, Example 6.14\] with $M$ taken to be
+the manifold whose boundary is the genus 2 surface.
 
 You can calculate the flag vectors and the **cd**-index just as you
-would for a classical poset, for example, `T.cdIndex()` returns the
-polynomial $\textbf{c}^2-2\textbf{d}$.
+would for a classical poset, for example, `G2.cdIndex()` returns the
+polynomial $\textbf{c}^3-2\textbf{d}\textbf{c}$.
 
 When plotting a quasigraded poset by default only the underlying poset
 is shown with element heights based on rank, the zeta values are not
@@ -160,11 +160,11 @@ $p$ depicted as the associated filter, namely the subposet
 $\\{q:q\ge p\\}$, and with elements of the filters labeled by the
 corresponding zeta value. To do so, either construct the poset with
 `hasse_class=ZetaHasseDiagram` such as in
-`Poset([[1,-1,1],[1,1],[1]], ranks=[[0],[],[1],[2]],hasse_class=ZetaHasseDiagram)`
-or set the Hasse diagram attribute on the poset as below:
+`Poset([1,2,1, 1,1, 1],ranks=[[0],[],[],[1],[2]], flat_zeta=True` or set
+the Hasse diagram attribute on the poset as below:
 
-    T = Poset([[1,-1,1],[1,1],[1]], ranks=[[0],[],[1],[2]])
-    T.hasseDiagram = ZetaHasseDiagram(T)
+    G2 = Poset([1,2,1, 1,1, 1],ranks=[[0],[],[],[1],[2]], flat_zeta=True)
+    G2.hasseDiagram = ZetaHasseDiagram(G2)
 
 You can also represent elements with ideals instead of filters by
 passing `filters=False`. See `ZetaHasseDiagram` and
