@@ -782,11 +782,11 @@ class SubposetsHasseDiagram(HasseDiagram):
 
 	def Q_node_options(this, i):
 		if this.parent.is_in(this.P.elements[i],this.parent.element): return ''
-		return 'opacity=0.3'
+		return 'color=lightgray'
 	def Q_line_options(this, i,j):
 			q = this.parent.element
 			if this.parent.is_in(this.P.elements[i],q) and this.parent.is_in(this.P.elements[j],q): return ''
-			return 'opacity=0.3'
+			return 'color=lightgray'
 		
 ##############
 #end SubposetsHasseDiagram class

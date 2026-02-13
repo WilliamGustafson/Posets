@@ -1395,8 +1395,6 @@ def UniformMatroid(n=3,r=3,q=1):
 	r'''
 	Returns the lattice of flats of the uniform ($q$-)matroid of rank $r$ on $n$ elements.
 
-	Currently only implemented for \verb|q=1| or a prime. Raises an instance of \verb|NotImplementedError| if \verb|q| is neither 1 nor prime.
-
 	\begin{center}
 		\includegraphics{figures/unif.pdf}
 

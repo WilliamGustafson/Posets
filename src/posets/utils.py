@@ -104,7 +104,7 @@ class TriangularArray:
 		\end{itemize}
 	Constructor raises \verb|ValueError| if the number of entries of \verb|data| is not a triangle number.
 
-	@is_section@
+	@is_section@section@Utilities@
 	'''
 	def __init__(this, data, flat=True):
 		if flat:

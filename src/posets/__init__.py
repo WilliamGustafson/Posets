@@ -169,7 +169,8 @@ G2.hasseDiagram = ZetaHasseDiagram(G2)
 \end{verbatim}
 You can also represent elements with ideals instead of filters by passing \verb|filters=False|.
 See \verb|ZetaHasseDiagram| and \verb|SubposetsHasseDiagram| for a thorough explanation of the options.
-@is_section@sections_order@Poset@PosetIsoClass@Genlatt@HasseDiagram@SubposetsHasseDiagram@Built in posets@Polynomial@@
+
+@is_section@sections_order@Poset@PosetIsoClass@Genlatt@Built in posets@HasseDiagram@SubposetsHasseDiagram@ZetaHasseDiagram@Polynomial@Utilities@@
 '''
 from .poset import *
 from .hasseDiagram import *
