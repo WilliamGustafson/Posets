@@ -701,6 +701,12 @@ class SubposetsHasseDiagram(HasseDiagram):
 		this.prefix=prefix+'_'
 		this.prefix_len = len(this.prefix)
 		this.minNodeLabel = type(this).minNodeLabel
+		
+		for a in dir(type(this)):
+			if a.startswith('Q_'):
+				this.__dict__[this.prefix+a[2:]] = getattr(type(this),a)
+		print('prefix line options:',this.__dict__[this.prefix+'line_options'])
+
 		super().__init__(P,**kwargs)
 		this.P = P
 		this.Q = Q
@@ -717,8 +723,8 @@ class SubposetsHasseDiagram(HasseDiagram):
 		'''
 		Q_args = {k[len(this.prefix):] : v for k,v in kwargs.items() if k[:len(this.prefix)]==this.prefix}
 		Q_defaults = this.Q.hasseDiagram.__dict__.copy()
-		this.Q.hasseDiagram.__dict__.update(Q_args)
 		this.Q.hasseDiagram.__dict__.update({k[len(this.prefix):] : v for k,v in this.__dict__.items() if k.startswith(this.prefix)})
+		this.Q.hasseDiagram.__dict__.update(Q_args)
 		this.Q.hasseDiagram.nodeName = SubposetsHasseDiagram.Q_nodeName
 		this.Q.hasseDiagram.prefix = this.prefix
 		this.Q.hasseDiagram.parent = this
@@ -749,17 +755,6 @@ class SubposetsHasseDiagram(HasseDiagram):
 		if not this.in_latex:
 			return ','.join(str(x) for x in this.P[i])
 		if not this.draw_min and i in this.P.min(): return this.minNodeLabel(this)
-#		args = {
-#			'node_options' : SubposetsHasseDiagram.make_node_options(this.P[i]),
-#			'line_options' : SubposetsHasseDiagram.make_line_options(this.P[i]),
-#			}
-#		args.update({k[len(this.prefix):] : v for (k,v) in this.__dict__.items() if k[:len(this.prefix)]==this.prefix})
-#		func_arg_values = {k:v(this,i) for k,v in this.func_args.items()}
-#		args.update(func_arg_values)
-		
-#		args['parent']=this
-#		args[this.prefix[:-1]] = this.P[i]
-#		Q_Latex = this.Q.latex(**args)
 		this.element = this.P[i]
 		Q_Latex = this.Q.latex()
 		try:
@@ -786,12 +781,12 @@ class SubposetsHasseDiagram(HasseDiagram):
 		return this.prefix+HasseDiagram.nodeName(this,i)
 
 	def Q_node_options(this, i):
-		if this.parent.is_in(this.P.elements[i],this.parent.element): return 'color=black'
-		return 'color=gray'
-	def Q_line_options(this, i):
+		if this.parent.is_in(this.P.elements[i],this.parent.element): return ''
+		return 'opacity=0.3'
+	def Q_line_options(this, i,j):
 			q = this.parent.element
-			if this.parent.is_in(this.P.elements[i],q) and this.parent.is_in(this.P.elements[j],q): return 'color=black'
-			return 'color=gray'
+			if this.parent.is_in(this.P.elements[i],q) and this.parent.is_in(this.P.elements[j],q): return ''
+			return 'opacity=0.3'
 		
 ##############
 #end SubposetsHasseDiagram class
