@@ -147,8 +147,8 @@ Quasigraded posets:
 
 \begin{verbatim}
 #Provide the zeta and rank functions explicitly
-#To construct a 2-chain with top two elements rank 2 and 3
-#and with zeta value -1 between minimum and the element covering it:
+#To construct a 2-chain with top two elements rank 3 and 4
+#and with zeta value 2 between minimum and the element covering it:
 G2 = Poset([1,2,1, 1,1, 1],ranks=[[0],[],[],[1],[2]], flat_zeta=True)
 \end{verbatim}
 The poset \verb|G2| above is from \cite[Example 6.14]{ehrenborg-goresky-readdy-15} with $M$ taken to be the manifold whose boundary is the genus 2 surface.
