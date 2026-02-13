@@ -900,17 +900,10 @@ def mat_to_tuple(M):
 	return tuple(tuple(int(x) for x in row) for row in M)
 def Bnq_galois(n,q):
 	r'''
-	Returns the poset of subspaces of the vector space $\F_q^n$ where $\F_q$ is the field with q elements.
-
-	\begin{center}
-		\includegraphics{figures/Bnq.pdf}
-
-		The poset \verb|Bnq(3,2)|.
-	\end{center}
-
-	@exec@
-	make_fig(Bnq(3,2),'Bnq',height=10,width=16)
-	@section@Built in posets@
+	Backend for \verb|Bnq| called for nonprime values of $q$ (must be a prime power).
+	
+	Constructs the subspace lattice using the \verb|galois| package by appending all lines to row reduced matrices and row reducing.
+	@no_doc@
 	'''
 	Fq = galois.GF(q,repr='poly')
 	elements = list(rref_mats(n,q))
@@ -919,6 +912,8 @@ def Bnq_galois(n,q):
 
 def Bnq_manual(n=2, q=2):
 	r'''
+	Backend for \verb|Bnq| called for prime values of $q$.
+
 	Constructs the subspace lattice of $\mathbb{F}_q^n$ by intersecting all hyperplanes.
 
 	@no_doc@
@@ -1020,6 +1015,9 @@ def Bnq(n=2, q=2):
 
 		The poset \verb|Bnq(3,2)|.
 	\end{center}
+
+	Note, the time complexity of this function appears to be exponential or worse in both $n$ and $q$.
+	When $q$ is a prime a more efficient algorithm is used that has apparently exponential improvements or better (this algorithm too appears to be exponential or worse).
 
 	@exec@
 	make_fig(Bnq(3,2),'Bnq',height=10,width=16)

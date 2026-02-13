@@ -59,7 +59,7 @@ docs : docs/posets.pdf
 docs/bib.tex :
 	printf '\\bibliography{bib}{}\n\\bibliographystyle{plain}' > $@
 
-docs/posets.pdf : $(SRCFILES) docs/posets.sty docs/doc_funcs.py docs/bib.tex $(PYDOX)
+docs/posets.pdf : $(SRCFILES) docs/posets.sty docs/doc_funcs.py docs/bib.tex $(PYDOX) install
 	cd docs; $(PYDOX) --module ../src/posets --compile bibtex --impall doc_funcs --date today --author William\ Gustafson --title Posets --post bib.tex --subtitle v$(VERSION)$(DATE)
 
 

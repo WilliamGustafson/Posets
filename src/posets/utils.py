@@ -14,7 +14,7 @@ def subsets(S):
 	r'''
 	Iterator for subsets of an iterable.
 
-	@no_doc@
+	@section@Utilities@
 	'''
 	for T in itertools.chain(*(itertools.combinations(S,k) for k in range(len(S)+1))):
 		yield T
@@ -143,7 +143,6 @@ class TriangularArray:
 		The argument \verb|x| must be a tuple of integers such that $0\le x_0\le x_1< n$ where $n$ is the size of the triangular array.
 		'''
 		return this.data[x[1] - x[0] + this.size*x[0] - triangle_num(x[0])]
-		#if isinstance(x,tuple): return this.data[this.size*(x[0]-1)-triangle_num(x[0]+1)+x[1]-1]
 
 	def __str__(this):
 		if this.size==0: return ''
@@ -208,7 +207,8 @@ def insert(I,J,pos):
 	Iterator for the iterator \verb|J| inserted into the iterator \verb|I| at positions given by the iterable \verb|pos|.
 
 	For example, \verb|tuple(insert((1,3,7),(2,4,5,6,0),(1,2,4,5)))==(1,2,3,4,5,6,7)|.
-	@no_doc@
+
+	@section@Utilities@
 	'''
 	I = iter(I)
 	J = iter(J)
@@ -233,7 +233,9 @@ def rref_mats(n,q):
 	r'''
 	Iterator for matrices in row reduced echelon form with $n$ columns over the field of size $q$.
 
-	@utilities@
+	Note, the matrix \verb|M| is assumed to have been created with the module \verb|galois|.
+
+	@section@Utilities@
 	'''
 	Fq = galois.GF(q)
 	subsetsiter = subsets(range(1,n+1))
@@ -253,7 +255,9 @@ def rowreduce(M):
 	r'''
 	Returns the row reduced echelon form of a matrix $M$ over a finite field.
 
-	@utilities@
+	Note, the matrix \verb|M| is assumed to have been created with the module \verb|galois|.
+
+	@section@Utilities@
 	'''
 	Fq = type(M)
 	zero = Fq(0)
