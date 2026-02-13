@@ -4,6 +4,11 @@
 import decorator
 import time
 import itertools
+try:
+	import galois
+except:
+	galois = None
+import numpy as np
 
 def subsets(S):
 	r'''
@@ -197,3 +202,74 @@ class MockSet:
 	'''
 	def add(this,x):
 		pass
+
+def insert(I,J,pos):
+	r'''
+	Iterator for the iterator \verb|J| inserted into the iterator \verb|I| at positions given by the iterable \verb|pos|.
+
+	For example, \verb|tuple(insert((1,3,7),(2,4,5,6,0),(1,2,4,5)))==(1,2,3,4,5,6,7)|.
+	@no_doc@
+	'''
+	I = iter(I)
+	J = iter(J)
+	pos = sorted(pos)
+	try:
+		while pos:
+			if pos[0]==0:
+				pos = pos[1:]
+				yield next(J)
+			else:
+				yield next(I)
+			pos = [p-1 for p in pos]
+	except StopIteration: pass
+	if I:
+		try:
+			while True: yield next(I)
+		except StopIteration: pass
+	#else: #I ended don't do anything
+	return	
+
+def rref_mats(n,q):
+	r'''
+	Iterator for matrices in row reduced echelon form with $n$ columns over the field of size $q$.
+
+	@utilities@
+	'''
+	Fq = galois.GF(q)
+	subsetsiter = subsets(range(1,n+1))
+	next(subsetsiter) #skip empty pivot set
+	for S in subsetsiter:
+		numentries = sum(n-s-(len(S)-1-i) for i,s in enumerate(S))
+		for entries in itertools.product(*(itertools.repeat(range(q),numentries))):
+			entries = list(entries)
+			i = 0
+			mat = []
+			for j,s in enumerate(S):
+				numentries=n-s-(len(S)-1-j)
+				mat.append([0]*(s-1) + [1] + list(insert(entries[i:i+numentries],itertools.repeat(0),[x-1-s for x in S[j+1:]])))
+				i+=numentries
+			yield Fq(mat)
+def rowreduce(M):
+	r'''
+	Returns the row reduced echelon form of a matrix $M$ over a finite field.
+
+	@utilities@
+	'''
+	Fq = type(M)
+	zero = Fq(0)
+	n,m = M.shape
+	p = 0 #pivot index
+	for j in range(m):
+		if all(M[p:,j]==zero):
+			#print('no pivot in column',j)
+			continue
+		i = next(iter(i for i in range(p,n) if M[i,j]!=zero))
+		M[i,:] = M[i,:] / M[i,j]
+		for k in range(n):
+			if k==i: continue
+			M[k,:] = M[k,:] - M[k,j]*M[i,:]
+		tmp = Fq(M[p,:]) #need to copy tmp
+		M[p,:] = M[i,:]
+		M[i,:] = tmp
+		p+=1
+	return M

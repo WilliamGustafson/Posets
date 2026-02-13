@@ -3,6 +3,10 @@ from .poset import Poset,Genlatt
 from .hasseDiagram import *
 from .utils import TriangularArray
 import itertools
+try:
+	import galois
+except:
+	galois = None
 
 def Empty():
 	r'''
@@ -851,11 +855,52 @@ def Uncrossing(t, upper=False, weak=False, E_only=False, zerohat=True):
 	P.cache['isGorenstein()']=True
 	return P
 
-def Bnq(n=2, q=2):
+		
+def Bnq_upcovers(M):
+	r'''
+	Iterator for the row reduced matrices whose rowspace covers the row space of a given matrix $M$ in the subspace lattice of the vector space $\mathbb{F}_q^n$.
+
+	@no_doc@
+	'''
+	n,m=M.shape
+	Fq = type(M)
+	q = Fq.order
+	#pivot columns
+	S = list(j for j in range(m) if (M[:,j]==Fq(1)).sum()==1 and sum(M[next(iter(i for i in range(n) if M[i,j]==1)),:j]==0)==j)
+	#a complement space to M is given by the span of the standard rows
+	#indexed by non-pivot columns, we iterate over all vectors of this
+	#space where the first nonzero parameter is 1.
+	#
+	#number of leading zeros
+	for k in range(m):
+		if k in S: continue
+		#parameters
+		rightpivots = [s for s in S if s>=k]
+		numentries = m-len(rightpivots)-k-1
+		for v in itertools.product(*(itertools.repeat(range(q),numentries))):
+			v = Fq(list(
+				insert(
+					itertools.chain(
+						itertools.repeat(0,k),
+						(1,),
+						v),
+					itertools.repeat(0),
+					rightpivots
+				)))
+			
+			thesum = sum(s>k for s in S)
+			yield rowreduce(np.concat((M,np.stack((v,)))))
+
+def mat_to_tuple(M):
+	'''
+	Converts a matrix to a tuple.
+
+	@no_doc@
+	'''
+	return tuple(tuple(int(x) for x in row) for row in M)
+def Bnq_galois(n,q):
 	r'''
 	Returns the poset of subspaces of the vector space $\F_q^n$ where $\F_q$ is the field with q elements.
-
-	Currently only implemented for \verb|q| a prime. Raises an instance of \verb|NotImplementedError| if \verb|q| is not prime.
 
 	\begin{center}
 		\includegraphics{figures/Bnq.pdf}
@@ -867,15 +912,22 @@ def Bnq(n=2, q=2):
 	make_fig(Bnq(3,2),'Bnq',height=10,width=16)
 	@section@Built in posets@
 	'''
-	def isprime(x):
-		d = 2
-		while d*d <= x:
-			if x%d == 0:
-				return false
-			d += 1
-		return True
-	if not isprime(q):
-		raise NotImplementedError("Bnq with nonprime q is not implemented")
+	Fq = galois.GF(q,repr='poly')
+	elements = list(rref_mats(n,q))
+	relations = {mat_to_tuple(M) : [mat_to_tuple(N) for N in Bnq_upcovers(M)] for M in elements}
+	return Poset(elements=[mat_to_tuple(M) for M in elements],relations=relations)
+
+def Bnq_manual(n=2, q=2):
+	r'''
+	Constructs the subspace lattice of $\mathbb{F}_q^n$ by intersecting all hyperplanes.
+
+	@no_doc@
+	'''
+	#Algorithm: The hyperplanes are the solutions to $x\cdot v = 0$ for a fixed vector $v$.
+	#We construct all the hyperplanes in this way and then compute all intersections of hyperplanes.
+	#
+	#vectors are represented as numbers, given a vector $v$ encoded as a number $u$ the component $v_i$ is the remainder of $u$ when divided by $q$ (i.e. `u%q`).
+
 	#does dot product
 	def dot(v,w):
 		vmodqi=v%q
@@ -927,12 +979,11 @@ def Bnq(n=2, q=2):
 				if S&H!=S: newnewspaces.add(S&H)
 		spaces=spaces.union(newnewspaces)
 		newspaces=newnewspaces
-#	lengths=[[]for i in range(0,n+1)]
-#	for S in spaces: lengths[int(math.log(len([j for j in range(qn) if (1<<j)&S!=0]),q))].append(S)
 
 	spaces=sorted(list(spaces))
 
 
+	#returns a basis for a space S that is represented as a number
 	def basis(S):
 		basis = []
 		span = 1 #zero space
@@ -950,24 +1001,53 @@ def Bnq(n=2, q=2):
 		return tuple(basis)
 
 	def list_to_mat(B):
-#		B = basis(S)
 		return tuple(tuple(vec(b)) for b in B)
 
-	def nodeLabel(hd, i):
-		if i==0: return '$\\left(\\begin{matrix}'+' & '.join('0'*n)+'\\end{matrix}\\right)$'
-		return '$\\left(\\begin{matrix}' + r'\\'.join(' & '.join(str(x) for x in row) for row in hd.P[i])+'\\end{matrix}\\right)$'
 
+	P = Poset(elements = spaces, less = lambda i,j: i!=j and i&j == i) 
+	#sort ranks: revlex on bases induced by ordering vectors by interpreting them as base q representations of numbers
+	P.elements = [basis(S)[::-1] for S in P]
+	P = P.sort()
+	P.elements = [list_to_mat(B)[::-1] for B in P]
+	return P
+
+def Bnq(n=2, q=2):
+	r'''
+	Returns the poset of subspaces of the vector space $\F_q^n$ where $\F_q$ is the field with q elements.
+
+	\begin{center}
+		\includegraphics{figures/Bnq.pdf}
+
+		The poset \verb|Bnq(3,2)|.
+	\end{center}
+
+	@exec@
+	make_fig(Bnq(3,2),'Bnq',height=10,width=16)
+	@section@Built in posets@
+	'''
+	def isprime(x):
+		d = 2
+		while d*d <= x:
+			if x%d == 0:
+				return False
+			d += 1
+		return True
+	if not isprime(q):
+		P = Bnq_galois(n,q).adjoin_zerohat(tuple())
+	else:
+		P = Bnq_manual(n,q)
+	def nodeLabel(hd, i):
+		if len(hd.P[i])==0: return '$\\left(\\begin{matrix}'+' & '.join('0'*n)+'\\end{matrix}\\right)$'
+		return '$\\left(\\begin{matrix}' + r'\\'.join(' & '.join(str(x) for x in row) for row in hd.P[i])+'\\end{matrix}\\right)$'
 	if q<10:
 		def nodeName(hd, i):
 			return '0' if i==0 else '/'.join(''.join(str(x) for x in y) for y in hd.P[i])
 	else:
 		def nodeName(hd, i):
 			return '0' if i==0 else '/'.join('-'.join(str(x) for x in y) for y in hd.P[i])
-	P = Poset(elements = spaces, less = lambda i,j: i!=j and i&j == i, nodeLabel=nodeLabel,preamble='\\usepackage{amsmath}',nodeName=nodeName)
-	#sort ranks: revlex on bases induced by ordering vectors by interpreting them as base q representations of numbers
-	P.elements = [basis(S)[::-1] for S in P]
-	P = P.sort()
-	P.elements = [list_to_mat(B)[::-1] for B in P]
+	P.hasseDiagram.nodeLabel = nodeLabel
+	P.hasseDiagram.preamble = '\\usepackage{amsmath}'
+	P.hasseDiagram.nodeName = nodeName
 	P.cache['isRanked()'] = True
 	P.cache['isEulerian()'] = False
 	P.cache['isGorenstein()'] = False

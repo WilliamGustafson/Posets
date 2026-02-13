@@ -19,6 +19,7 @@ dependencies =[
 	"decorator",
 	"numpy",
 	"wand",
+	"galois",
 	]
 [project.urls]
 Homepage = "https://github.com/WilliamGustafson/posets"

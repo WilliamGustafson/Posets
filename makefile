@@ -83,6 +83,7 @@ test :
 	cd tests && pytest posets_test.py -vvv
 
 #make html file to test compatibility under pyodide
+.PHONY : wasm.test.html
 wasm.test.html : tests/wasm.test tests/posets_test.py
 	lineno=$$(grep -n '^#Test pythonPosetToMac' $(lastword $^) | sed -e 's/\(.*\):.*/\1/g') && cat $< | sed -e 's/{WHL}/$(subst /,\/,$(WHL))/g' > $@.tmp && head -n $$lineno $(lastword $^) | cat $@.tmp - tests/bootleg.pytest.py > $@
 	printf "\n</p></body></html>" >> $@
@@ -91,6 +92,7 @@ wasm.test.html : tests/wasm.test tests/posets_test.py
 #run tests under pyodide (through the browser)
 wasmtest : wasm.test.html $(WHL)
 	$(info Starting a local web server. Navigate to the url below in your favorite web browser.)
+	$(info localhost:8000/$<)
 	python -m http.server 
 
 coverage : tests/htmlcov/index.html
